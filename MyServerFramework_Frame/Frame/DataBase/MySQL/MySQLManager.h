@@ -10,7 +10,7 @@ class MICRO_LEGEND_FRAME_API MySQLManager : public FrameComponent
 public:
 	MySQLManager()
 	{
-		mInTrasaction = false;
+		mInTransaction = false;
 	}
 	void init() override;
 	void lateInit() override;
@@ -21,7 +21,7 @@ public:
 	{
 		T* table = new T(name);
 		table->init();
-		mTableList.push_back(table);
+		mTableList.add(table);
 		return table;
 	}
 	CustomThread* getThread() const { return mMySQLWriteThread; }
@@ -30,21 +30,21 @@ public:
 	void startTransaction(bool check = true) const;
 	// 结束事务
 	void commit() const;
-	bool isInTransaction() const { return mInTrasaction; }
+	bool isInTransaction() const { return mInTransaction; }
 	bool connectDataBase();
 	void destroyMySQL();
 	bool checkReconnect(const char* str) const;
 	static void backup();
 protected:
-	static void onThreadPreCmd(CustomThread* thread);
-	static void onThreadEndCmd(CustomThread* thread);
-	static void mysqlThread(CustomThread* thread);
+	void onThreadPreCmd();
+	void onThreadEndCmd();
+	void mysqlThread();
 public:
 	Vector<MySQLTable*> mTableList;
 	CustomThread* mMySQLWriteThread = nullptr;
 	MYSQL* mMySQL = nullptr;
 	float mCurTimeCount = 0.0f;
-	atomic<bool> mInTrasaction;
+	atomic<bool> mInTransaction;
 	static constexpr float mTimeOut = 60.0f;
 };
 

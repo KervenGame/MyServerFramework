@@ -54,7 +54,10 @@ template<>
 struct IsPod<double> { static constexpr bool mValue = true; };
 
 template<typename T>
-struct IsPodType { using mType = enable_if_t<IsPod<typename remove_cv<T>::type>::mValue || is_enum<T>::value>; };
+struct IsPodType
+{
+	static constexpr bool mValue = IsPod<typename remove_cv<T>::type>::mValue || is_enum<T>::value;
+};
 
 // 是否为指针类型
 template<typename T>
@@ -74,7 +77,6 @@ template<typename T>
 struct IsPodOrPointerType 
 {
 	static constexpr bool mValue = IsPod<T>::mValue || IsPointer<T>::mValue;
-	using mType = enable_if_t<mValue>; 
 };
 
 // 是否不是指针和基础数据类型
@@ -82,7 +84,6 @@ template<typename T>
 struct IsNotPodAndPointerType
 {
 	static constexpr bool mValue = !IsPod<T>::mValue && !IsPointer<T>::mValue;
-	using mType = enable_if_t<mValue>;
 };
 
 // 是否为整型
@@ -168,3 +169,30 @@ struct IsPodUnsignedInteger<ullong> { static constexpr bool mValue = true; };
 
 template<typename T>
 struct IsPodUnsignedIntegerType { using mType = enable_if_t<IsPodUnsignedInteger<T>::mValue>; };
+
+template<typename T>
+struct ToUnsignedInteger { using Type = T; };
+
+template<>
+struct ToUnsignedInteger<char> { using Type = byte; };
+
+template<>
+struct ToUnsignedInteger<byte> { using Type = byte; };
+
+template<>
+struct ToUnsignedInteger<short> { using Type = ushort; };
+
+template<>
+struct ToUnsignedInteger<ushort> { using Type = ushort; };
+
+template<>
+struct ToUnsignedInteger<int> { using Type = uint; };
+
+template<>
+struct ToUnsignedInteger<uint> { using Type = uint; };
+
+template<>
+struct ToUnsignedInteger<llong> { using Type = ullong; };
+
+template<>
+struct ToUnsignedInteger<ullong> { using Type = ullong; };

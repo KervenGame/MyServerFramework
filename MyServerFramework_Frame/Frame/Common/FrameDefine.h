@@ -26,6 +26,8 @@
 #include "IsSubClassOf.h"
 #include "SafeHashMap.h"
 #include "SafeVector.h"
+#include "SafeVector0.h"
+#include "Ref.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 class MICRO_LEGEND_FRAME_API FrameDefine
@@ -34,8 +36,13 @@ public:
 	// 常量数字定义
 	static constexpr int UDP_MAX_PACKET_SIZE = 64 * 1024;			// udp单个消息包最大的大小,64KB
 	static constexpr int CLIENT_MAX_PACKET_SIZE = 128 * 1024;		// 客户端临时缓冲区大小,应该不小于单个消息包最大的大小,128KB
-	static constexpr int CLIENT_SEND_BUFFER = 256 * 1024;			// 客户端发送数据缓冲区大小,128KB
-	static constexpr int CLIENT_RECV_BUFFER = 256 * 1024;			// 客户端接收数据缓冲区大小,128KB
+#ifdef STRESS_TEST
+	static constexpr int CLIENT_SEND_BUFFER = 256 * 1024;			// 客户端发送数据缓冲区大小,256KB
+	static constexpr int CLIENT_RECV_BUFFER = 256 * 1024;			// 客户端接收数据缓冲区大小,256KB
+#else
+	static constexpr int CLIENT_SEND_BUFFER = 256 * 1024;			// 客户端发送数据缓冲区大小,256KB
+	static constexpr int CLIENT_RECV_BUFFER = 256 * 1024;			// 客户端接收数据缓冲区大小,256KB
+#endif
 	static constexpr int PACKET_TYPE_SIZE = sizeof(ushort);			// 包头中的包类型的变量类型大小
 	static constexpr int PACKET_CRC_SIZE = sizeof(ushort);			// 消息包中的包CRC校验码的变量类型大小
 	static constexpr int MIN_PARSE_COUNT = 5;						// 只有成功解析5个消息包以后的客户端才认为是有效客户端,当无效客户端接收到错误消息时直接断开连接并且不报错
@@ -46,6 +53,8 @@ public:
 	static const string MEDIA_PATH;
 	static const string CONFIG_PATH;
 	static const string LOG_PATH;
+	static const string CRASH_PATH;
+	static const string DUMP_FILE;
 	static const string MYSQL_BACKUP_PATH;
 	static const string SQLITE_PATH;
 	static const string EXCEL_PATH;

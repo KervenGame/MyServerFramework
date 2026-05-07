@@ -9,9 +9,135 @@
 #include "MyString.h"
 #include "Vector.h"
 #include "FrameCallback.h"
+#include "TCPServerClient.h"
+#include "TCPServerSystem.h"
 
 namespace FrameUtility
 {
+	// 用于简化ClassPool相关定义和使用的代码
+	template<typename T>
+	T* CLASS()
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			return PoolOf<T>::type::getInstance()->newClass();
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	template<typename T>
+	void CLASS(T*& obj)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			obj = PoolOf<T>::type::getInstance()->newClass();
+		}
+		else
+		{
+			obj = nullptr;
+		}
+	}
+	template<typename T>
+	void UN_CLASS(T*& obj)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			PoolOf<T>::type::getInstance()->destroyClass(obj);
+		}
+	}
+	template<typename T>
+	void UN_CLASS(Vector<T*>& objList)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			for (T* item : objList)
+			{
+				PoolOf<T>::type::getInstance()->destroyClass(item);
+			}
+			objList.clear();
+		}
+	}
+	template<typename T>
+	void UN_CLASS(SafeVector<T*>& objList)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			for (T* item : objList.getMainList())
+			{
+				PoolOf<T>::type::getInstance()->destroyClass(item);
+			}
+			objList.clear();
+		}
+	}
+	template<typename T>
+	void UN_CLASS(SafeVector0<T*>& objList)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			for (T* item : objList.getMainList())
+			{
+				PoolOf<T>::type::getInstance()->destroyClass(item);
+			}
+			objList.clear();
+		}
+	}
+	template<typename T, int Length>
+	void UN_CLASS(ArrayList<Length, T*>& objList)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			for (T* item : objList)
+			{
+				PoolOf<T>::type::getInstance()->destroyClass(item);
+			}
+			objList.clear();
+		}
+	}
+	template<typename T, typename Key>
+	void UN_CLASS(HashMap<Key, T*>& objList)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			for (auto& item : objList)
+			{
+				PoolOf<T>::type::getInstance()->destroyClass(item.second);
+			}
+			objList.clear();
+		}
+	}
+	template<typename T, typename Key>
+	void UN_CLASS(SafeHashMap<Key, T*>& objList)
+	{
+		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		if constexpr (!hasNoPool)
+		{
+			for (auto& item : objList.getMainList())
+			{
+				T* temp = item.second;
+				PoolOf<T>::type::getInstance()->destroyClass(temp);
+			}
+			objList.clear();
+		}
+	}
 	MICRO_LEGEND_FRAME_API bool tickTimerLoop(float& time, float elapsedTime, float interval);
 	MICRO_LEGEND_FRAME_API bool tickTimerLoopEnsure(float& time, float elapsedTime, float interval);
 	MICRO_LEGEND_FRAME_API bool tickTimerOnce(float& time, float elapsedTime);
@@ -21,7 +147,7 @@ namespace FrameUtility
 		valueVec.clearAndReserve(valueSet.size());
 		for (const auto& iter : valueSet)
 		{
-			valueVec.push_back(iter);
+			valueVec.add(iter);
 		}
 	}
 	template<typename T>
@@ -31,7 +157,7 @@ namespace FrameUtility
 		valueVec.clearAndReserve(valueSet.size());
 		for (const auto& iter : valueSet)
 		{
-			valueVec.push_back(iter);
+			valueVec.add(iter);
 		}
 		return valueVec;
 	}
@@ -240,7 +366,7 @@ namespace FrameUtility
 		keyList.clearAndReserve(map.size());
 		for (const auto& iter : map)
 		{
-			keyList.push_back(iter.first);
+			keyList.add(iter.first);
 		}
 	}
 	template<typename Key, typename Value>
@@ -253,8 +379,23 @@ namespace FrameUtility
 		keyList.clearAndReserve(map.size());
 		for (const auto& iter : map)
 		{
-			keyList.push_back(iter.first);
+			keyList.add(iter.first);
 		}
+	}
+	template<typename Key, typename Value>
+	Vector<Key> hashMapKeyToVector(const HashMap<Key, Value>& map)
+	{
+		Vector<Key> keyList;
+		if (map.isEmpty())
+		{
+			return keyList;
+		}
+		keyList.clearAndReserve(map.size());
+		for (const auto& iter : map)
+		{
+			keyList.add(iter.first);
+		}
+		return keyList;
 	}
 	template<typename Key, typename Value, int Length>
 	void hashMapKeyToArrayList(const HashMap<Key, Value>& map, ArrayList<Length, Key>& keyList)
@@ -269,8 +410,23 @@ namespace FrameUtility
 			keyList.add(iter.first);
 		}
 	}
+	template<typename Key, typename Value, int Length>
+	void hashMapKeyValueToArrayList(const HashMap<Key, Value>& map, ArrayList<Length, Key>& keyList, ArrayList<Length, Value>& valueList)
+	{
+		if (map.isEmpty())
+		{
+			return;
+		}
+		keyList.clear();
+		valueList.clear();
+		for (const auto& iter : map)
+		{
+			keyList.add(iter.first);
+			valueList.add(iter.second);
+		}
+	}
 	template<typename Key, typename Value>
-	bool mapKeyToList(const Map<Key, Value>& map, Value* keyList, const int maxCount)
+	bool mapKeyToList(const Map<Key, Value>& map, Key* keyList, const int maxCount)
 	{
 		if (map.isEmpty())
 		{
@@ -288,7 +444,7 @@ namespace FrameUtility
 		return true;
 	}
 	template<typename Key, typename Value>
-	bool hashMapKeyToList(const HashMap<Key, Value>& map, Value* keyList, const int maxCount)
+	bool hashMapKeyToList(const HashMap<Key, Value>& map, Key* keyList, const int maxCount)
 	{
 		if (map.isEmpty())
 		{
@@ -315,7 +471,7 @@ namespace FrameUtility
 		valueList.clearAndReserve(valueList.size() + map.size());
 		for (const auto& iter : map)
 		{
-			valueList.push_back(iter.second);
+			valueList.add(iter.second);
 		}
 	}
 	template<typename Key, typename Value>
@@ -328,7 +484,7 @@ namespace FrameUtility
 		valueList.clearAndReserve(valueList.size() + map.size());
 		for (const auto& iter : map)
 		{
-			valueList.push_back(iter.second);
+			valueList.add(iter.second);
 		}
 	}
 	template<typename Key, typename Value>
@@ -341,7 +497,7 @@ namespace FrameUtility
 		valueList.clearAndReserve(valueList.size() + map.size());
 		for (const auto& iter : map)
 		{
-			valueList.push_back(make_pair(iter.first, iter.second));
+			valueList.add(make_pair(iter.first, iter.second));
 		}
 	}
 	template<typename Key, typename Value>
@@ -379,7 +535,7 @@ namespace FrameUtility
 		}
 		for (const T& item : vec)
 		{
-			set.insert(item);
+			set.add(item);
 		}
 	}
 	template<typename T>
@@ -397,36 +553,36 @@ namespace FrameUtility
 		}
 	}
 	// 适用于基础数据类型的列表
-	template<typename T, typename TypeCheck = typename IsPodOrPointerType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodOrPointerType<T>::mValue>>
 	void getListDiffPod(const T* array0, const int count0, const T* array1, const int count1, Vector<T>& diffInArray0, Vector<T>& diffInArray1)
 	{
 		// 先复制一份,然后删除其中相同的元素,剩下的就是两个列表的差异元素
 		diffInArray0.setRange(array0, count0);
 		diffInArray1.setRange(array1, count1);
-		for (int i = count0 - 1; i >= 0; --i)
+		FOR_INVERSE(count0)
 		{
-			if (diffInArray1.eraseElement(diffInArray0[i]))
+			if (diffInArray1.remove(diffInArray0[i]))
 			{
-				diffInArray0.eraseAt(i);
+				diffInArray0.removeAt(i);
 			}
 		}
 	}
 	// 适用于基础数据类型的列表
-	template<typename T, typename TypeCheck = typename IsPodOrPointerType<T>::mType, int Length0, int Length1>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodOrPointerType<T>::mValue>, int Length0, int Length1>
 	void getListDiffPod(const T* array0, const int count0, const T* array1, const int count1, ArrayList<Length0, T>& diffInArray0, ArrayList<Length1, T>& diffInArray1)
 	{
 		// 先复制一份,然后删除其中相同的元素,剩下的就是两个列表的差异元素
 		diffInArray0.addRange(array0, count0);
 		diffInArray1.addRange(array1, count1);
-		for (int i = count0 - 1; i >= 0; --i)
+		FOR_INVERSE(count0)
 		{
-			if (diffInArray1.eraseFirstElement(diffInArray0[i]))
+			if (diffInArray1.remove(diffInArray0[i]))
 			{
-				diffInArray0.eraseAt(i);
+				diffInArray0.removeAt(i);
 			}
 		}
 	}
-	template<typename T, typename TypeCheck = typename IsPodOrPointerType<T>::mType, int Length0, int Length1, int Length2, int Length3>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodOrPointerType<T>::mValue>, int Length0, int Length1, int Length2, int Length3>
 	void getListDiffPod(const ArrayList<Length0, T>& array0, const ArrayList<Length1, T>& array1, ArrayList<Length2, T>& diffInArray0, ArrayList<Length3, T>& diffInArray1)
 	{
 		const int count0 = array0.size();
@@ -434,46 +590,52 @@ namespace FrameUtility
 		// 先复制一份,然后删除其中相同的元素,剩下的就是两个列表的差异元素
 		diffInArray0.addRange(array0.data(), count0);
 		diffInArray1.addRange(array1.data(), count1);
-		for (int i = count0 - 1; i >= 0; --i)
+		FOR_INVERSE(count0)
 		{
-			if (diffInArray1.eraseFirstElement(diffInArray0[i]))
+			if (diffInArray1.remove(diffInArray0[i]))
 			{
-				diffInArray0.eraseAt(i);
+				diffInArray0.removeAt(i);
 			}
 		}
 	}
 	// 适用于非基础数据类型的列表
-	template<typename T, typename TypeCheck = typename IsNotPodAndPointerType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsNotPodAndPointerType<T>::mValue>>
 	void getListDiff(const T* array0, const int count0, const T* array1, const int count1, Vector<T>& diffInArray0, Vector<T>& diffInArray1)
 	{
 		// 先复制一份,然后删除其中相同的元素,剩下的就是两个列表的差异元素
 		diffInArray0.setRangeCopy(array0, count0);
 		diffInArray1.setRangeCopy(array1, count1);
-		for (int i = diffInArray0.size() - 1; i >= 0; --i)
+		FOR_VECTOR_INVERSE(diffInArray0)
 		{
-			if (diffInArray1.eraseElement(diffInArray0[i]))
+			if (diffInArray1.remove(diffInArray0[i]))
 			{
-				diffInArray0.eraseAt(i);
+				diffInArray0.removeAt(i);
 			}
 		}
 	}
-	MICRO_LEGEND_FRAME_API void sendPacketTCP(PacketTCP* packet, TCPServerClient* client);
 	MICRO_LEGEND_FRAME_API void sendPacketTypeTCP(ushort packetType, const string& name, TCPServerClient* client);
-	MICRO_LEGEND_FRAME_API void sendPacketUDP(PacketTCP* packet, TCPServerClient* client);
-	MICRO_LEGEND_FRAME_API void sendPacketWebSocket(PacketWebSocket* packet, WebSocketServerClient* client);
-	// 如果消息没有任何参数,则推荐使用此函数发送消息,避免不必要的逻辑执行
-	template<typename T, 
-		typename TypeCheck0 = typename IsSubClassOf<PacketTCP, T>::mType,
-		typename TypeCheck1 = enable_if_t<!T::hasMember()>>
-	void sendPacketTCP(TCPServerClient* client)
+	template<typename T, typename TypeCheck0 = typename IsSubClassOf<PacketTCP, T>::mType>
+	void sendPacketTCP(T* packet, TCPServerClient* client)
 	{
-		if (client != nullptr)
+		if (client == nullptr)
 		{
-			sendPacketTypeTCP(T::getStaticType(), T::getStaticPacketName(), client);
+			return;
+		}
+		if constexpr (T::hasMember())
+		{
+			mTCPServerSystem->writePacket(packet);
+			client->sendPacket(packet);
+		}
+		else
+		{
+			client->sendPacket(T::getStaticType(), T::getStaticPacketName());
 		}
 	}
+	MICRO_LEGEND_FRAME_API void sendPacketUDP(PacketTCP* packet, TCPServerClient* client);
+	MICRO_LEGEND_FRAME_API void sendPacketWebSocket(PacketWebSocket* packet, WebSocketServerClient* client);
 	// 延迟执行一个lambda表达式,回调会在主线程中执行,0秒表示在下一帧执行
-	MICRO_LEGEND_FRAME_API void delayCall(const VoidCallback& func, float time = 0.0f);
+	MICRO_LEGEND_FRAME_API void delayCall(float time, const VoidCallback& func);
+	MICRO_LEGEND_FRAME_API void delayCall(const VoidCallback& func);
 	ushort generateCRC16(const char* buffer, int count) { return crc16(0x1F, buffer, count) ^ 0x123F; }
 	template<typename T>
 	ushort generateCRC16(T value) { return generateCRC16((char*)(&value), sizeof(T)); }

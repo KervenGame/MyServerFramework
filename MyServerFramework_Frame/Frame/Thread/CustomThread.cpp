@@ -1,9 +1,8 @@
 ﻿#include "FrameHeader.h"
 
-CustomThread::CustomThread(const string& name, CustomThreadCallback callback, void* args, CustomThreadCallback preCmdCallback, CustomThreadCallback endCmdCallback) :
+CustomThread::CustomThread(const string& name, VoidCallback callback, VoidCallback preCmdCallback, VoidCallback endCmdCallback) :
 	mName(name),
 	mCallback(callback),
-	mArgs(args),
 	mPreCmdCallback(preCmdCallback),
 	mEndCmdCallback(endCmdCallback),
 	mRunning(true),
@@ -88,17 +87,13 @@ void CustomThread::updateThread()
 		try
 		{
 			// 执行命令列表中的命令
-			FOR_ONCE
+			CALL(mPreCmdCallback);
+			DoubleBufferReadScope<DelayCommand*> readCmdScope(mCmdBuffer);
+			if (readCmdScope.mReadList != nullptr)
 			{
-				DoubleBufferReadScope<DelayCommand*> readScope(mCmdBuffer);
-				if (readScope.mReadList == nullptr)
-				{
-					break;
-				}
-				CALL(mPreCmdCallback, this);
 				mCmdTypeList.clear();
 				const llong startTime = getRealTimeMS();
-				for (DelayCommand* delayInfo : *readScope.mReadList)
+				for (DelayCommand* delayInfo : *readCmdScope.mReadList)
 				{
 					if (delayInfo->isDestroy())
 					{
@@ -106,7 +101,7 @@ void CustomThread::updateThread()
 						continue;
 					}
 					GameCommand* cmd = delayInfo->mCommand;
-					mCmdTypeList.insertOrGet(typeid(*cmd).name()) += 1;
+					mCmdTypeList.addOrGet(typeid(*cmd).name()) += 1;
 					if (delayInfo->mReceiver != nullptr)
 					{
 						cmd->setDelayCommand(false);
@@ -120,7 +115,7 @@ void CustomThread::updateThread()
 				if (mCmdDebug)
 				{
 					const llong endTime = getRealTimeMS();
-					if (readScope.mReadList->size() > 0 && endTime - startTime > 20)
+					if (!readCmdScope.mReadList->isEmpty() && endTime - startTime > 20)
 					{
 						int maxCount = 0;
 						string maxCmd;
@@ -132,17 +127,37 @@ void CustomThread::updateThread()
 								maxCmd = iter.first;
 							}
 						}
-						LOG("线程" + mName + 
-							"耗时:" + IToS((int)(endTime - startTime)) + 
-							"毫秒,命令数量:" + UIToS(readScope.mReadList->size()) +
-							", 最多的是" + maxCmd + 
+						LOG("线程" + mName +
+							"耗时:" + IToS((int)(endTime - startTime)) +
+							"毫秒,命令数量:" + UIToS(readCmdScope.mReadList->size()) +
+							", 最多的是" + maxCmd +
 							", 数量:" + IToS(maxCount));
 					}
 				}
-				mDelayCommandPool->destroyClassList(*readScope.mReadList);
-				CALL(mEndCmdCallback, this);
+				mDelayCommandPool->destroyClassList(*readCmdScope.mReadList);
 			}
-			CALL(mCallback, this);
+
+			DoubleBufferReadScope<VoidCallback> readCallScope(mCallBuffer);
+			if (readCallScope.mReadList != nullptr)
+			{
+				const llong startTime = getRealTimeMS();
+				for (VoidCallback call : *readCallScope.mReadList)
+				{
+					CALL(call);
+				}
+				if (mCmdDebug)
+				{
+					const llong endTime = getRealTimeMS();
+					if (!readCallScope.mReadList->isEmpty() && endTime - startTime > 20)
+					{
+						LOG("线程" + mName +
+							"耗时:" + IToS((int)(endTime - startTime)) +
+							"毫秒,调用数量:" + UIToS(readCallScope.mReadList->size()));
+					}
+				}
+			}
+			CALL(mEndCmdCallback);
+			CALL(mCallback);
 		}
 		catch (const exception& e)
 		{

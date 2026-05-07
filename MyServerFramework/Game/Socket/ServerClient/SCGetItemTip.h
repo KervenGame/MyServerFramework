@@ -29,17 +29,28 @@ public:
 	static const string& getStaticPacketName() { return mPacketName; }
 	static constexpr ushort getStaticType() { return PACKET_TYPE::SCGetItemTip; }
 	static constexpr bool hasMember() { return true; }
-	bool readFromBuffer(SerializerBitRead* reader) override
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override
 	{
 		bool success = true;
-		success = success && reader->readCustomList(mIDCountList);
+		success = success && reader->readCustomList(needReadSign, mIDCountList);
 		return success;
 	}
-	bool writeToBuffer(SerializerBitWrite* serializer) const override
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override
 	{
 		bool success = true;
-		success = success && serializer->writeCustomList(mIDCountList);
+		success = success && writer->writeCustomList(needWriteSign, mIDCountList);
 		return success;
+	}
+	bool generateHasSignInternal() const override
+	{
+		for (const NetStructItemInfo& item : mIDCountList)
+		{
+			if (item.hasSign())
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 	void resetProperty() override
 	{

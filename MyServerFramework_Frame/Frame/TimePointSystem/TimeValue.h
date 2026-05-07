@@ -14,13 +14,30 @@ public:
 	static bool isTimeInRangeInYear(const TimeValue& time, const TimeValue& minTime, const TimeValue& maxTime);
 	bool operator>(const TimeValue& other) const
 	{
-		// 转换成秒数来计算
-		const long seconds0 = 60 * 60 * 24 * 365 * mYear + 60 * 60 * 24 * 31 * mMonth + 60 * 60 * 24 * mDay + 60 * 60 * mHour + 60 * mMinute + mSecond;
-		const long seconds1 = 60 * 60 * 24 * 365 * other.mYear + 60 * 60 * 24 * 31 * other.mMonth + 60 * 60 * 24 * other.mDay + 60 * 60 * other.mHour + 60 * other.mMinute + other.mSecond;
-		return seconds0 > seconds1;
+		if (mYear != other.mYear)
+		{
+			return mYear > other.mYear;
+		}
+		if (mMonth != other.mMonth)
+		{
+			return mMonth > other.mMonth;
+		}
+		if (mDay != other.mDay)
+		{
+			return mDay > other.mDay;
+		}
+		if (mHour != other.mHour)
+		{
+			return mHour > other.mHour;
+		}
+		if (mMinute != other.mMinute)
+		{
+			return mMinute > other.mMinute;
+		}
+		return mSecond > other.mSecond;
 	}
 public:
-	int mWeekDay = 0;
+	int mWeekDay = 0;		// 0到6分别表示周日到周六,比如周一就是1,周二就是2,周日是0
 	int mYear = 0;
 	int mMonth = 0;
 	int mDay = 0;

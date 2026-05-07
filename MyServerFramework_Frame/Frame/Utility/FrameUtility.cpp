@@ -52,23 +52,13 @@ namespace FrameUtility
 		return true;
 	}
 
-	void sendPacketTCP(PacketTCP* packet, TCPServerClient* client)
+	void sendPacketTypeTCP(const ushort packetType, const string& name, TCPServerClient* client)
 	{
 		if (client == nullptr)
 		{
 			return;
 		}
-		mTCPServerSystem->writePacket(packet);
-		client->sendPacket(packet);
-	}
-
-	void sendPacketTypeTCP(const ushort packetType, const string& name, TCPServerClient* client)
-	{
-		if (client != nullptr)
-		{
-
-			client->sendPacket(packetType, name);
-		}
+		client->sendPacket(packetType, name);
 	}
 
 	void sendPacketUDP(PacketTCP* packet, TCPServerClient* client)
@@ -95,7 +85,7 @@ namespace FrameUtility
 		client->sendPacket(packet);
 	}
 
-	void delayCall(const VoidCallback& func, const float time)
+	void delayCall(const float time, const VoidCallback& func)
 	{
 		if (isMainThread())
 		{
@@ -108,6 +98,18 @@ namespace FrameUtility
 			auto* cmd = CMD_THREAD_DELAY<CmdGlobalDelayLambda>();
 			cmd->mFunction = func;
 			mCommandSystem->pushCommandDelay(cmd, mCommandSystem, time);
+		}
+	}
+
+	void delayCall(const VoidCallback& func)
+	{
+		if (isMainThread())
+		{
+			mDelayCallSystem->addCall(func);
+		}
+		else
+		{
+			mDelayCallSystem->addCallCrossThread(func);
 		}
 	}
 }

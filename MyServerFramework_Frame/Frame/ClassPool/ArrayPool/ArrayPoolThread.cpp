@@ -7,7 +7,7 @@ ThreadLock ArrayPoolThread::mCharLock;
 
 void ArrayPoolThread::init()
 {
-	mServerFramework->registeHour(this, onHour);
+	mServerFramework->registeHour(this, [this] {onHour(); });
 }
 
 void ArrayPoolThread::quit()
@@ -27,11 +27,11 @@ char* ArrayPoolThread::newCharArray(const int count, const bool zeroMemory)
 	const int threadID = getThreadID();
 	{
 		THREAD_LOCK(mCharLock);
-		threadArrayMemory = mArrayPoolSingleCharList.tryGet(threadID);
+		threadArrayMemory = mArrayPoolSingleCharList.get(threadID);
 		if (threadArrayMemory == nullptr)
 		{
 			threadArrayMemory = new ArrayPoolSingleChar();
-			mArrayPoolSingleCharList.insert(threadID, threadArrayMemory);
+			mArrayPoolSingleCharList.add(threadID, threadArrayMemory);
 		}
 	}
 	// 在线程内存列表中找到指定类型的内存列表
@@ -43,7 +43,7 @@ void ArrayPoolThread::deleteCharArray(char*& data, const int size)
 	ArrayPoolSingleChar* threadArrayMemory = nullptr;
 	{
 		THREAD_LOCK(mCharLock);
-		threadArrayMemory = mArrayPoolSingleCharList.tryGet(getThreadID());
+		threadArrayMemory = mArrayPoolSingleCharList.get(getThreadID());
 	}
 	if (threadArrayMemory != nullptr)
 	{
@@ -52,15 +52,15 @@ void ArrayPoolThread::deleteCharArray(char*& data, const int size)
 	data = nullptr;
 }
 
-void ArrayPoolThread::onHour(void* userData)
+void ArrayPoolThread::onHour()
 {
 	LOG("开始dumpArrayPoolThread");
-	for (const auto& item : static_cast<This*>(userData)->mArrayPoolSingleList)
+	for (const auto& item : mArrayPoolSingleList)
 	{
 		LOG("ThreadID:" + IToS(item.first));
 		item.second->dump();
 	}
-	for (const auto& item : static_cast<This*>(userData)->mArrayPoolSingleCharList)
+	for (const auto& item : mArrayPoolSingleCharList)
 	{
 		LOG("ThreadID:" + IToS(item.first));
 		item.second->dump();

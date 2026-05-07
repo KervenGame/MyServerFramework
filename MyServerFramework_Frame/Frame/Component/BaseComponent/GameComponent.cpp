@@ -30,3 +30,25 @@ void GameComponent::setActive(const bool active, const bool isInit)
 		unregisteTick();
 	}
 }
+
+void GameComponent::setFrameTick(FloatCallback callback)
+{
+	mComponentOwner->setFrameTick(this, callback);
+}
+
+void GameComponent::setLateFrameTick(FloatCallback callback)
+{
+	mComponentOwner->setLateFrameTick(this, callback);
+}
+
+void GameComponent::setSecondTick(VoidCallback callback)
+{
+	mComponentOwner->setSecondTick(this, callback);
+}
+
+void GameComponent::unregisteTick()
+{
+	mComponentOwner->clearFrameTick(this);
+	mComponentOwner->clearLateFrameTick(this);
+	mComponentOwner->clearSecondTick(this);
+}

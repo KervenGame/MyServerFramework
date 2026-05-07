@@ -15,10 +15,8 @@ class EventProcess : public EventProcessBase
 {
 	BASE(EventProcess, EventProcessBase);
 public:
-	void onEventInternal(GameEvent* event, IEventListener* listener) override
-	{
-		onEvent(static_cast<T0*>(event), static_cast<T1*>(listener));
-	}
-protected:
-	void onEvent(T0* event, T1* listener);
+    static void call(GameEvent* event, IEventListener* listener)
+    {
+        static_cast<T1*>(listener)->onEvent(static_cast<T0*>(event));
+    }
 };

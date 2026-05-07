@@ -103,7 +103,7 @@ bool COMCharacterStateMachine::canAddState(const ushort type, StateParam* param)
 	return result;
 }
 
-CharacterState* COMCharacterStateMachine::addState(const ushort type, StateParam* param, const float stateTime, const bool removeByDie)
+Ref<CharacterState> COMCharacterStateMachine::addState(const ushort type, StateParam* param, const float stateTime, const bool removeByDie)
 {
 	CharacterState* state = mStatePool->newClass(type);
 	state->setCharacter(static_cast<Character*>(mComponentOwner));
@@ -112,13 +112,13 @@ CharacterState* COMCharacterStateMachine::addState(const ushort type, StateParam
 	{
 		destroyState(state, __LINE__);
 		state = nullptr;
-		return nullptr;
+		return Ref<CharacterState>::null;
 	}
 
 	// 移除自身不可共存的状态
 	if (needRemoveState != nullptr)
 	{
-		removeState(needRemoveState, true, removeByDie);
+		removeStateInternal(needRemoveState, true, removeByDie);
 	}
 
 	if (mAllowKeepTypeCountList == nullptr)
@@ -148,7 +148,7 @@ CharacterState* COMCharacterStateMachine::addState(const ushort type, StateParam
 	{
 		ERROR_PROFILE("4Debug:状态在添加之前销毁了自己");
 		state = nullptr;
-		return nullptr;
+		return Ref<CharacterState>::null;
 	}
 
 	if (state->getStateMutex() == STATE_MUTEX::OVERLAP_LAYER)
@@ -160,7 +160,7 @@ CharacterState* COMCharacterStateMachine::addState(const ushort type, StateParam
 			existState->addSameState(state);
 			// 因为没有调用enter,所以只需要直接销毁
 			destroyState(state, __LINE__);
-			return nullptr;
+			return Ref<CharacterState>::null;
 		}
 	}
 
@@ -175,35 +175,35 @@ CharacterState* COMCharacterStateMachine::addState(const ushort type, StateParam
 	{
 		ERROR_PROFILE((string("5状态已经被销毁:") + typeid(*state).name()).c_str());
 		state = nullptr;
-		return nullptr;
+		return Ref<CharacterState>::null;
 	}
 	// 如果没有持续时间,则只执行一个enter,不存储起来
 	if (isZero(state->getStateTime()))
 	{
 		leaveStateInternal(state, false, false, false);
 		destroyState(state, __LINE__);
-		return nullptr;
+		return Ref<CharacterState>::null;
 	}
 
 	// 添加到状态列表
-	mStateTypeList.insertOrGet(state->getType()).push_back(state);
+	mStateTypeList.addOrGet(state->getType()).add(state);
 	if (state->isNeedTick())
 	{
-		mStateTickList.push_back(state);
+		mStateTickList.add(state);
 		++mStateTickCount;
 	}
 	const auto& groupList = mFrameStateManager->getGroupList(type);
-	if (groupList.size() > 0)
+	if (!groupList.isEmpty())
 	{
-		for (short item : groupList)
+		for (const short item : groupList)
 		{
-			++mGroupStateCountList.insertOrGet(item);
+			++mGroupStateCountList.addOrGet(item);
 		}
 	}
-	return state;
+	return Ref<CharacterState>(state);
 }
 
-bool COMCharacterStateMachine::removeState(CharacterState* state, const bool isBreak, const bool removeByDie)
+bool COMCharacterStateMachine::removeStateInternal(CharacterState* state, const bool isBreak, const bool removeByDie)
 {
 	if (state == nullptr)
 	{
@@ -225,19 +225,19 @@ bool COMCharacterStateMachine::removeState(CharacterState* state, const bool isB
 	// 但是仍然需要正常执行leave,所以不考虑移除失败的情况
 	if (state->isNeedTick())
 	{
-		mStateTickList.eraseElement(state);
+		mStateTickList.remove(state);
 		--mStateTickCount;
 	}
 
 	if (auto* stateList = mStateTypeList.getPtr(state->getType()))
 	{
-		stateList->eraseElement(state);
+		stateList->remove(state);
 	}
 
 	auto& groupList = mFrameStateManager->getGroupList(state->getType());
-	if (groupList.size() > 0)
+	if (!groupList.isEmpty())
 	{
-		for (short item : groupList)
+		for (const short item : groupList)
 		{
 			if (short* countPtr = mGroupStateCountList.getPtr(item))
 			{
@@ -294,7 +294,7 @@ void COMCharacterStateMachine::removeStateType(const ushort type, const bool isB
 		// 但是仍然需要正常执行leave,所以不考虑移除失败的情况
 		if (state->isNeedTick())
 		{
-			mStateTickList.eraseElement(state);
+			mStateTickList.remove(state);
 			--mStateTickCount;
 		}
 
@@ -302,9 +302,9 @@ void COMCharacterStateMachine::removeStateType(const ushort type, const bool isB
 		++removeCount;
 	}
 	auto& groupList = mFrameStateManager->getGroupList(type);
-	if (groupList.size() > 0)
+	if (!groupList.isEmpty())
 	{
-		for (short item : groupList)
+		for (const short item : groupList)
 		{
 			if (short* countPtr = mGroupStateCountList.getPtr(item))
 			{
@@ -333,6 +333,17 @@ void COMCharacterStateMachine::removeStateInGroup(const int group, const bool is
 	}
 }
 
+bool COMCharacterStateMachine::removeFirstState(int buffID, bool isBreak, bool removeByDie) 
+{
+	CharacterState* state = getFirstState(buffID);
+	if (state == nullptr)
+	{
+		return false;
+	}
+	removeStateInternal(state, false, false); 
+	return true;
+}
+
 CharacterState* COMCharacterStateMachine::getFirstState(const ushort type) const
 {
 	if (mStateTypeList.isEmpty())
@@ -345,7 +356,7 @@ CharacterState* COMCharacterStateMachine::getFirstState(const ushort type) const
 		return nullptr;
 	}
 	auto& itemList = iter->getMainList();
-	return itemList.size() > 0 ? itemList[0] : nullptr;
+	return !itemList.isEmpty() ? itemList[0] : nullptr;
 }
 
 bool COMCharacterStateMachine::hasStateGroup(const int group) const
@@ -357,7 +368,7 @@ bool COMCharacterStateMachine::hasStateGroup(const int group) const
 bool COMCharacterStateMachine::hasState(const ushort type) const
 {
 	const auto* iter = mStateTypeList.getPtrConst(type);
-	return iter != nullptr && iter->size() > 0;
+	return iter != nullptr && !iter->isEmpty();
 }
 
 bool COMCharacterStateMachine::canAddState(CharacterState* state, StateParam* param, CharacterState** needRemoveState) const
@@ -471,7 +482,7 @@ bool COMCharacterStateMachine::allowKeepStateByGroup(const ushort newState, cons
 	{
 		initAllowKeepTypeList();
 	}
-	return mAllowKeepTypeList.tryGet((newState << 16) + existState, true);
+	return mAllowKeepTypeList.get((newState << 16) + existState, true);
 }
 
 // 添加了newState以后是否还会保留existState
@@ -549,7 +560,7 @@ bool COMCharacterStateMachine::allowAddStateByGroup(const ushort newState, const
 	{
 		initAllowAddTypeList();
 	}
-	return mAllowAddTypeList.tryGet((newState << 16) + existState, true);
+	return mAllowAddTypeList.get((newState << 16) + existState, true);
 }
 
 // 当存在existState时,是否允许添加newState
@@ -643,7 +654,7 @@ void COMCharacterStateMachine::initAllowKeepTypeList()
 		{
 			if (!allowKeepStateByGroupInternal(item0.first, item1.first))
 			{
-				mAllowKeepTypeList.insert((item0.first << 16) + item1.first, false);
+				mAllowKeepTypeList.add((item0.first << 16) + item1.first, false);
 				++mAllowKeepTypeCountList[item0.first];
 			}
 		}
@@ -668,7 +679,7 @@ void COMCharacterStateMachine::initAllowAddTypeList()
 		{
 			if (!allowAddStateByGroupInternal(item0.first, item1.first))
 			{
-				mAllowAddTypeList.insert((item0.first << 16) + item1.first, false);
+				mAllowAddTypeList.add((item0.first << 16) + item1.first, false);
 				++mAllowAddTypeCountList[item0.first];
 			}
 		}

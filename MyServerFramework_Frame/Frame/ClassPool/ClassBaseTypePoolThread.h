@@ -25,15 +25,15 @@ public:
 		{
 			BaseClassType* obj = new T();
 			obj->resetProperty();
-			list.push_back(obj);
+			list.add(obj);
 		}
 		{
 			THREAD_LOCK(mLock);
-			mUnusedList.insertOrGet(typeid(T).hash_code()).addRange(list);
+			mUnusedList.addOrGet(typeid(T).hash_code()).addRange(list);
 		}
 		{
 			THREAD_LOCK(mTotalCountLock);
-			mTotalCount.insertOrGet(typeid(T).hash_code(), make_pair(typeid(T).name(), 0)).second += count;
+			mTotalCount.addOrGet(typeid(T).hash_code(), make_pair(typeid(T).name(), 0)).second += count;
 		}
 	}
 	void quit() override
@@ -55,7 +55,7 @@ public:
 		THREAD_LOCK(mRemainTimeLock);
 		for (BaseClassType* obj : classList)
 		{
-			mClassRemainTimeList.insert(obj, make_pair(DEFAULT_LIFE_TIME, stack));
+			mClassRemainTimeList.add(obj, make_pair(DEFAULT_LIFE_TIME, stack));
 		}
 #endif
 	}
@@ -64,7 +64,7 @@ public:
 	{
 		classList.clearAndReserve(dataCount);
 		const size_t typeHash = typeid(T).hash_code();
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			THREAD_LOCK(mLock);
 			if (auto* listPtr = mUnusedList.getPtr(typeHash))
@@ -77,7 +77,7 @@ public:
 					{
 						break;
 					}
-					classList.push_back(obj);
+					classList.add(obj);
 				}
 			}
 		}
@@ -90,10 +90,10 @@ public:
 				BaseClassType* obj = new T();
 				// 为了跟复用时的状态统一
 				obj->resetProperty();
-				classList.push_back(obj);
+				classList.add(obj);
 			}
 			THREAD_LOCK(mTotalCountLock);
-			auto& totalCount = mTotalCount.insertOrGet(typeHash, make_pair(typeid(T).name(), 0));
+			auto& totalCount = mTotalCount.addOrGet(typeHash, make_pair(typeid(T).name(), 0));
 			totalCount.second += needCreateCount;
 			if (mShowCountLog && (totalCount.second & (4096 - 1)) == 0)
 			{
@@ -116,7 +116,7 @@ public:
 		THREAD_LOCK(mRemainTimeLock);
 		for (T* obj : classList)
 		{
-			mClassRemainTimeList.insert(obj, make_pair(DEFAULT_LIFE_TIME, stack));
+			mClassRemainTimeList.add(obj, make_pair(DEFAULT_LIFE_TIME, stack));
 		}
 #endif
 	}
@@ -125,7 +125,7 @@ public:
 	{
 		classList.clearAndReserve(dataCount);
 		const size_t typeHash = typeid(T).hash_code();
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			THREAD_LOCK(mLock);
 			if (auto* listPtr = mUnusedList.getPtr(typeHash))
@@ -138,7 +138,7 @@ public:
 					{
 						break;
 					}
-					classList.push_back(static_cast<T*>(obj));
+					classList.add(static_cast<T*>(obj));
 				}
 			}
 		}
@@ -151,10 +151,10 @@ public:
 				T* obj = new T();
 				// 为了跟复用时的状态统一
 				obj->resetProperty();
-				classList.push_back(obj);
+				classList.add(obj);
 			}
 			THREAD_LOCK(mTotalCountLock);
-			auto& totalCount = mTotalCount.insertOrGet(typeHash, make_pair(typeid(T).name(), 0));
+			auto& totalCount = mTotalCount.addOrGet(typeHash, make_pair(typeid(T).name(), 0));
 			totalCount.second += needCreateCount;
 			if (mShowCountLog && (totalCount.second & (4096 - 1)) == 0)
 			{
@@ -175,7 +175,7 @@ public:
 #ifdef WINDOWS
 		const string stack = mEnableStackTrace ? getStackTrace(TRACE_DEPTH) : "";
 		THREAD_LOCK(mRemainTimeLock);
-		mClassRemainTimeList.insert(obj, make_pair(DEFAULT_LIFE_TIME, stack));
+		mClassRemainTimeList.add(obj, make_pair(DEFAULT_LIFE_TIME, stack));
 #endif
 		return obj;
 	}
@@ -183,7 +183,7 @@ public:
 	T* newClass()
 	{
 		T* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			THREAD_LOCK(mLock);
 			// 首先从未使用的列表中获取,获取不到再重新创建一个
@@ -199,7 +199,7 @@ public:
 			obj = new T();
 			obj->resetProperty();
 			THREAD_LOCK(mTotalCountLock);
-			auto& totalCount = mTotalCount.insertOrGet(typeid(T).hash_code(), make_pair(typeid(T).name(), 0));
+			auto& totalCount = mTotalCount.addOrGet(typeid(T).hash_code(), make_pair(typeid(T).name(), 0));
 			++totalCount.second;
 			if (mShowCountLog && (totalCount.second & (4096 - 1)) == 0)
 			{
@@ -229,13 +229,13 @@ public:
 #ifdef WINDOWS
 		{
 			THREAD_LOCK(mRemainTimeLock);
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 		}
 #endif
 		// 添加到未使用列表中
 		{
 			THREAD_LOCK(mLock);
-			mUnusedList.insertOrGet(typeid(*obj).hash_code()).push_back(obj);
+			mUnusedList.addOrGet(typeid(*obj).hash_code()).add(obj);
 		}
 		obj = nullptr;
 	}
@@ -267,9 +267,9 @@ public:
 				ERROR_PROFILE((string("2重复销毁对象:") + typeid(T1).name()).c_str());
 				continue;
 			}
-			mUnusedList.insertOrGet(typeid(*obj).hash_code()).push_back(obj);
+			mUnusedList.addOrGet(typeid(*obj).hash_code()).add(obj);
 #ifdef WINDOWS
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 #endif
 		}
 		objMap.clear();
@@ -301,9 +301,9 @@ public:
 				ERROR_PROFILE((string("3重复销毁对象:") + typeid(T).name()).c_str());
 				continue;
 			}
-			mUnusedList.insertOrGet(typeid(*obj).hash_code()).push_back(obj);
+			mUnusedList.addOrGet(typeid(*obj).hash_code()).add(obj);
 #ifdef WINDOWS
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 #endif
 		}
 		objList.clear();
@@ -334,9 +334,9 @@ public:
 				ERROR_PROFILE((string("4重复销毁对象:") + typeid(T).name()).c_str());
 				continue;
 			}
-			mUnusedList.insertOrGet(typeid(*obj).hash_code()).push_back(obj);
+			mUnusedList.addOrGet(typeid(*obj).hash_code()).add(obj);
 #ifdef WINDOWS
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 #endif
 		}
 		objList.clear();
@@ -370,7 +370,7 @@ public:
 			const int itemCount = item.second.second;
 			if (itemCount > 1000)
 			{
-				const int unuseCount = mUnusedList.tryGet(item.first).size();
+				const int unuseCount = mUnusedList.get(item.first).size();
 				LOG("ClassBaseTypePoolThread: " + item.second.first + "的数量:" + IToS(itemCount) + ",总大小:" + LLToS(itemCount * sizeof(BaseClassType) / 1024) + "KB" + ", 未使用数量:" + IToS(unuseCount));
 			}
 		}

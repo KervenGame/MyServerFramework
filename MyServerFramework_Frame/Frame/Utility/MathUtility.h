@@ -9,6 +9,9 @@
 #include "Set.h"
 #include "Vector.h"
 
+template<typename T>
+using CompareTCallback = int(*)(const T&, const T&);
+
 namespace MathUtility
 {
 	MICRO_LEGEND_FRAME_API extern Array<513, int> mGreaterPow2;		// 存储比数值数值大的第一个2的次方数,比如获得比5大的第一个数,则是mGreaterPow2[5]
@@ -94,7 +97,7 @@ namespace MathUtility
 	}
 	// 使用函数指针的方式,但是此方式效率较低,因为调用函数指针的效率较低,无法进行内联
 	template<typename T>
-	int quickSortNonRecursiveAscend(T* arr, const int low, const int high, int (*compare)(T&, T&))
+	int quickSortNonRecursiveAscend(T* arr, const int low, const int high, CompareTCallback<T> compare)
 	{
 		if (compare == nullptr)
 		{
@@ -130,7 +133,7 @@ namespace MathUtility
 	}
 	// 使用函数指针的方式,但是此方式效率较低,因为调用函数指针的效率较低,无法进行内联
 	template<typename T>
-	int quickSortNonRecursiveDescend(T* arr, const int low, const int high, int (*compare)(T&, T&))
+	int quickSortNonRecursiveDescend(T* arr, const int low, const int high, CompareTCallback<T> compare)
 	{
 		if (compare == nullptr)
 		{
@@ -298,7 +301,7 @@ namespace MathUtility
 	}
 	// 使用函数指针的方式,但是此方式效率较低,因为调用函数指针的效率较低,无法进行内联
 	template<typename T>
-	void quickSortAscend(T* arr, const int low, const int high, int (*compare)(T&, T&))
+	void quickSortAscend(T* arr, const int low, const int high, CompareTCallback<T> compare)
 	{
 		if (compare == nullptr)
 		{
@@ -335,7 +338,7 @@ namespace MathUtility
 	}
 	// 使用函数指针的方式,但是此方式效率较低,因为调用函数指针的效率较低,无法进行内联
 	template<typename T>
-	void quickSortDescend(T* arr, const int low, const int high, int (*compare)(T&, T&))
+	void quickSortDescend(T* arr, const int low, const int high, CompareTCallback<T> compare)
 	{
 		if (compare == nullptr)
 		{
@@ -407,11 +410,13 @@ namespace MathUtility
 	// 对于a % b的计算,如果b为2的n次方,则a % b等效于a & (b - 1)
 	constexpr bool isEven(const int value) { return (value & 1) == 0; }
 	// 是否为2的n次幂
-	constexpr bool isPow2(const int value) { return (value & (value - 1)) == 0; }
+	constexpr bool isPow2(const int value) { return value > 0 && (value & (value - 1)) == 0; }
 	constexpr float divide(float value0, float value1) { return isZero(value1) ? 0.0f : value0 / value1; }
 	constexpr float divide(int value0, int value1) { return value1 == 0 ? 0.0f : (float)value0 / value1; }
+	constexpr float divide(llong value0, llong value1) { return value1 == 0 ? 0.0f : (float)((double)value0 / value1); }
 	constexpr float divide(float value0, int value1) { return value1 == 0 ? 0.0f : value0 / value1; }
 	constexpr float divide(int value0, float value1) { return isZero(value1) ? 0.0f : value0 / value1; }
+	constexpr float divide(llong value0, float value1) { return isZero(value1) ? 0.0f : value0 / value1; }
 	constexpr double divide(double value0, double value1) { return isZero(value1) ? 0.0 : value0 / value1; }
 	constexpr int divideInt(int value0, int value1) { return value1 == 0 ? 0 : value0 / value1; }
 	constexpr ullong divideInt(ullong value0, ullong value1) { return value1 == 0ull ? 0ull : value0 / value1; }
@@ -431,9 +436,9 @@ namespace MathUtility
 		}
 		return getMin((int)(count - preCount), (int)batch);
 	}
-	// 得到比value大的第一个pow的n次方的数
+	// 得到大于等于value的第一个pow的n次方的数
 	constexpr int getGreaterPowerValue(int value, int pow);
-	// 得到比value大的第一个2的n次方的数
+	// 得到大于等于value的第一个2的n次方的数
 	MICRO_LEGEND_FRAME_API int getGreaterPower2(int value);
 	// 得到的一个2的pow次方的数
 	constexpr int pow2(const int pow) { return 1 << pow; }
@@ -454,7 +459,7 @@ namespace MathUtility
 		return intValue;
 	}
 	// 得到数轴上浮点数右边的第一个整数,向上取整
-	constexpr int ceiling(const double value)
+	constexpr llong ceiling(const double value)
 	{
 		int intValue = (int)(value);
 		if (value >= 0.0f && value > (double)intValue + 0.000001)
@@ -464,7 +469,7 @@ namespace MathUtility
 		return intValue;
 	}
 	// 得到数轴上浮点数左边的第一个整数,向下取整
-	constexpr int floor(const float value)
+	constexpr int floor_(const float value)
 	{
 		int intValue = (int)(value);
 		if (value < 0.0f && value < intValue - 0.0001f)
@@ -474,7 +479,7 @@ namespace MathUtility
 		return intValue;
 	}
 	// 得到数轴上浮点数左边的第一个整数,向下取整
-	constexpr int floor(const double value)
+	constexpr int floor_(const double value)
 	{
 		int intValue = (int)(value);
 		if (value < 0.0f && value < (double)intValue - 0.000001)
@@ -483,9 +488,6 @@ namespace MathUtility
 		}
 		return intValue;
 	}
-	template<typename T>
-	constexpr T abs(const T value) { return value >= (T)0 ? value : -value; }
-	constexpr float abs(const float value) { return value >= 0.0f ? value : -value; }
 	constexpr void ceiling(Vector2& value)
 	{
 		value.x = (float)ceiling(value.x);
@@ -592,6 +594,7 @@ namespace MathUtility
 	MICRO_LEGEND_FRAME_API float randomFloat(float minFloat, float maxFloat);
 	// 非线程安全,范围[minInt, maxInt]  
 	MICRO_LEGEND_FRAME_API int randomInt(int minInt, int maxInt);
+	MICRO_LEGEND_FRAME_API llong randomLong(llong minInt, llong maxInt);
 	// 非线程安全,根据一定几率随机返回true或false,probability范围为0到1
 	bool randomHit(const float probability)
 	{
@@ -750,7 +753,7 @@ namespace MathUtility
 		Vector<int> indexList(count);
 		FOR(count)
 		{
-			indexList.push_back(i);
+			indexList.add(i);
 		}
 		FOR(selectCount)
 		{
@@ -768,9 +771,17 @@ namespace MathUtility
 	// 非线程安全
 	MICRO_LEGEND_FRAME_API void randomSelect(int count, int selectCount, Set<int>& selectIndexes);
 	// 非线程安全,根据权重随机选择多个下标
-	MICRO_LEGEND_FRAME_API void randomSelect(const Vector<int>& oddsList, int selectCount, Vector<int>& selectIndexes);
+	MICRO_LEGEND_FRAME_API void randomSelect(const int* oddsList, int oddsCount, const int selectCount, Vector<int>& selectIndexes);
+	void randomSelect(const Vector<int>& oddsList, int selectCount, Vector<int>& selectIndexes)
+	{
+		randomSelect(oddsList.data(), oddsList.size(), selectCount, selectIndexes);
+	}
 	// 根据权重随机选择一个下标
-	MICRO_LEGEND_FRAME_API int randomSelect(const Vector<int>& oddsList);
+	MICRO_LEGEND_FRAME_API int randomSelect(const int* oddsList, int oddsCount);
+	int randomSelect(const Vector<int>& oddsList)
+	{
+		return randomSelect(oddsList.data(), oddsList.size());
+	}
 	// 根据权重随机选择多个下标
 	template<int Length0, int Length1>
 	void randomSelect(const ArrayList<Length0, int>& oddsList, int selectCount, ArrayList<Length1, int>& selectIndexes)
@@ -787,9 +798,14 @@ namespace MathUtility
 		{
 			max += oddsList[i];
 		}
+		if (max <= 0)
+		{
+			return;
+		}
+
 		FOR(selectCount)
 		{
-			const int random = randomInt(0, max);
+			const int random = randomInt(1, max);
 			int curValue = 0;
 			FOR_J(allCount)
 			{
@@ -818,7 +834,12 @@ namespace MathUtility
 		{
 			max += odds;
 		}
-		const int random = randomInt(0, max);
+		if (max <= 0)
+		{
+			return -1;
+		}
+
+		const int random = randomInt(1, max);
 		int curValue = 0;
 		FOR_VECTOR(oddsList)
 		{
@@ -868,7 +889,7 @@ namespace MathUtility
 			selectResult.reserve(count);
 			for (const auto& item : list)
 			{
-				selectResult.push_back(item.second);
+				selectResult.add(item.second);
 			}
 		}
 		Vector<int> temp;
@@ -880,7 +901,7 @@ namespace MathUtility
 		{
 			if (++curIndex == temp[indexInResult])
 			{
-				selectResult.push_back(&(iter.second));
+				selectResult.add(&(iter.second));
 				if (++indexInResult >= selectCount)
 				{
 					break;
@@ -903,7 +924,7 @@ namespace MathUtility
 			selectResult.reserve(count);
 			for (const auto& item : list)
 			{
-				selectResult.push_back(item.second);
+				selectResult.add(item.second);
 			}
 		}
 		Vector<int> temp;
@@ -915,7 +936,7 @@ namespace MathUtility
 		{
 			if (++curIndex == temp[indexInResult])
 			{
-				selectResult.push_back(&(iter.second));
+				selectResult.add(&(iter.second));
 				if (++indexInResult >= selectCount)
 				{
 					break;
@@ -938,7 +959,7 @@ namespace MathUtility
 			selectResult.reserve(count);
 			for (const auto& iter : list)
 			{
-				selectResult.push_back(iter.second);
+				selectResult.add(iter.second);
 			}
 			return;
 		}
@@ -952,7 +973,7 @@ namespace MathUtility
 		{
 			if (++curIndex == temp[indexInResult])
 			{
-				selectResult.push_back(iter.second);
+				selectResult.add(iter.second);
 				if (++indexInResult >= selectCount)
 				{
 					break;
@@ -975,7 +996,7 @@ namespace MathUtility
 			selectResult.reserve(count);
 			for (const auto& iter : list)
 			{
-				selectResult.push_back(iter.second);
+				selectResult.add(iter.second);
 			}
 			return selectResult;
 		}
@@ -989,7 +1010,7 @@ namespace MathUtility
 		{
 			if (++curIndex == temp[indexInResult])
 			{
-				selectResult.push_back(iter.second);
+				selectResult.add(iter.second);
 				if (++indexInResult >= selectCount)
 				{
 					break;
@@ -1021,8 +1042,8 @@ namespace MathUtility
 	constexpr bool inRange(Vector2 value, Vector2 range0, Vector2 range1) { return inRange(value.x, range0.x, range1.x) && inRange(value.y, range0.y, range1.y); }
 	constexpr bool inRange(const Vector3& value, const Vector3& range0, const Vector3& range1) { return inRange(value.x, range0.x, range1.x) && inRange(value.y, range0.y, range1.y) && inRange(value.z, range0.z, range1.z); }
 	template<typename T>
-	constexpr T lerpSimple(const T& start, const T& end, const float t) { return start + (end - start) * t; }
-	constexpr float lerp(const float start, const float end, float t, const float minAbsDelta = 0.0f)
+	constexpr T lerpSimple(const T& start, const T& end, const float t) { return start + (T)((end - start) * t); }
+	inline float lerp(const float start, const float end, float t, const float minAbsDelta = 0.0f)
 	{
 		clampRef(t, 0.0f, 1.0f);
 		float value = start + (end - start) * t;
@@ -1037,6 +1058,11 @@ namespace MathUtility
 	{
 		clampRef(t, 0.0f, 1.0f);
 		return start + (int)((end - start) * t);
+	}
+	constexpr llong lerp(const llong start, const llong end, float t)
+	{
+		clampRef(t, 0.0f, 1.0f);
+		return start + (llong)((end - start) * t);
 	}
 	constexpr float inverseLerp(const float a, const float b, const float value) { return divide(value - a, b - a); }
 	// 绕Y轴旋转向量
@@ -1085,8 +1111,9 @@ namespace MathUtility
 	}
 	constexpr float speedToInterval(const float speed) { return divide(0.0333f, speed); }
 	constexpr float intervalToSpeed(const float interval) { return divide(0.0333f, interval); }
+	// 因为swap太容易重名了,所以后面加一个下划线避免重名
 	template<typename T>
-	constexpr void swap(T& value0, T& value1)
+	constexpr void swap_(T& value0, T& value1)
 	{
 		const T temp = value0;
 		value0 = value1;
@@ -1107,14 +1134,22 @@ namespace MathUtility
 	}
 	// 四舍五入
 	constexpr llong roundDouble(const double value) { return value > 0.0 ? (llong)(value + 0.5) : (llong)(value - 0.5); }
-	constexpr int round(const float value) { return value > 0.0f ? (int)(value + 0.5f) : (int)(value - 0.5f); }
-	constexpr void round(Vector3& value)
+	constexpr int round_(const float value) { return value > 0.0f ? (int)(value + 0.5f) : (int)(value - 0.5f); }
+	void round(Vector3& value)
 	{
-		value.x = (float)round(value.x);
-		value.y = (float)round(value.y);
-		value.z = (float)round(value.z);
+		value.x = ::round(value.x);
+		value.y = ::round(value.y);
+		value.z = ::round(value.z);
 	}
-	constexpr float HueToRGB(float v1, float v2, float vH);
+	constexpr float HueToRGB(float v1, float v2, float vH)
+	{
+		if (vH < 0.0f) { vH += 1.0f; }
+		if (vH > 1.0f) { vH -= 1.0f; }
+		if (6.0f * vH < 1.0f) { return v1 + (v2 - v1) * 6.0f * vH; }
+		if (2.0f * vH < 1.0f) { return v2; }
+		if (3.0f * vH < 2.0f) { return v1 + (v2 - v1) * (2.0f / 3.0f - vH) * 6.0f; }
+		return v1;
+	}
 	MICRO_LEGEND_FRAME_API int findPointIndex(const Vector<float>& distanceListFromStart, float curDistance, int startIndex, int endIndex);
 	// 计算两条直线的交点,返回值表示两条直线是否相交
 	MICRO_LEGEND_FRAME_API bool intersectLine2(const Line2D& line0, const Line2D& line1, Vector2& intersect);
@@ -1227,7 +1262,7 @@ namespace MathUtility
 		}
 	}
 	template<typename T>
-	void quickSort(Vector<T>& arr, int (*compare)(T&, T&), const bool ascend = true)
+	void quickSort(Vector<T>& arr, CompareTCallback<T> compare, const bool ascend = true)
 	{
 		if (ascend)
 		{
@@ -1239,7 +1274,7 @@ namespace MathUtility
 		}
 	}
 	template<typename T, int Length>
-	void quickSort(ArrayList<Length, T>& arr, int (*compare)(T&, T&), const bool ascend = true)
+	void quickSort(ArrayList<Length, T>& arr, CompareTCallback<T> compare, const bool ascend = true)
 	{
 		if (ascend)
 		{
@@ -1251,7 +1286,7 @@ namespace MathUtility
 		}
 	}
 	template<typename T>
-	void quickSort(T* arr, int count, int (*compare)(T&, T&), const bool ascend = true)
+	void quickSort(T* arr, int count, CompareTCallback<T> compare, const bool ascend = true)
 	{
 		if (ascend)
 		{
@@ -1262,11 +1297,6 @@ namespace MathUtility
 			quickSortDescend(arr, 0, count - 1, compare);
 		}
 	}
-	template<typename T>
-	void quickSortNonRecursive(Vector<T>& arr, const bool ascend = true)
-	{
-		quickSortNonRecursive(arr.data(), arr.size(), ascend);
-	}
 	// 非递归版本的快速排序,但是执行了大量的额外逻辑,所以效率比较低,比std::sort的效率低
 	template<typename T>
 	void quickSortNonRecursive(T* arr, const int count, const bool ascend = true)
@@ -1275,8 +1305,8 @@ namespace MathUtility
 		Vector<int> endList;
 		Vector<int> lastStartList;
 		Vector<int> lastEndList;
-		lastStartList.push_back(0);
-		lastEndList.push_back(count - 1);
+		lastStartList.add(0);
+		lastEndList.add(count - 1);
 		auto* curStartList = &lastStartList;
 		auto* curEndList = &lastEndList;
 		auto* lastStartPtr = &startList;
@@ -1298,15 +1328,15 @@ namespace MathUtility
 					{
 						continue;
 					}
-					lastStartPtr->push_back(start, middle + 1);
-					lastEndPtr->push_back(middle - 1, end);
+					lastStartPtr->add(start, middle + 1);
+					lastEndPtr->add(middle - 1, end);
 				}
 				if (startList.isEmpty())
 				{
 					break;
 				}
-				swap(curStartList, lastStartPtr);
-				swap(curEndList, lastEndPtr);
+				swap_(curStartList, lastStartPtr);
+				swap_(curEndList, lastEndPtr);
 			}
 		}
 		else
@@ -1321,37 +1351,42 @@ namespace MathUtility
 				{
 					const int start = (*curStartList)[i];
 					const int end = (*curEndList)[i];
-					const int middle = quickSortNonRecursiveDecend(arr, start, end);
+					const int middle = quickSortNonRecursiveDescend(arr, start, end);
 					if (middle < 0)
 					{
 						continue;
 					}
-					lastStartPtr->push_back(start, middle + 1);
-					lastEndPtr->push_back(middle - 1, end);
+					lastStartPtr->add(start, middle + 1);
+					lastEndPtr->add(middle - 1, end);
 				}
 				if (startList.isEmpty())
 				{
 					break;
 				}
-				swap(curStartList, lastStartPtr);
-				swap(curEndList, lastEndPtr);
+				swap_(curStartList, lastStartPtr);
+				swap_(curEndList, lastEndPtr);
 			}
 		}
 	}
 	template<typename T>
-	void quickSortNonRecursive(Vector<T>& arr, int (*compare)(T&, T&), const bool ascend = true)
+	void quickSortNonRecursive(Vector<T>& arr, const bool ascend = true)
+	{
+		quickSortNonRecursive(arr.data(), arr.size(), ascend);
+	}
+	template<typename T>
+	void quickSortNonRecursive(Vector<T>& arr, CompareTCallback<T> compare, const bool ascend = true)
 	{
 		quickSort(arr.data(), arr.size(), compare, ascend);
 	}
 	template<typename T>
-	void quickSortNonRecursive(T* arr, int count, int (*compare)(T&, T&), const bool ascend = true)
+	void quickSortNonRecursive(T* arr, int count, CompareTCallback<T> compare, const bool ascend = true)
 	{
 		Vector<int> startList;
 		Vector<int> endList;
 		Vector<int> lastStartList;
 		Vector<int> lastEndList;
-		lastStartList.push_back(0);
-		lastEndList.push_back(count - 1);
+		lastStartList.add(0);
+		lastEndList.add(count - 1);
 		auto* curStartList = &lastStartList;
 		auto* curEndList = &lastEndList;
 		auto* lastStartPtr = &startList;
@@ -1373,15 +1408,15 @@ namespace MathUtility
 					{
 						continue;
 					}
-					lastStartPtr->push_back(start, middle + 1);
-					lastEndPtr->push_back(middle - 1, end);
+					lastStartPtr->add(start, middle + 1);
+					lastEndPtr->add(middle - 1, end);
 				}
 				if (startList.isEmpty())
 				{
 					break;
 				}
-				swap(curStartList, lastStartPtr);
-				swap(curEndList, lastEndPtr);
+				swap_(curStartList, lastStartPtr);
+				swap_(curEndList, lastEndPtr);
 			}
 		}
 		else
@@ -1396,20 +1431,20 @@ namespace MathUtility
 				{
 					const int start = (*curStartList)[i];
 					const int end = (*curEndList)[i];
-					const int middle = quickSortNonRecursiveDecend(arr, start, end, compare);
+					const int middle = quickSortNonRecursiveDescend(arr, start, end, compare);
 					if (middle < 0)
 					{
 						continue;
 					}
-					lastStartPtr->push_back(start, middle + 1);
-					lastEndPtr->push_back(middle - 1, end);
+					lastStartPtr->add(start, middle + 1);
+					lastEndPtr->add(middle - 1, end);
 				}
 				if (startList.isEmpty())
 				{
 					break;
 				}
-				swap(curStartList, lastStartPtr);
-				swap(curEndList, lastEndPtr);
+				swap_(curStartList, lastStartPtr);
+				swap_(curEndList, lastEndPtr);
 			}
 		}
 	}
@@ -1421,6 +1456,7 @@ using MathUtility::clampZero;
 using MathUtility::getMin;
 using MathUtility::randomHit;
 using MathUtility::randomInt;
+using MathUtility::randomLong;
 using MathUtility::generateBatchCount;
 using MathUtility::clampRef;
 using MathUtility::clampMinRef;
@@ -1486,3 +1522,59 @@ using MathUtility::PI_RADIAN;
 using MathUtility::intersectEdge;
 using MathUtility::intersectLineAABB;
 using MathUtility::intersectLineTriangle;
+using MathUtility::swap_;
+using MathUtility::saturate;
+using MathUtility::sign;
+using MathUtility::round_;
+using MathUtility::floor_;
+using MathUtility::dot;
+using MathUtility::cross;
+using MathUtility::frameToSecond;
+using MathUtility::isPow2;
+using MathUtility::checkInt;
+using MathUtility::intervalToSpeed;
+using MathUtility::secondsToMinutesSeconds;
+using MathUtility::inverseLerp;
+using MathUtility::clampDegree180;
+using MathUtility::clampRadian180;
+using MathUtility::clampDegree360;
+using MathUtility::secondsToHoursMinutesSeconds;
+using MathUtility::pow2;
+using MathUtility::isEven;
+using MathUtility::step;
+using MathUtility::frac;
+using MathUtility::clampCycle;
+using MathUtility::MATH_PI;
+using MathUtility::getDistanceToLine;
+using MathUtility::getProjection;
+using MathUtility::intersectLineSection;
+using MathUtility::intersectLine2;
+using MathUtility::calculateFloat;
+using MathUtility::calculateInt;
+using MathUtility::quickSortNonRecursive;
+using MathUtility::getVectorFromAngle;
+using MathUtility::intersectIgnoreY;
+using MathUtility::intersectLine3IgnoreY;
+using MathUtility::HueToRGB;
+using MathUtility::intersectSegment;
+using MathUtility::intersectLineTriangleIgnoreY;
+using MathUtility::getDistanceToLineIgnoreY;
+using MathUtility::getProjectPointIgnoreY;
+using MathUtility::intersectLineSectionIgnoreY;
+using MathUtility::getProjectionIgnoreY;
+using MathUtility::lineIntersect;
+using MathUtility::replaceKeywordAndCalculate;
+using MathUtility::replaceStringKeyword;
+using MathUtility::getProjectPoint;
+using MathUtility::rotateVector3;
+using MathUtility::rotateVector3Ref;
+using MathUtility::MIN_DELTA;
+using MathUtility::Rad2Deg;
+using MathUtility::HALF_PI_RADIAN;
+using MathUtility::clampZeroRef;
+using MathUtility::quickSortNonRecursiveAscend;
+using MathUtility::quickSortNonRecursiveDescend;
+using MathUtility::quickSortDescend;
+using MathUtility::quickSortAscend;
+using MathUtility::quickSortDescendPtr;
+using MathUtility::quickSortAscendPtr;

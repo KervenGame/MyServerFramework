@@ -15,7 +15,7 @@ public:
 	virtual bool canEnter(StateParam* param) const { return true; }
 	virtual void enter(StateParam* param);
 	// 一般在子类的update最后再调用该父类的update,确保在移除状态后不会再执行update
-	virtual void update(const float elapsedTime);
+	virtual void update(float elapsedTime);
 	// isBreak表示是否是因为添加了互斥状态而退出的,willDestroy表示是否是销毁而退出的
 	virtual void leave(bool isBreak, bool willDestroy, bool removeByDie) {}
 	void destroy() override { base::destroy(); }
@@ -49,14 +49,14 @@ public:
 		{
 			mWillRemoveCallbackList = new HashMap<void*, Vector<CharacterStateCallback>>();
 		}
-		mWillRemoveCallbackList->insertOrGet(listener).push_back(callback); 
+		mWillRemoveCallbackList->addOrGet(listener).add(callback); 
 	}
 	// 移除回调监听,只能移除此监听者的所有监听
 	void removeWillRemoveCallback(void* listener) 
 	{
 		if (mWillRemoveCallbackList != nullptr)
 		{
-			mWillRemoveCallbackList->erase(listener);
+			mWillRemoveCallbackList->remove(listener);
 		}
 	}
 	void callWillRemoveCallback();

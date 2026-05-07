@@ -1,5 +1,6 @@
 ﻿#include "FrameHeader.h"
 
+#ifdef _MYSQL
 QueryScope::QueryScope(const MySQLTable* table, const char* queryStr)
 {
 	mTable = table;
@@ -19,3 +20,4 @@ QueryScope::~QueryScope()
 		mTable->endQuery(mResult);
 	}
 }
+#endif

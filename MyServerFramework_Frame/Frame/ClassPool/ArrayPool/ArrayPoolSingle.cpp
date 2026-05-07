@@ -11,12 +11,13 @@ void ArrayPoolSingle::destroy()
 		}
 	}
 	mUnuseMemoryList.clear();
+	mCreatedSizeList.clear();
 }
 
 void ArrayPoolSingle::dump()
 {
 	for (const auto& item : mCreatedSizeList)
 	{
-		LOG("数组名:" + mTypeNameList.tryGet(item.first) + "总大小:" + LLToS(item.second >> 10) + "KB");
+		LOG("数组名:" + mTypeNameList.get(item.first) + "总大小:" + LLToS(item.second >> 10) + "KB");
 	}
 }

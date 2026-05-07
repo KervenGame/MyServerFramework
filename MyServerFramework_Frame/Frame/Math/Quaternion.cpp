@@ -27,7 +27,7 @@ Quaternion::Quaternion(const Vector3& v, float angleRadian)
 	}
 	else
 	{
-		const Vector3 newV = MathUtility::normalize(v);
+		const Vector3 newV = ::normalize(v);
 		x = newV.x * sinValue;
 		y = newV.y * sinValue;
 		z = newV.z * sinValue;
@@ -42,7 +42,7 @@ Quaternion Quaternion::normalize() const
 		return Quaternion();
 	}
 	const float oneOverLen = 1.0f / len;
-	return { w * oneOverLen, x * oneOverLen, y * oneOverLen, z * oneOverLen };
+	return { x * oneOverLen, y * oneOverLen, z * oneOverLen, w * oneOverLen };
 }
 
 Vector3 Quaternion::axis()

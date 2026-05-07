@@ -11,16 +11,12 @@ public:
 	virtual void update(float elapsedTime);
 	virtual void lateUpdate(float elapsedTime);
 	void resetProperty() override;
-	void setCallback(VoidPtrCallback callback, void* userData) 
-	{
-		mCallback = callback; 
-		mUserData = userData;
-	}
+	// 一般是lambda
+	void setCallback(VoidCallback callback) { mCallback = callback; }
 protected:
 	void arrivalTime();
 protected:
-	VoidPtrCallback mCallback = nullptr;	// 到时间的回调
-	void* mUserData = nullptr;
+	VoidCallback mCallback = nullptr;		// 到时间的回调,两个回调设置一个即可,如果两个都设置了,优先调用mCallback
 	TimeValue mTime;
 	float mArrivalCD = -1.0f;				// 因为时间只能精确到秒,所以需要加一个2秒内只能触发一次mArrivalTime为true的限制
 	bool mArrivalTime = false;

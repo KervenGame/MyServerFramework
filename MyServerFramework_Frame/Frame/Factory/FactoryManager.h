@@ -28,17 +28,16 @@ public:
 	{
 		DELETE_MAP(mFactoryList);
 	}
-	FactoryBase<BaseType, KeyType>* getFactory(const KeyType type) const { return mFactoryList.tryGet(type); }
+	FactoryBase<BaseType, KeyType>* getFactory(const KeyType type) const { return mFactoryList.get(type); }
 	const HashMap<KeyType, FactoryBase<BaseType, KeyType>*>& getFactoryList() const { return mFactoryList; }
 	int getFactoryCount() const { return mFactoryList.size(); }
 	bool isFactory() const override { return true; }
-protected:
 	template<class ClassType, typename TypeCheck = typename IsSubClassOf<BaseType, ClassType>::mType>
 	void addFactoryInstance(const KeyType type)
 	{
 		auto factory = new FactoryInstance<ClassType, BaseType, KeyType>();
 		factory->mType = type;
-		mFactoryList.insert(factory->mType, factory);
+		mFactoryList.add(factory->mType, factory);
 	}
 protected:
 	HashMap<KeyType, FactoryBase<BaseType, KeyType>*> mFactoryList;

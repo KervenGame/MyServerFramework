@@ -5,8 +5,8 @@ TCPServerClient::TCPServerClient(const int clientGUID, const MY_SOCKET s, const 
 	mSendBuffer(new StreamBuffer(FrameDefine::CLIENT_SEND_BUFFER)),
 	mRecvBuffer(new StreamBuffer(FrameDefine::CLIENT_RECV_BUFFER)),
 	mSendWriter(new SerializerBitWrite(false)),
-	mPacketTempBuffer0(new SerializerWrite()),
-	mPacketTempBuffer1(new SerializerWrite()),
+	mPacketTempBuffer1(new StreamBuffer(FrameDefine::CLIENT_SEND_BUFFER)),
+	mPacketTempBuffer2(new StreamBuffer(FrameDefine::CLIENT_SEND_BUFFER)),
 	mSocket(s),
 	mClientGUID(clientGUID),
 	mIsDeadClient(false)
@@ -14,8 +14,6 @@ TCPServerClient::TCPServerClient(const int clientGUID, const MY_SOCKET s, const 
 	memset(&mUDPAddress, 0, sizeof(mUDPAddress));
 	// 构造就设置一个最大容量,避免后续还会在子线程中扩容的情况
 	mSendWriter->initCapacity(FrameDefine::CLIENT_MAX_PACKET_SIZE);
-	mPacketTempBuffer0->initCapacity(FrameDefine::CLIENT_SEND_BUFFER);
-	mPacketTempBuffer1->initCapacity(FrameDefine::CLIENT_SEND_BUFFER);
 }
 
 void TCPServerClient::init()
@@ -28,8 +26,8 @@ TCPServerClient::~TCPServerClient()
 	DELETE(mSendBuffer);
 	DELETE(mRecvBuffer);
 	DELETE(mSendWriter);
-	DELETE(mPacketTempBuffer0);
 	DELETE(mPacketTempBuffer1);
+	DELETE(mPacketTempBuffer2);
 	// 关闭客户端套接字,并从列表移除
 	CLOSE_SOCKET(mSocket);
 	mSequenceNumber = 0;
@@ -40,6 +38,16 @@ void TCPServerClient::update(const float elapsedTime)
 	if (mIsDeadClient)
 	{
 		return;
+	}
+
+	// 将数据从mPacketTempBuffer1中转到mPacketTempBuffer2
+	if (mPacketTempBuffer1->getDataLength() > 0)
+	{
+		{
+			THREAD_LOCK(mPacketTempBuffer2Lock);
+			mPacketTempBuffer2->mergeFrom(mPacketTempBuffer1);
+		}
+		mPacketTempBuffer1->clear();
 	}
 
 	// 执行所有消息
@@ -86,23 +94,9 @@ void TCPServerClient::sendPacket(PacketTCP* packet)
 		debugError("临时缓冲区太小! send size : " + IToS(sendSize) + ", temp buffer size : " + IToS(FrameDefine::CLIENT_MAX_PACKET_SIZE));
 		return;
 	}
+	writeToSendBuffer1(packetType, packet->hasSign(), packet->getFieldFlag(), bodySize, (char*)packetDataBuffer->getBuffer());
 
-	{
-		THREAD_LOCK(mPacketTempBufferLock);
-		bool success = mPacketTempBuffer0->write(packetType);
-		success = success && mPacketTempBuffer0->write(packet->getFieldFlag());
-		success = success && mPacketTempBuffer0->write(bodySize);
-		if (bodySize > 0)
-		{
-			success = success && mPacketTempBuffer0->writeBuffer(packetDataBuffer->getBuffer(), bodySize);
-		}
-		if (!success)
-		{
-			ERROR("写入错误");
-		}
-	}
-
-#ifndef VIRTUAL_CLIENT_TEST
+#if !defined(VIRTUAL_CLIENT_TEST) && !defined(STRESS_TEST)
 	if (mTCPServerSystem->getOutputLog() && packet->showInfo())
 	{
 		MyString<1024> packetInfo;
@@ -110,7 +104,7 @@ void TCPServerClient::sendPacket(PacketTCP* packet)
 		INT_STR(packetTypeStr, packetType);
 		INT_STR(packetSizeStr, bodySize);
 		MyString<2048> allInfo;
-		strcat_t(allInfo, "已发送: ", packetTypeStr.str(), ", ", packetInfo.str(), ", 字节数:", packetSizeStr.str());
+		allInfo.add("已发送: ", packetTypeStr.str(), ", ", packetInfo.str(), ", 字节数:", packetSizeStr.str());
 		debugInfo(allInfo.str());
 	}
 #endif
@@ -135,84 +129,58 @@ void TCPServerClient::sendPacket(const ushort packetType, const string& name)
 		return;
 	}
 
+	writeToSendBuffer1(packetType, false, FrameDefine::FULL_FIELD_FLAG, 0, nullptr);
+}
+
+// 将消息数据写入到mPacketTempBuffer1
+void TCPServerClient::writeToSendBuffer1(const ushort packetType, bool hasSign, ullong fieldFlag, uint bodySize, char* bodyBuffer)
+{
+	const uint sequence = ++mSequenceNumber;
+	if (bodySize > 0)
 	{
-		THREAD_LOCK(mPacketTempBufferLock);
-		mPacketTempBuffer0->write(packetType);
-		mPacketTempBuffer0->write(FrameDefine::FULL_FIELD_FLAG);
-		mPacketTempBuffer0->write(0);
+		// 只在将包体数据写入到buffer时才会加密包体
+		TCPServerSystem::encrypt(bodyBuffer, bodySize, (byte)(packetType + bodySize + (sequence ^ 123 ^ (int)packetType)));
+	}
+
+	mSendWriter->clear();
+	mSendWriter->writeUnsigned(bodySize);
+	mSendWriter->writeUnsigned(generateCRC16(bodySize));
+	mSendWriter->writeUnsigned(packetType);
+	mSendWriter->writeUnsigned(sequence);
+	mSendWriter->writeBool(hasSign);
+	mSendWriter->writeBool(fieldFlag != FrameDefine::FULL_FIELD_FLAG);
+	if (fieldFlag != FrameDefine::FULL_FIELD_FLAG)
+	{
+		mSendWriter->writeUnsigned(fieldFlag);
+	}
+	if (bodySize > 0)
+	{
+		mSendWriter->writeBuffer(bodyBuffer, bodySize);
+	}
+	// 下面要计算crc,需要完整的字节信息,所以将剩下的位都填充为0
+	mSendWriter->fillZeroToByteEnd();
+	// 添加CRC校验码,因为要连包头一起校验,所以只能在这里写
+	mSendWriter->writeUnsigned(generateCRC16(mSendWriter->getBuffer(), mSendWriter->getByteCount()));
+
+	// 放入到缓存列表中,因为要保证发送消息的顺序,所以只能都先放到二级缓冲区
+	if (!mPacketTempBuffer1->addDataToBack(mSendWriter->getBuffer(), mSendWriter->getByteCount()))
+	{
+		setDeadClient("客户端发送缓冲区已满", DEAD_TYPE::SERVER_KICK_OUT);
 	}
 }
 
-// 此函数在sendThread调用
+// 此函数在sendThread调用,将数据从mPacketTempBuffer2中转到mSendBuffer
 void TCPServerClient::writeToSendBuffer()
 {
-	// 将数据从mPacketTempBuffer0中转到mPacketTempBuffer1
-	if (mPacketTempBuffer0->getDataSize() > 0)
+	if (mPacketTempBuffer2->getDataLength() > 0)
 	{
-		THREAD_LOCK(mPacketTempBufferLock);
-		mPacketTempBuffer1->writeBuffer(mPacketTempBuffer0->getBuffer(), mPacketTempBuffer0->getDataSize());
-		mPacketTempBuffer0->clear();
-	}
-	if (mPacketTempBuffer1->getDataSize() == 0)
-	{
-		return;
-	}
-	
-	SerializerRead reader(mPacketTempBuffer1->getBuffer(), mPacketTempBuffer1->getDataSize());
-	while (true)
-	{
-		ushort packetType;
-		if (!reader.read(packetType))
-		{
-			break;
-		}
-		ullong fieldFlag = 0;
-		if (!reader.read(fieldFlag))
-		{
-			ERROR("读取错误");
-			break;
-		}
-		int bodySize = 0;
-		if (!reader.read(bodySize))
-		{
-			ERROR("读取错误");
-			break;
-		}
-		char* bodyBuffer = (char*)reader.getBuffer() + reader.getIndex();
-		const int sequence = ++mSequenceNumber;
-		if (bodySize > 0)
-		{
-			reader.setIndex(reader.getIndex() + bodySize);
-			// 只在将包体数据写入到buffer时才会加密包体
-			TCPServerSystem::encrypt(bodyBuffer, bodySize, FrameDefine::ENCRYPT_KEY, FrameDefine::ENCRYPT_KEY_LENGTH, (byte)(packetType + bodySize + (sequence ^ 123 ^ (int)packetType)));
-		}
-
-		mSendWriter->clear();
-		mSendWriter->writeSigned(bodySize);
-		mSendWriter->writeUnsigned(generateCRC16(bodySize));
-		mSendWriter->writeUnsigned(packetType);
-		mSendWriter->writeSigned(sequence);
-		mSendWriter->writeBool(fieldFlag != FrameDefine::FULL_FIELD_FLAG);
-		if (fieldFlag != FrameDefine::FULL_FIELD_FLAG)
-		{
-			mSendWriter->writeUnsigned(fieldFlag);
-		}
-		if (bodySize > 0)
-		{
-			mSendWriter->writeBuffer(bodyBuffer, bodySize);
-		}
-		// 下面要计算crc,需要完整的字节信息,所以将剩下的位都填充为0
-		mSendWriter->fillZeroToByteEnd();
-		// 添加CRC校验码,因为要连包头一起校验,所以只能在这里写
-		mSendWriter->writeUnsigned(generateCRC16(mSendWriter->getBuffer(), mSendWriter->getByteCount()));
-
-		// 放入到缓存列表中,因为要保证发送消息的顺序,所以只能都先放到二级缓冲区
-		if (!mSendBuffer->addDataToBack(mSendWriter->getBuffer(), mSendWriter->getByteCount()))
+		THREAD_LOCK(mPacketTempBuffer2Lock);
+		if (!mSendBuffer->mergeFrom(mPacketTempBuffer2))
 		{
 			setDeadClient("客户端发送缓冲区已满", DEAD_TYPE::SERVER_KICK_OUT);
 		}
+		mPacketTempBuffer2->clear();
 	}
-	mPacketTempBuffer1->clear();
 }
 
 void TCPServerClient::recvData(const char* data, const int dataCount)
@@ -250,7 +218,7 @@ void TCPServerClient::recvData(const char* data, const int dataCount)
 		// 数据未接收完全
 		if (parseResult == PARSE_RESULT::SUCCESS)
 		{
-			mTempPacketList.push_back(packet);
+			mTempPacketList.add(packet);
 			// 将已经解析的数据移除
 			mRecvBuffer->removeDataFromFront(bitCountToByteCount(bitIndex));
 			++parsedCount;
@@ -305,17 +273,19 @@ void TCPServerClient::recvData(const char* data, const int dataCount)
 
 PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, string& reason)
 {
+	mRecvBuffer->linearize();
 	SerializerBitRead reader(mRecvBuffer->getData(), mRecvBuffer->getDataLength());
 	reader.setBitIndex(bitIndex);
 	packet = nullptr;
-	int bodySize = 0;
+	uint bodySize = 0;
 	ushort bodySizeCRC = 0;
 	ushort packetType = 0;
-	int sequenceNumber = 0;
+	uint sequenceNumber = 0;
+	bool hasSign = false;
 	bool useFlag = false;
 	ullong fieldFlag = FrameDefine::FULL_FIELD_FLAG;
 	const char* bodyBuffer = nullptr;
-	if (!reader.readSigned(bodySize))
+	if (!reader.readUnsigned(bodySize))
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
@@ -331,7 +301,11 @@ PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, stri
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
-	if (!reader.readSigned(sequenceNumber))
+	if (!reader.readUnsigned(sequenceNumber))
+	{
+		return PARSE_RESULT::NOT_ENOUGH;
+	}
+	if (!reader.readBool(hasSign))
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
@@ -359,11 +333,8 @@ PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, stri
 	}
 
 	// 解密包体数据
-	if (bodyBuffer != nullptr)
-	{
-		// bodyBuffer指向的是mRecvBuffer中的buffer,此buffer允许修改,所以此处强转为char*
-		TCPServerSystem::decrypt((char*)bodyBuffer, bodySize, FrameDefine::ENCRYPT_KEY, FrameDefine::ENCRYPT_KEY_LENGTH, (byte)((int)packetType + bodySize + (sequenceNumber ^ 123 ^ (int)packetType)));
-	}
+	// bodyBuffer指向的是mRecvBuffer中的buffer,此buffer允许修改,所以此处强转为char*
+	TCPServerSystem::decrypt((char*)bodyBuffer, bodySize, (byte)((int)packetType + bodySize + (sequenceNumber ^ 123 ^ (int)packetType)));
 
 	// 如果是消息解析数不足,并且收到无效消息时,不会报错
 	if (mParsedCount < FrameDefine::MIN_PARSE_COUNT && mPacketTCPFactoryManager->getFactory(packetType) == nullptr)
@@ -372,7 +343,7 @@ PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, stri
 		return PARSE_RESULT::INVALID_PACKET_TYPE;
 	}
 	// 创建消息对象并解析包体
-	packet = mPacketTCPThreadPool->newClass(packetType);
+	packet = mPacketTCPSCThreadPool->newClass(packetType);
 	if (packet == nullptr)
 	{
 		reason = "消息解析错误! 消息类型ID:" + IToS((int)packetType);
@@ -382,9 +353,11 @@ PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, stri
 	if (bodyBuffer != nullptr)
 	{
 		SerializerBitRead bodyReader(bodyBuffer, bodySize);
-		if (!packet->readFromBuffer(&bodyReader))
+		if (!packet->readFromBuffer(&bodyReader, hasSign))
 		{
-			mPacketTCPThreadPool->destroyClass(packet);
+			// 延迟到主线程销毁消息包
+			delayCall([packet]() { auto* temp = packet; mPacketTCPSCThreadPool->destroyClass(temp); });
+			packet = nullptr;
 			reason = "消息解析错误! 消息类型ID:" + IToS((int)packetType);
 			return PARSE_RESULT::PACKET_PARSE_FAILED;
 		}
@@ -392,14 +365,15 @@ PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, stri
 
 	// 校验序列号是否正确
 	packet->setSequenceNumber(sequenceNumber);
-	if (sequenceNumber != mLastReceiveNumber + 1 && mPlayerGUID > 0 && mLastReceiveNumber != 0x7FFFFFFF)
+	if (sequenceNumber != mLastReceiveNumber + 1 && mPlayerGUID > 0 && mLastReceiveNumber != 0xFFFFFFFF)
 	{
 		string info = "丢包:" + IToS(sequenceNumber - mLastReceiveNumber - 1) + 
 							", 角色ID:" + LLToS(mPlayerGUID) + ", 已接收包数量:" + UIToS(mParsedCount) +
 							", 当前包序列号:" + IToS(sequenceNumber);
 		LOG(info);
 		PLAYER_LOG_NO_PRINT(info, mPlayerGUID);
-		mPacketTCPThreadPool->destroyClass(packet);
+		// 延迟到主线程销毁消息包
+		delayCall([packet]() { auto* temp = packet; mPacketTCPSCThreadPool->destroyClass(temp); });
 		packet = nullptr;
 		reason = "sequence number check error! lastNumber:" + IToS(mLastReceiveNumber) + 
 						", receiveNumber:" + IToS(sequenceNumber);
@@ -410,7 +384,8 @@ PARSE_RESULT TCPServerClient::packetRead(int& bitIndex, PacketTCP*& packet, stri
 	// CRC校验
 	if (crcCode != readCrc)
 	{
-		mPacketTCPThreadPool->destroyClass(packet);
+		// 延迟到主线程销毁消息包
+		delayCall([packet]() { auto* temp = packet; mPacketTCPSCThreadPool->destroyClass(temp); });
 		packet = nullptr;
 		reason = "crc check error";
 		return PARSE_RESULT::CRC_ERROR;
@@ -437,9 +412,12 @@ void TCPServerClient::executeAllPacket()
 		}
 		if (packetCount > 100)
 		{
-			LOG("单个客户端一帧执行的消息数量:" + IToS(packetCount));
+#ifndef STRESS_TEST
+			LOG("单个客户端一帧执行的消息数量:" + IToS(packetCount) + ", PlayerGUID:" + LLToS(mPlayerGUID) + ", AccountGUID:" + LLToS(mAccountGUID));
+#endif
 		}
 		mTempExecutePacketCountList.clear();
+		mWillDestroyPackets.clear();
 		for (PacketTCP* packetReply : *readScope.mReadList)
 		{
 			if (packetReply == nullptr)
@@ -453,21 +431,35 @@ void TCPServerClient::executeAllPacket()
 			}
 			if (mIsDeadClient)
 			{
-				mPacketTCPThreadPool->destroyClass(packetReply);
+				if (!mWillDestroyPackets.add(packetReply))
+				{
+					mPacketTCPSCThreadPool->destroyClassList(mWillDestroyPackets);
+					mWillDestroyPackets.add(packetReply);
+				}
 				continue;
 			}
 			packetReply->execute();
+#if !defined(VIRTUAL_CLIENT_TEST) && !defined(STRESS_TEST)
 			if (mTCPServerSystem->getOutputLog() && packetReply->showInfo())
 			{
 				INT_STR(packetTypeStr, (int)packetReply->getType());
 				MyString<1024> packetInfo;
 				packetReply->debugInfo(packetInfo);
 				MyString<2048> allInfo;
-				strcat_t(allInfo, "已接收 : ", packetTypeStr.str(), ", ", packetInfo.str());
+				allInfo.add("已接收 : ", packetTypeStr.str(), ", ", packetInfo.str());
 				debugInfo(allInfo.str());
 			}
-			mTempExecutePacketCountList.insertOrGet(packetReply->getType()) += 1;
-			mPacketTCPThreadPool->destroyClass(packetReply);
+#endif
+			mTempExecutePacketCountList.addOrGet(packetReply->getType()) += 1;
+			if (!mWillDestroyPackets.add(packetReply))
+			{
+				mPacketTCPSCThreadPool->destroyClassList(mWillDestroyPackets);
+				mWillDestroyPackets.add(packetReply);
+			}
+		}
+		if (!mWillDestroyPackets.isEmpty())
+		{
+			mPacketTCPSCThreadPool->destroyClassList(mWillDestroyPackets);
 		}
 		const llong time1 = getRealTimeMS();
 		if (time1 - time0 > 10)
@@ -501,16 +493,13 @@ void TCPServerClient::debugInfo(const string& info) const
 	if (mAccountGUID != 0)
 	{
 		LLONG_STR(accountGUIDStr, mAccountGUID);
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 账号GUID:", accountGUIDStr.str(), 
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 账号GUID:", accountGUIDStr.str());
+		fullInfo.add(", 角色GUID:", charGUIDStr.str(), ", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	else
 	{
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 角色GUID:", charGUIDStr.str());
+		fullInfo.add(", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	if (mPlayerGUID > 0)
 	{
@@ -527,16 +516,13 @@ void TCPServerClient::debugError(const string& info) const
 	if (mAccountGUID != 0)
 	{
 		LLONG_STR(accountGUIDStr, mAccountGUID);
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 账号GUID:", accountGUIDStr.str(), 
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 账号GUID:", accountGUIDStr.str());
+		fullInfo.add(", 角色GUID:", charGUIDStr.str(), ", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	else
 	{
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 角色GUID:", charGUIDStr.str());
+		fullInfo.add(", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	if (mPlayerGUID > 0)
 	{
@@ -547,7 +533,8 @@ void TCPServerClient::debugError(const string& info) const
 void TCPServerClient::notifyPing()
 {
 	mHeartBeatTime = mTCPServerSystem->getHeartBeatTimeOut();
-	mLastPingList.push_back(getRealTimeMS());
+#ifndef STRESS_TEST
+	mLastPingList.add(getRealTimeMS());
 	if (mLastPingList.size() > 10)
 	{
 		// 每次心跳是2秒,如果3次心跳的时间小于17秒,留15%的误差空间,则可认为是开了加速外挂,加速了客户端的全局时间
@@ -564,6 +551,7 @@ void TCPServerClient::notifyPing()
 		}
 		mLastPingList.clear();
 	}
+#endif
 }
 
 void TCPServerClient::notifyServerPing(int index)

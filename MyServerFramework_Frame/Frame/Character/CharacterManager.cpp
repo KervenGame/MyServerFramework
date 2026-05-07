@@ -40,7 +40,7 @@ Character* CharacterManager::createCharacter(const string& name, const byte type
 	newChar->init();
 	// 加入ID索引表,仅仅在插入时检查是否有重复,因为大部分时候肯定能插入成功,如果每次都先检查是否存在,会浪费不少的性能
 	// 所以即使看起来像是先创建后加入失败再销毁,显得有点冗余,但是性能是最好的
-	if (!mCharacterIDList.insert(guid, newChar))
+	if (!mCharacterIDList.add(guid, newChar))
 	{
 		ERROR("there is a character id : " + LLToS(guid));
 		mCharacterPool->destroyClass(newChar);
@@ -49,10 +49,10 @@ Character* CharacterManager::createCharacter(const string& name, const byte type
 	// 如果需要管理器负责更新,则加入到更新列表中
 	if (managed)
 	{
-		mCharacterUpdateList.insert(guid, newChar);
+		mCharacterUpdateList.add(guid, newChar);
 	}
 	// 加入到角色分类列表
-	mCharacterTypeList.insertOrGet(type).insert(guid, newChar);
+	mCharacterTypeList.addOrGet(type).add(guid, newChar);
 	return newChar;
 }
 
@@ -68,11 +68,11 @@ void CharacterManager::destroyCharacter(Character* character)
 		return;
 	}
 	// 从ID索引表中移除
-	mCharacterIDList.erase(character->getGUID());
+	mCharacterIDList.remove(character->getGUID());
 	// 从更新列表中移除
-	mCharacterUpdateList.erase(character->getGUID());
+	mCharacterUpdateList.remove(character->getGUID());
 	// 从角色分类列表中移除
-	mCharacterTypeList.insertOrGet(character->getType()).erase(character->getGUID());
+	mCharacterTypeList.addOrGet(character->getType()).remove(character->getGUID());
 	mCharacterPool->destroyClass(character);
 }
 

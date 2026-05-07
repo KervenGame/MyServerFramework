@@ -23,14 +23,14 @@ public:
 		b(bb),
 		a(aa)
 	{}
-	Color operator+(const Color& that) { return Color(r + that.r, g + that.g, b + that.b, a + that.a); }
-	Color operator-(const Color& that) { return Color(r - that.r, g - that.g, b - that.b, a - that.a); }
+	Color operator+(const Color& that) const { return Color(r + that.r, g + that.g, b + that.b, a + that.a); }
+	Color operator-(const Color& that) const { return Color(r - that.r, g - that.g, b - that.b, a - that.a); }
 	Color& operator+=(const Color& that)
 	{
-		r -= that.r;
-		g -= that.g;
-		b -= that.b;
-		a -= that.a;
+		r += that.r;
+		g += that.g;
+		b += that.b;
+		a += that.a;
 		return *this;
 	}
 	Color& operator-=(const Color& that)
@@ -41,4 +41,6 @@ public:
 		a -= that.a;
 		return *this;
 	}
+	bool operator==(const Color& that) const { return r == that.r && g == that.g && b == that.b && a == that.a; }
+	bool operator!=(const Color& that) const { return !(*this == that); }
 };

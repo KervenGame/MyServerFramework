@@ -8,7 +8,7 @@ MovableObject::~MovableObject()
 void MovableObject::destroy()
 {
 	base::destroy();
-	if (mDestroyCallbackList != nullptr && mDestroyCallbackList->size() > 0)
+	if (mDestroyCallbackList != nullptr && !mDestroyCallbackList->isEmpty())
 	{
 		for (const auto& pair : *mDestroyCallbackList)
 		{
@@ -69,7 +69,7 @@ void MovableObject::removeDestroyCallback(const OnObjectDestroy callback, const 
 		const auto& value = (*mDestroyCallbackList)[i];
 		if (value.first == callback && value.second == userData)
 		{
-			mDestroyCallbackList->eraseAt(i);
+			mDestroyCallbackList->removeAt(i);
 			break;
 		}
 	}

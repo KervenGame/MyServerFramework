@@ -27,14 +27,14 @@ SQLiteTableBase::~SQLiteTableBase()
 bool SQLiteTableBase::doUpdate(const char* updateString, const char* conditionString) const
 {
 	MyString<1024> queryStr;
-	strcat_t(queryStr, "UPDATE ", mTableName, " SET ", updateString, " WHERE ", conditionString);
+	queryStr.add("UPDATE ", mTableName, " SET ", updateString, " WHERE ", conditionString);
 	return executeNonQuery(queryStr.str());
 }
 
 bool SQLiteTableBase::doInsert(const char* valueString) const
 {
 	MyString<1024> queryStr;
-	strcat_t(queryStr, "INSERT INTO ", mTableName, " VALUES (", valueString, ")");
+	queryStr.add("INSERT INTO ", mTableName, " VALUES (", valueString, ")");
 	return executeNonQuery(queryStr.str());
 }
 

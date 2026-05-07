@@ -7,15 +7,7 @@ void GameLogWrap::logError(string&& info, const llong playerGUID, const bool wri
 	if (mLogSystem == nullptr || !writeToLog || mLogInfoPool == nullptr)
 	{
 		print(info.c_str());
-		// windows下报错就直接暂停运行
-#ifdef WINDOWS
-		system("pause");
-#else
-		if (mErrorPause)
-		{
-			system("pause");
-		}
-#endif
+		systemPause();
 		return;
 	}
 
@@ -37,15 +29,7 @@ void GameLogWrap::logError(string&& info, const llong playerGUID, const bool wri
 	log->mPlayerGUID = playerGUID;
 	print(log->mLog.c_str());
 	LogSystem::log(log);
-	// windows下报错就直接暂停运行
-#ifdef WINDOWS
-	system("pause");
-#else
-	if (mErrorPause)
-	{
-		system("pause");
-	}
-#endif
+	systemPause();
 }
 
 void GameLogWrap::logError(const string& info, const llong playerGUID, const bool writeToLog)
@@ -53,15 +37,7 @@ void GameLogWrap::logError(const string& info, const llong playerGUID, const boo
 	if (mLogSystem == nullptr || !writeToLog || mLogInfoPool == nullptr)
 	{
 		print(info.c_str());
-		// windows下报错就直接暂停运行
-#ifdef WINDOWS
-		system("pause");
-#else
-		if (mErrorPause)
-		{
-			system("pause");
-		}
-#endif
+		systemPause();
 		return;
 	}
 
@@ -83,15 +59,7 @@ void GameLogWrap::logError(const string& info, const llong playerGUID, const boo
 	log->mPlayerGUID = playerGUID;
 	print(log->mLog.c_str());
 	LogSystem::log(log);
-	// windows下报错就直接暂停运行
-#ifdef WINDOWS
-	system("pause");
-#else
-	if (mErrorPause)
-	{
-		system("pause");
-	}
-#endif
+	systemPause();
 }
 
 void GameLogWrap::logInfo(string&& info, const llong playerGUID, const bool printConsole, const bool writeToLog)

@@ -51,18 +51,18 @@ void ParamSet::initAllowMemberType()
 {
 	if (mAllowMemberType.isEmpty())
 	{
-		mAllowMemberType.insert(mIntType);
-		mAllowMemberType.insert(mFloatType);
-		mAllowMemberType.insert(mBoolType);
-		mAllowMemberType.insert(mByteType);
-		mAllowMemberType.insert(mShortType);
-		mAllowMemberType.insert(mUShortType);
-		mAllowMemberType.insert(mVector2Type);
-		mAllowMemberType.insert(mVector3Type);
-		mAllowMemberType.insert(mIntListType);
-		mAllowMemberType.insert(mShortListType);
-		mAllowMemberType.insert(mUShortListType);
-		mAllowMemberType.insert(mFloatListType);
-		mAllowMemberType.insert(mLLongType);
+		mAllowMemberType.add(mIntType);
+		mAllowMemberType.add(mFloatType);
+		mAllowMemberType.add(mBoolType);
+		mAllowMemberType.add(mByteType);
+		mAllowMemberType.add(mShortType);
+		mAllowMemberType.add(mUShortType);
+		mAllowMemberType.add(mVector2Type);
+		mAllowMemberType.add(mVector3Type);
+		mAllowMemberType.add(mIntListType);
+		mAllowMemberType.add(mShortListType);
+		mAllowMemberType.add(mUShortListType);
+		mAllowMemberType.add(mFloatListType);
+		mAllowMemberType.add(mLLongType);
 	}
 }

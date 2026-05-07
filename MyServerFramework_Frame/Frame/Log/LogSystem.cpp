@@ -8,7 +8,7 @@ LogSystem::LogSystem()
 
 void LogSystem::init()
 {
-	mLogThread = mThreadManager->createThread("LogThread", writeLogThread, this);
+	mLogThread = mThreadManager->createThread("LogThread", [this] {writeLogThread(); });
 	mLogThread->setTime(100);
 }
 
@@ -38,12 +38,12 @@ void LogSystem::writeLogFile()
 		THREAD_LOCK(mLogWriteInfoListLock);
 		for (LogInfo* info : *readScope.mReadList)
 		{
-			LogFileInfo* fileInfo = mLogWriteInfoList.tryGet(info->mPlayerGUID);
+			LogFileInfo* fileInfo = mLogWriteInfoList.get(info->mPlayerGUID);
 			if (fileInfo == nullptr)
 			{
 				continue;
 			}
-			fileInfoMap.insertOrGet(fileInfo).push_back(info);
+			fileInfoMap.addOrGet(fileInfo).add(info);
 		}
 	}
 	// 写入文件
@@ -74,7 +74,7 @@ void LogSystem::writeLogFile()
 			}
 		}
 		// 还有日志没写入,则继续写入剩下的日志
-		if (logString.length() > 0)
+		if (!logString.empty())
 		{
 			writeFile(fileInfo->mFileName, logString, true);
 		}
@@ -101,12 +101,12 @@ void LogSystem::writeErrorFile()
 		THREAD_LOCK(mErrorWriteInfoListLock);
 		for (LogInfo* info : *readScope.mReadList)
 		{
-			LogFileInfo* fileInfo = mErrorWriteInfoList.tryGet(info->mPlayerGUID);
+			LogFileInfo* fileInfo = mErrorWriteInfoList.get(info->mPlayerGUID);
 			if (fileInfo == nullptr)
 			{
 				continue;
 			}
-			fileInfoMap.insertOrGet(fileInfo).push_back(info);
+			fileInfoMap.addOrGet(fileInfo).add(info);
 		}
 	}
 
@@ -139,7 +139,7 @@ void LogSystem::writeErrorFile()
 			}
 		}
 		// 还有日志没写入,则继续写入剩下的日志
-		if (logString.length() > 0)
+		if (!logString.empty())
 		{
 			writeFile(fileInfo->mFileName, logString, true);
 		}
@@ -147,7 +147,7 @@ void LogSystem::writeErrorFile()
 	mLogInfoPool->destroyClassList(*readScope.mReadList);
 }
 
-void LogSystem::writeLogThread(CustomThread* thread)
+void LogSystem::writeLogThread()
 {
 	mLogSystem->writeLogFile();
 	mLogSystem->writeErrorFile();
@@ -165,7 +165,7 @@ void LogSystem::log(LogInfo* info)
 				// 而且LogFileInfo也不需要进行销毁,会一直存在
 				LogFileInfo* fileInfo = new LogFileInfo();
 				fileInfo->mPlayerGUID = info->mPlayerGUID;
-				mLogSystem->mErrorWriteInfoList.insert(info->mPlayerGUID, fileInfo);
+				mLogSystem->mErrorWriteInfoList.add(info->mPlayerGUID, fileInfo);
 			}
 		}
 		mLogSystem->mErrorBuffer.add(info);
@@ -178,7 +178,7 @@ void LogSystem::log(LogInfo* info)
 			{
 				LogFileInfo* fileInfo = new LogFileInfo();
 				fileInfo->mPlayerGUID = info->mPlayerGUID;
-				mLogSystem->mLogWriteInfoList.insert(info->mPlayerGUID, fileInfo);
+				mLogSystem->mLogWriteInfoList.add(info->mPlayerGUID, fileInfo);
 			}
 		}
 		mLogSystem->mLogBuffer.add(info);

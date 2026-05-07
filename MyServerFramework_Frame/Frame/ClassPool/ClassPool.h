@@ -5,6 +5,7 @@
 #include "ErrorProfile.h"
 #include "SafeHashMap.h"
 
+template<typename T>struct PoolOf { using type = void; };
 // 固定类型的对象池
 // 仅在主线程用
 template<typename ClassType, typename TypeCheck = typename IsSubClassOf<ClassObject, ClassType>::mType>
@@ -12,6 +13,22 @@ class ClassPool : public ClassPoolBase
 {
 	BASE(ClassPool, ClassPoolBase);
 public:
+	ClassPool()
+	{
+		if (mInstance != nullptr)
+		{
+			ERROR("不能定义重复类型的对象池");
+		}
+		mInstance = this;
+	}
+	~ClassPool()
+	{
+		mInstance = nullptr;
+	}
+	void init() override
+	{
+		base::init();
+	}
 	void initDefault(const int count)
 	{
 #ifdef WINDOWS
@@ -26,7 +43,7 @@ public:
 		{
 			ClassType* obj = new ClassType();
 			obj->resetProperty();
-			list.push_back(obj);
+			list.add(obj);
 		}
 		mUnusedList.addRange(list);
 		mTotalCount += count;
@@ -53,7 +70,7 @@ public:
 #endif
 		ClassType* obj = nullptr;
 		// 首先从未使用的列表中获取,获取不到再重新创建一个
-		while (mUnusedList.size() > 0 && obj == nullptr)
+		while (!mUnusedList.isEmpty() && obj == nullptr)
 		{
 			obj = mUnusedList.popBack(nullptr);
 		}
@@ -96,178 +113,8 @@ public:
 			return;
 		}
 		// 添加到未使用列表中
-		mUnusedList.push_back(obj);
+		mUnusedList.add(obj);
 		obj = nullptr;
-	}
-	void destroyClassList(SafeVector<ClassType*>& objList)
-	{
-#ifdef WINDOWS
-		if (!isMainThread())
-		{
-			ERROR(string("只能在主线程调用,type:") + typeid(ClassType).name());
-			return;
-		}
-#endif
-		// 如果当前对象池已经被销毁,则不能再重复销毁任何对象
-		if (mDestroied || objList.isEmpty())
-		{
-			return;
-		}
-
-		// 再添加到列表
-		mUnusedList.reserve(mUnusedList.size() + objList.size());
-		for (ClassType* obj : objList.getMainList())
-		{
-			if (obj == nullptr)
-			{
-				continue;
-			}
-			obj->destroy();
-			if (!obj->markDispose(this))
-			{
-				ERROR_PROFILE((string("1重复销毁对象:") + typeid(ClassType).name()).c_str());
-				continue;
-			}
-		}
-		mUnusedList.addRange(objList.getMainList());
-		objList.clear();
-	}
-	void destroyClassList(Vector<ClassType*>& objList)
-	{
-#ifdef WINDOWS
-		if (!isMainThread())
-		{
-			ERROR(string("只能在主线程调用,type:") + typeid(ClassType).name());
-			return;
-		}
-#endif
-		// 如果当前对象池已经被销毁,则不能再重复销毁任何对象
-		if (mDestroied || objList.isEmpty())
-		{
-			return;
-		}
-		
-		// 再添加到列表
-		mUnusedList.reserve(mUnusedList.size() + objList.size());
-		for (ClassType* obj : objList)
-		{
-			if (obj == nullptr)
-			{
-				continue;
-			}
-			obj->destroy();
-			if (!obj->markDispose(this))
-			{
-				ERROR_PROFILE((string("1重复销毁对象:") + typeid(ClassType).name()).c_str());
-				continue;
-			}
-		}
-		mUnusedList.addRange(objList);
-		objList.clear();
-	}
-	template<int Length>
-	void destroyClassList(ArrayList<Length, ClassType*>& objList)
-	{
-#ifdef WINDOWS
-		if (!isMainThread())
-		{
-			ERROR(string("只能在主线程调用,type:") + typeid(ClassType).name());
-			return;
-		}
-#endif
-		// 如果当前对象池已经被销毁,则不能再重复销毁任何对象
-		if (mDestroied || objList.isEmpty())
-		{
-			return;
-		}
-
-		// 再添加到列表
-		mUnusedList.reserve(mUnusedList.size() + objList.size());
-		for (ClassType* obj : objList)
-		{
-			if (obj == nullptr)
-			{
-				continue;
-			}
-			obj->destroy();
-			if (!obj->markDispose(this))
-			{
-				ERROR_PROFILE((string("1重复销毁对象:") + typeid(ClassType).name()).c_str());
-				continue;
-			}
-		}
-		mUnusedList.addRange(objList);
-		objList.clear();
-	}
-	template<typename T0>
-	void destroyClassList(HashMap<T0, ClassType*>& objMap)
-	{
-#ifdef WINDOWS
-		if (!isMainThread())
-		{
-			ERROR(string("只能在主线程调用,type:") + typeid(ClassType).name());
-			return;
-		}
-#endif
-		// 如果当前对象池已经被销毁,则不能再重复销毁任何对象
-		if (mDestroied || objMap.isEmpty())
-		{
-			return;
-		}
-
-		// 添加到未使用列表中
-		mUnusedList.reserve(mUnusedList.size() + objMap.size());
-		for (const auto& objPair : objMap)
-		{
-			ClassType* obj = objPair.second;
-			if (obj == nullptr)
-			{
-				continue;
-			}
-			obj->destroy();
-			if (!obj->markDispose(this))
-			{
-				ERROR_PROFILE((string("2重复销毁对象:") + typeid(ClassType).name()).c_str());
-				continue;
-			}
-			mUnusedList.push_back(obj);
-		}
-		objMap.clear();
-	}
-	template<typename T0>
-	void destroyClassList(SafeHashMap<T0, ClassType*>& objMap)
-	{
-#ifdef WINDOWS
-		if (!isMainThread())
-		{
-			ERROR(string("只能在主线程调用,type:") + typeid(ClassType).name());
-			return;
-		}
-#endif
-		// 如果当前对象池已经被销毁,则不能再重复销毁任何对象
-		if (mDestroied || objMap.isEmpty())
-		{
-			return;
-		}
-
-		// 添加到未使用列表中
-		mUnusedList.reserve(mUnusedList.size() + objMap.size());
-		for (const auto& objPair : objMap.getMainList())
-		{
-			ClassType* obj = objPair.second;
-			if (obj == nullptr)
-			{
-				continue;
-			}
-			obj->destroy();
-			if (!obj->markDispose(this))
-			{
-				ERROR_PROFILE((string("2重复销毁对象:") + typeid(ClassType).name()).c_str());
-				continue;
-			}
-			mUnusedList.push_back(obj);
-		}
-		objMap.clear();
 	}
 	void dump() override
 	{
@@ -276,9 +123,14 @@ public:
 			LOG("ClassPool: " + string(typeid(ClassType).name()) + "的数量:" + IToS(mTotalCount) + ",总大小:" + LLToS(mTotalCount * sizeof(ClassType) / 1024) + "KB" + ", 未使用数量:" + IToS(mUnusedList.size()));
 		}
 	}
+	static ClassPool<ClassType>* getInstance() { return mInstance; }
 protected:
 	Vector<ClassType*> mUnusedList;		// 未使用列表
 	llong mAssignIDSeed = 0;			// 对象的分配ID种子
 	int mTotalCount = 0;				// 创建的对象总数
 	bool mShowCountLog = true;			// 当对象池创建总数达到一定数量时,是否打印日志信息,一般打印,但是日志的对象池不能打印
+	static ClassPool<ClassType>* mInstance;
 };
+
+template<typename ClassType, typename TypeCheck>
+ClassPool<ClassType>* ClassPool<ClassType, TypeCheck>::mInstance = nullptr;

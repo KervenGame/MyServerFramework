@@ -30,7 +30,7 @@ public:
 		{
 			mParamMemberList = new Vector<StateParamMember>();
 		}
-		mParamMemberList->emplace_back(&value, typeHash);
+		mParamMemberList->emplace(&value, typeHash);
 	}
 	// 由于枚举类型比较特殊,所以单独将枚举类型当作byte来处理,暂不支持其他类型的枚举
 	template<typename T>
@@ -44,7 +44,7 @@ public:
 		{
 			mParamMemberList = new Vector<StateParamMember>();
 		}
-		mParamMemberList->emplace_back(&value, (int)typeid(byte).hash_code());
+		mParamMemberList->emplace(&value, (int)typeid(byte).hash_code());
 	}
 	void valueDirty(void* pointer);
 	void initFromParam(const string& param0, const string& param1)

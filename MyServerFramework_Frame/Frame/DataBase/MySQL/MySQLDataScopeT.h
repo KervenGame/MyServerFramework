@@ -64,9 +64,11 @@ public:
     }
     // 指针访问操作符,只允许左值调用,右值不能调用,因为容易产生析构后才返回的问题
     T* operator->() const& { return mData; }
+    // 右值不能调用,因为容易产生析构后才返回的问题
     T* operator->() const&& = delete;
     // 指针访问操作符,只允许左值调用,右值不能调用,因为容易产生析构后才返回的问题
     T* get() const& { return mData; }
+    // 右值不能调用,因为容易产生析构后才返回的问题
     T* get() const&& = delete;
     bool isValid() const { return mData != nullptr; }
     void release()

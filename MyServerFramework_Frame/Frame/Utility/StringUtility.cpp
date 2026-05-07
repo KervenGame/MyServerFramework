@@ -9,29 +9,29 @@ namespace StringUtility
 	const char BOM[4]{ (char)0xEF, (char)0xBB, (char)0xBF, 0 };
 	string ChineseSpace;
 	Array<20000, string> mIntString;
-	const Array<11, llong> POWER_INT_10{ 1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L };
+	const Array<11, llong> POWER_INT_10{ 1LL, 10LL, 100LL, 1000LL, 10000LL, 100000LL, 1000000LL, 10000000LL, 100000000LL, 1000000000LL, 10000000000LL };
 	const Array<6, float> INVERSE_POWER_INT_10{ 1.0f, 0.1f, 0.01f, 0.001f, 0.0001f, 0.00001f };
 	const Array<19, llong> POWER_LLONG_10
 	{
-		1L,
-		10L,
-		100L,
-		1000L,
-		10000L,
-		100000L,
-		1000000L,
-		10000000L,
-		100000000L,
-		1000000000L,
-		10000000000L,
-		100000000000L,
-		1000000000000L,
-		10000000000000L,
-		100000000000000L,
-		1000000000000000L,
-		10000000000000000L,
-		100000000000000000L,
-		1000000000000000000L
+		1LL,
+		10LL,
+		100LL,
+		1000LL,
+		10000LL,
+		100000LL,
+		1000000LL,
+		10000000LL,
+		100000000LL,
+		1000000000LL,
+		10000000000LL,
+		100000000000LL,
+		1000000000000LL,
+		10000000000000LL,
+		100000000000000LL,
+		1000000000000000LL,
+		10000000000000000LL,
+		100000000000000000LL,
+		1000000000000000000LL
 	};
 	const Array<10, double> INVERSE_POWER_LLONG_10{ 1.0, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001 };
 
@@ -65,9 +65,11 @@ namespace StringUtility
 			if (stream[i] != key)
 			{
 				stream.erase(0, i);
-				break;
+				return;
 			}
 		}
+		// all characters are key, clear entirely
+		stream.clear();
 	}
 
 	void removeStart(string& stream, const char key)
@@ -84,19 +86,21 @@ namespace StringUtility
 
 	void removeLastAll(string& stream, const char key)
 	{
-		FOR_INVERSE_I(stream.length())
+		FOR_INVERSE(stream.length())
 		{
 			if (stream[i] != key)
 			{
 				stream.erase(i + 1);
-				break;
+				return;
 			}
 		}
+		// all characters are key, clear entirely
+		stream.clear();
 	}
 
 	void removeLast(string& stream, const char key)
 	{
-		FOR_INVERSE_I(stream.length())
+		FOR_INVERSE(stream.length())
 		{
 			if (stream[i] == key)
 			{
@@ -198,22 +202,36 @@ namespace StringUtility
 		return temp.substr(index + 1, temp.length() - index - 1);
 	}
 
-	string getFilePath(const string& dir)
+	string getFilePath(const string& dir, bool keepSlash)
 	{
 		string tempDir = dir;
 		rightToLeft(tempDir);
 		const int pos = (int)tempDir.find_last_of('/');
-		return pos != FrameDefine::NOT_FIND ? dir.substr(0, pos) : "./";
+		if (keepSlash)
+		{
+			return pos != -1 ? dir.substr(0, pos + 1) : "./";
+		}
+		else
+		{
+			return pos != -1 ? dir.substr(0, pos) : ".";
+		}
 	}
 
-	string getFileSuffix(const string& fileName)
+	string getFileSuffix(const string& fileName, bool keepDot)
 	{
 		const int dotPos = (int)fileName.find_last_of('.');
-		if (dotPos == FrameDefine::NOT_FIND)
+		if (dotPos == -1)
 		{
-			return fileName;
+			return "";
 		}
-		return fileName.substr(dotPos + 1, fileName.length() - dotPos - 1);
+		if (keepDot)
+		{
+			return fileName.substr(dotPos, fileName.length() - dotPos);
+		}
+		else
+		{
+			return fileName.substr(dotPos + 1, fileName.length() - dotPos - 1);
+		}
 	}
 
 	string removeStartString(const string& fileName, const string& startStr)
@@ -236,7 +254,7 @@ namespace StringUtility
 
 	int getLastNotNumberPos(const string& str)
 	{
-		FOR_INVERSE_I(str.length())
+		FOR_INVERSE(str.length())
 		{
 			if (str[i] > '9' || str[i] < '0')
 			{
@@ -263,7 +281,7 @@ namespace StringUtility
 
 	int getLastChar(const char* str, const char value)
 	{
-		FOR_INVERSE_I(strlength(str))
+		FOR_INVERSE(strlength(str))
 		{
 			if (str[i] == value)
 			{
@@ -275,7 +293,7 @@ namespace StringUtility
 
 	int getLastNotChar(const string& str, const char value)
 	{
-		FOR_INVERSE_I(str.length())
+		FOR_INVERSE(str.length())
 		{
 			if (str[i] != value)
 			{
@@ -291,13 +309,22 @@ namespace StringUtility
 		{
 			split(str, "\r\n", vec, removeEmpty);
 		}
-		else if (findString(str, "\n"))
+		else if (findString(str, '\n'))
 		{
 			split(str, '\n', vec, removeEmpty);
 		}
-		else if (findString(str, "\r"))
+		else if (findString(str, '\r'))
 		{
 			split(str, '\r', vec, removeEmpty);
+		}
+		else
+		{
+			// 无换行符，整个字符串就是一行
+			const int len = strlength(str);
+			if (len > 0 || !removeEmpty)
+			{
+				vec.add(str);
+			}
 		}
 	}
 
@@ -307,18 +334,28 @@ namespace StringUtility
 		{
 			split(str, "\r\n", stringBuffer, bufferSize, removeEmpty);
 		}
-		else if (findString(str, "\n"))
+		else if (findString(str, '\n'))
 		{
 			split(str, '\n', stringBuffer, bufferSize, removeEmpty);
 		}
-		else if (findString(str, "\r"))
+		else if (findString(str, '\r'))
 		{
 			split(str, '\r', stringBuffer, bufferSize, removeEmpty);
+		}
+		else
+		{
+			// 无换行符，整个字符串就是一行
+			const int len = strlength(str);
+			if (bufferSize > 0 && (len > 0 || !removeEmpty))
+			{
+				stringBuffer[0] = str;
+			}
 		}
 	}
 
 	void split(const char* str, const char key, Vector<string>& vec, const bool removeEmpty)
 	{
+		vec.clear();
 		const int sourceLen = strlength(str);
 		if (sourceLen == 0)
 		{
@@ -330,27 +367,26 @@ namespace StringUtility
 		bool ret = true;
 		while (ret)
 		{
-			int devidePos = strchar(str, key, startPos, sourceLen);
+			int dividePos = strchar(str, key, startPos, sourceLen);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			if (devidePos == -1)
+			if (dividePos == -1)
 			{
-				devidePos = sourceLen;
+				dividePos = sourceLen;
 				ret = false;
 			}
-			if (devidePos - startPos >= STRING_BUFFER)
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
 				return;
 			}
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + 1;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + 1;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
-			vec.push_back(curString.str());
+			vec.add(curString.str());
 		}
 	}
 
@@ -375,23 +411,22 @@ namespace StringUtility
 		bool ret = true;
 		while (ret)
 		{
-			int devidePos = strchar(str, key, startPos, sourceLen);
+			int dividePos = strchar(str, key, startPos, sourceLen);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			if (devidePos == -1)
+			if (dividePos == -1)
 			{
-				devidePos = sourceLen;
+				dividePos = sourceLen;
 				ret = false;
 			}
-			if (devidePos - startPos >= STRING_BUFFER)
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
 				return 0;
 			}
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + 1;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + 1;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
@@ -407,6 +442,7 @@ namespace StringUtility
 
 	void split(const char* str, const char* key, Vector<string>& vec, const bool removeEmpty)
 	{
+		vec.clear();
 		const int sourceLen = strlength(str);
 		if (sourceLen == 0)
 		{
@@ -415,33 +451,33 @@ namespace StringUtility
 		const int keyLen = strlength(key);
 		constexpr int STRING_BUFFER = 1024;
 		MyString<STRING_BUFFER> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		int startPos = 0;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, key, &devidePos, startPos);
+			ret = findString(str, key, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			if (devidePos - startPos >= STRING_BUFFER)
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
 				return;
 			}
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
-			vec.push_back(curString.str());
+			vec.add(curString.str());
 		}
 	}
 
 	void split(const string& str, const char* key, Vector<string>& vec, const bool removeEmpty)
 	{
+		vec.clear();
 		const int sourceLen = (int)str.length();
 		if (sourceLen == 0)
 		{
@@ -451,27 +487,61 @@ namespace StringUtility
 		const int keyLen = strlength(key);
 		constexpr int STRING_BUFFER = 1024;
 		MyString<STRING_BUFFER> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, key, &devidePos, startPos);
+			ret = findString(str, key, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			if (devidePos - startPos >= STRING_BUFFER)
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
 				return;
 			}
-			curString.copy(str.c_str() + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
-			vec.push_back(curString.str());
+			vec.add(curString.str());
+		}
+	}
+
+	void split(const string& str, const char key, Vector<string>& vec, const bool removeEmpty)
+	{
+		vec.clear();
+		const int sourceLen = (int)str.length();
+		if (sourceLen == 0)
+		{
+			return;
+		}
+		int startPos = 0;
+		constexpr int STRING_BUFFER = 1024;
+		MyString<STRING_BUFFER> curString;
+		int dividePos = -1;
+		bool ret = true;
+		while (ret)
+		{
+			dividePos = (int)str.find_first_of(key, startPos);
+			ret = dividePos >= 0;
+			// 无论是否查找到,都将前面一段字符串截取出来
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
+			{
+				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
+				return;
+			}
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + 1;
+			// 放入列表
+			if (curString.isEmpty() && removeEmpty)
+			{
+				continue;
+			}
+			vec.add(curString.str());
 		}
 	}
 
@@ -485,24 +555,23 @@ namespace StringUtility
 		const int keyLen = strlength(key);
 		constexpr int STRING_BUFFER = 1024;
 		MyString<STRING_BUFFER> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		int startPos = 0;
 		int curCount = 0;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, key, &devidePos, startPos);
+			ret = findString(str, key, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			if (devidePos - startPos >= STRING_BUFFER)
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
 				return 0;
 			}
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
-			if (curString[0] == '\0' && removeEmpty)
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
@@ -520,7 +589,8 @@ namespace StringUtility
 	{
 		const int curLength = strlength(str);
 		const int replaceLength = strlength(reStr);
-		if (begin + replaceLength + curLength - end >= strBufferSize)
+		const int newLength = begin + replaceLength + (curLength - end);
+		if (newLength >= strBufferSize)
 		{
 			ERROR("buffer is too small!");
 			return;
@@ -530,10 +600,15 @@ namespace StringUtility
 			memmove(str + begin + replaceLength, str + end, curLength - end);
 		}
 		MEMCPY(str + begin, strBufferSize - begin, reStr, replaceLength);
+		str[newLength] = '\0';
 	}
 
 	void replace(string& str, const int begin, const int end, const string& reStr)
 	{
+		if (begin < 0 || end < 0)
+		{
+			return;
+		}
 		const int replaceLength = (int)reStr.length();
 		if (end - begin == replaceLength)
 		{
@@ -595,7 +670,7 @@ namespace StringUtility
 		int strLength = (int)str.length();
 		CharArrayScopeThread tempBuffer(getGreaterPower2(strLength + 1));
 		setString(tempBuffer.mArray, strLength + 1, str);
-		FOR_INVERSE_I(strLength)
+		FOR_INVERSE(strLength)
 		{
 			if (tempBuffer.mArray[i] == value)
 			{
@@ -616,7 +691,7 @@ namespace StringUtility
 		int strLength = (int)str.length();
 		CharArrayScopeThread tempBuffer(getGreaterPower2(strLength + 1));
 		setString(tempBuffer.mArray, strLength + 1, str);
-		FOR_INVERSE_I(strLength)
+		FOR_INVERSE(strLength)
 		{
 			if (tempBuffer.mArray[i] == value0 || tempBuffer.mArray[i] == value1)
 			{
@@ -718,7 +793,7 @@ namespace StringUtility
 		const int length = strlength(source);
 		if (length >= size)
 		{
-			ERROR("strcat_s buffer is too small");
+			ERROR("strcpy_s buffer is too small");
 			return;
 		}
 		MEMCPY(destBuffer, size, source, length);
@@ -761,7 +836,7 @@ namespace StringUtility
 	string LLToS(const llong value, const int limitLen)
 	{
 		MyString<32> temp;
-		const int len = _i64toa_s(value, temp);
+		const int len = _i64toa_s_(value, temp);
 		if (limitLen > len)
 		{
 			return zeroString(limitLen - len) + temp.str();
@@ -769,7 +844,7 @@ namespace StringUtility
 		return temp.str();
 	}
 
-	string ULLsToS(const Vector<ullong>& valueList, const char* seperate)
+	string ULLsToS(const Vector<ullong>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -779,7 +854,7 @@ namespace StringUtility
 		const int arrayLen = 32 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -788,13 +863,36 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string LLsToS(const Vector<llong>& valueList, const char* seperate)
+	void ULLsToS(char* buffer, const int bufferSize, const Vector<ullong>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+		MyString<32> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			ULLToS(temp, valueList[i]);
+			if (i != count - 1)
+			{
+				strcat_t(buffer, bufferSize, temp.str(), separate);
+			}
+			else
+			{
+				strcat_s(buffer, bufferSize, temp.str());
+			}
+		}
+	}
+
+	string LLsToS(const Vector<llong>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -804,7 +902,7 @@ namespace StringUtility
 		const int arrayLen = 32 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -813,13 +911,13 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string LLsToS(const llong* valueList, const int valueCount, const char* seperate)
+	string LLsToS(const llong* valueList, const int valueCount, const char* separate)
 	{
 		if (valueCount == 0)
 		{
@@ -829,7 +927,7 @@ namespace StringUtility
 		const int arrayLen = 32 * getGreaterPower2(valueCount);
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		FOR(valueCount)
 		{
@@ -837,13 +935,56 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != valueCount - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string bytesToString(const Vector<byte>& valueList, const char* seperate)
+	void LLsToS(char* buffer, const int bufferSize, const Vector<llong>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+		const int separateLen = strlength(separate);
+		MyString<32> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = LLToS(temp, valueList[i]);
+			strcat_s(buffer, bufferSize, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(buffer, bufferSize, separate, separateLen);
+			}
+		}
+	}
+
+	void bytesToString(char* buffer, const int bufferSize, const Vector<byte>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+
+		const int separateLen = strlength(separate);
+		MyString<8> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = IToS(temp, valueList[i]);
+			strcat_s(buffer, bufferSize, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(buffer, bufferSize, separate, separateLen);
+			}
+		}
+	}
+
+	string bytesToString(const Vector<byte>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -852,31 +993,7 @@ namespace StringUtility
 		const int arrayLen = 4 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = '\0';
-		const int seperateLen = strlength(seperate);
-		MyString<4> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = IToS(temp, valueList[i]);
-			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
-			}
-		}
-		return charArray.mArray;
-	}
-
-	string SsToS(const Vector<short>& valueList, const char* seperate)
-	{
-		if (valueList.isEmpty())
-		{
-			return FrameDefine::EMPTY;
-		}
-		const int arrayLen = 8 * getGreaterPower2(valueList.size());
-		CharArrayScopeThread charArray(arrayLen);
-		charArray.mArray[0] = '\0';
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -885,13 +1002,35 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string USsToS(const Vector<ushort>& valueList, const char* seperate)
+	void SsToS(char* buffer, const int bufferSize, const Vector<short>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+
+		const int separateLen = strlength(separate);
+		MyString<8> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = IToS(temp, valueList[i]);
+			strcat_s(buffer, bufferSize, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(buffer, bufferSize, separate, separateLen);
+			}
+		}
+	}
+
+	string SsToS(const Vector<short>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -900,7 +1039,7 @@ namespace StringUtility
 		const int arrayLen = 8 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = '\0';
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -909,13 +1048,81 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string IsToS(const Vector<int>& valueList, const char* seperate)
+	void USsToS(char* buffer, const int bufferSize, const Vector<ushort>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+
+		const int separateLen = strlength(separate);
+		MyString<8> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = IToS(temp, valueList[i]);
+			strcat_s(buffer, bufferSize, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(buffer, bufferSize, separate, separateLen);
+			}
+		}
+	}
+
+	string USsToS(const Vector<ushort>& valueList, const char* separate)
+	{
+		if (valueList.isEmpty())
+		{
+			return FrameDefine::EMPTY;
+		}
+		const int arrayLen = 8 * getGreaterPower2(valueList.size());
+		CharArrayScopeThread charArray(arrayLen);
+		charArray.mArray[0] = '\0';
+		const int separateLen = strlength(separate);
+		MyString<8> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = IToS(temp, valueList[i]);
+			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
+			}
+		}
+		return charArray.mArray;
+	}
+
+	void IsToS(char* buffer, int bufferSize, const Vector<int>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+
+		const int separateLen = strlength(separate);
+		MyString<16> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = IToS(temp, valueList[i]);
+			strcat_s(buffer, bufferSize, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(buffer, bufferSize, separate, separateLen);
+			}
+		}
+	}
+
+	string IsToS(const Vector<int>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -925,7 +1132,7 @@ namespace StringUtility
 		const int arrayLen = 16 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = '\0';
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -934,13 +1141,35 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string UIsToS(const Vector<uint>& valueList, const char* seperate)
+	void UIsToS(char* buffer, int bufferSize, const Vector<uint>& valueList, const char* separate)
+	{
+		buffer[0] = '\0';
+		if (valueList.isEmpty())
+		{
+			return;
+		}
+
+		const int separateLen = strlength(separate);
+		MyString<16> temp;
+		const int count = valueList.size();
+		FOR(count)
+		{
+			const int len = UIToS(temp, valueList[i]);
+			strcat_s(buffer, bufferSize, temp.str(), len);
+			if (i != count - 1)
+			{
+				strcat_s(buffer, bufferSize, separate, separateLen);
+			}
+		}
+	}
+
+	string UIsToS(const Vector<uint>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -950,7 +1179,7 @@ namespace StringUtility
 		const int arrayLen = 16 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -959,13 +1188,13 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	string FsToS(const Vector<float>& valueList, const char* seperate)
+	string FsToS(const Vector<float>& valueList, const char* separate)
 	{
 		if (valueList.isEmpty())
 		{
@@ -975,7 +1204,7 @@ namespace StringUtility
 		const int arrayLen = 16 * getGreaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -984,13 +1213,13 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 
-	void FsToS(char* buffer, const int bufferSize, const Vector<float>& valueList, const char* seperate)
+	void FsToS(char* buffer, const int bufferSize, const Vector<float>& valueList, const char* separate)
 	{
 		buffer[0] = '\0';
 		if (valueList.isEmpty())
@@ -998,7 +1227,7 @@ namespace StringUtility
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -1007,46 +1236,73 @@ namespace StringUtility
 			strcat_s(buffer, bufferSize, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
+				strcat_s(buffer, bufferSize, separate, separateLen);
 			}
 		}
 	}
 
-	void SToBs(const string& str, Vector<byte>& valueList, const char* seperate)
+	string stringsToString(const Vector<string>& strList, const char* separate)
+	{
+		string totalStr;
+		FOR_VECTOR(strList)
+		{
+			totalStr += strList[i];
+			if (i != strList.size() - 1)
+			{
+				totalStr += separate;
+			}
+		}
+		return totalStr;
+	}
+	string stringsToString(const Set<string>& strList, const char* separate )
+	{
+		int index = 0;
+		string totalStr;
+		for (const string& str : strList)
+		{
+			totalStr += str;
+			if (index++ != strList.size() - 1)
+			{
+				totalStr += separate;
+			}
+		}
+		return totalStr;
+	}
+
+	void SToBs(const string& str, Vector<byte>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(count);
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(SToI(curStr));
+				valueList.add(SToI(curStr));
 			}
 		}
 	}
 
-	int SToBs(const char* str, byte* buffer, const int bufferSize, const char* seperate)
+	int SToBs(const char* str, byte* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<4> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1060,41 +1316,40 @@ namespace StringUtility
 		return curCount;
 	}
 
-	void SToSs(const string& str, Vector<short>& valueList, const char* seperate)
+	void SToSs(const string& str, Vector<short>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(strList.size());
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(SToI(curStr));
+				valueList.add(SToI(curStr));
 			}
 		}
 	}
 
-	int SToSs(const char* str, short* buffer, const int bufferSize, const char* seperate)
+	int SToSs(const char* str, short* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1108,41 +1363,40 @@ namespace StringUtility
 		return curCount;
 	}
 
-	void SToUSs(const string& str, Vector<ushort>& valueList, const char* seperate)
+	void SToUSs(const string& str, Vector<ushort>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(count);
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(SToI(curStr));
+				valueList.add(SToI(curStr));
 			}
 		}
 	}
 
-	int SToUSs(const char* str, ushort* buffer, const int bufferSize, const char* seperate)
+	int SToUSs(const char* str, ushort* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<8> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1156,41 +1410,58 @@ namespace StringUtility
 		return curCount;
 	}
 
-	void SToIs(const string& str, Vector<int>& valueList, const char* seperate)
+	void SToIs(const string& str, Vector<int>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(strList.size());
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(SToI(curStr));
+				valueList.add(SToI(curStr));
 			}
 		}
 	}
 
-	int SToIs(const char* str, int* buffer, const int bufferSize, const char* seperate)
+	Vector<int> SToIs(const string& str, const char* separate)
+	{
+		Vector<int> valueList;
+		Vector<string> strList;
+		split(str, separate, strList);
+		const int count = strList.size();
+		valueList.clearAndReserve(strList.size());
+		FOR(count)
+		{
+			const string& curStr = strList[i];
+			if (!curStr.empty())
+			{
+				valueList.add(SToI(curStr));
+			}
+		}
+		return valueList;
+	}
+
+	int SToIs(const char* str, int* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1204,41 +1475,40 @@ namespace StringUtility
 		return curCount;
 	}
 
-	void SToUIs(const string& str, Vector<uint>& valueList, const char* seperate)
+	void SToUIs(const string& str, Vector<uint>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(count);
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back((uint)SToI(curStr));
+				valueList.add((uint)SToI(curStr));
 			}
 		}
 	}
 
-	int SToUIs(const char* str, uint* buffer, const int bufferSize, const char* seperate)
+	int SToUIs(const char* str, uint* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1252,41 +1522,40 @@ namespace StringUtility
 		return curCount;
 	}
 
-	void stringToULLongs(const char* str, Vector<ullong>& valueList, const char* seperate)
+	void stringToULLongs(const char* str, Vector<ullong>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(count);
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(stringToULLong(curStr));
+				valueList.add(stringToULLong(curStr));
 			}
 		}
 	}
 
-	int stringToULLongs(const char* str, ullong* buffer, const int bufferSize, const char* seperate)
+	int stringToULLongs(const char* str, ullong* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1300,84 +1569,81 @@ namespace StringUtility
 		return curCount;
 	}
 
-	void SToLLs(const char* str, Vector<llong>& valueList, const char* seperate)
+	void SToLLs(const char* str, Vector<llong>& valueList, const char* separate)
 	{
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		valueList.clear();
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
-			valueList.push_back(SToLL(curString.str()));
+			valueList.add(SToLL(curString.str()));
 		}
 	}
 
-	Vector<llong> SToLLs(const string& str, const char* seperate)
+	Vector<llong> SToLLs(const string& str, const char* separate)
 	{
 		Vector<llong> list;
-		SToLLs(str, list, seperate);
+		SToLLs(str, list, separate);
 		return list;
 	}
 
-	void SToLLs(const string& str, Vector<llong>& valueList, const char* seperate)
+	void SToLLs(const string& str, Vector<llong>& valueList, const char* separate)
 	{
 		int startPos = 0;
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		const int sourceLen = (int)str.length();
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		valueList.clear();
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str.c_str() + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
-			valueList.push_back(SToLL(curString.str()));
+			valueList.add(SToLL(curString.str()));
 		}
 	}
 
-	int SToLLs(const char* str, llong* buffer, const int bufferSize, const char* seperate)
+	int SToLLs(const char* str, llong* buffer, const int bufferSize, const char* separate)
 	{
 		int curCount = 0;
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1394,10 +1660,7 @@ namespace StringUtility
 	string zeroString(const int zeroCount)
 	{
 		MyString<16> charArray;
-		FOR(zeroCount)
-		{
-			charArray[i] = '0';
-		}
+		charArray.addCount('0', zeroCount);
 		return charArray.str();
 	}
 
@@ -1408,13 +1671,13 @@ namespace StringUtility
 		if (!isZero(f))
 		{
 			const float powerValue = powerFloat(10.0f, precision);
-			const float totalValue = f * powerValue + MathUtility::sign(f) * 0.5f;
+			const float totalValue = f * powerValue + sign(f) * 0.5f;
 			if ((int)totalValue == 0)
 			{
 				if (precision > 0)
 				{
 					MyString<16> temp;
-					zeroString(temp, precision);
+					temp.setCount('0', precision);
 					retString += zeroDot + temp.str();
 				}
 				else
@@ -1430,7 +1693,7 @@ namespace StringUtility
 				if (dotPosition <= 0)
 				{
 					MyString<16> tempZero;
-					zeroString(tempZero, -dotPosition);
+					tempZero.setCount('0', -dotPosition);
 					retString = zeroDot + tempZero.str() + retString;
 				}
 				else
@@ -1440,7 +1703,7 @@ namespace StringUtility
 				// 为负数时,确保负号始终在最前面
 				if ((int)totalValue < 0)
 				{
-					retString = "-" + retString;
+					retString = '-' + retString;
 				}
 			}
 		}
@@ -1449,12 +1712,12 @@ namespace StringUtility
 			if (precision > 0)
 			{
 				MyString<16> tempZero;
-				zeroString(tempZero, precision);
+				tempZero.setCount('0', precision);
 				retString = zeroDot + tempZero.str();
 			}
 			else
 			{
-				retString = "0";
+				retString = '0';
 			}
 		}
 		// 移除末尾无用的0
@@ -1481,154 +1744,170 @@ namespace StringUtility
 		return retString;
 	}
 
-	string FToS(const float f)
+	string FToS(const float f, const int precision)
 	{
 		MyString<16> temp;
-		FToS(temp, f);
+		FToS(temp, f, precision);
 		return temp.str();
 	}
 
-	void SToFs(const string& str, Vector<float>& valueList, const char* seperate)
+	void SToFs(const string& str, Vector<float>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(count);
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(SToF(curStr));
+				valueList.add(SToF(curStr));
 			}
 		}
 	}
 
-	void SToV2Is(const string& str, Vector<Vector2Int>& valueList, const char* seperate)
+	void SToV2Is(const string& str, Vector<Vector2Int>& valueList, const char* separate)
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		const int count = strList.size();
 		valueList.clearAndReserve(count);
 		FOR(count)
 		{
 			const string& curStr = strList[i];
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
-				valueList.push_back(SToV2I(curStr));
-			}
-		}
-	}
-	void SToV2s(const string& str, Vector<Vector2>& valueList, const char* seperate)
-	{
-		Vector<string> strList;
-		split(str, seperate, strList);
-		const int count = strList.size();
-		valueList.clearAndReserve(count);
-		FOR(count)
-		{
-			const string& curStr = strList[i];
-			if (curStr.length() > 0)
-			{
-				valueList.push_back(SToV2(curStr));
-			}
-		}
-	}
-	void SToV3Is(const string& str, Vector<Vector3Int>& valueList, const char* seperate)
-	{
-		Vector<string> strList;
-		split(str, seperate, strList);
-		const int count = strList.size();
-		valueList.clearAndReserve(count);
-		FOR(count)
-		{
-			const string& curStr = strList[i];
-			if (curStr.length() > 0)
-			{
-				valueList.push_back(SToV3I(curStr));
-			}
-		}
-	}
-	void SToV3s(const string& str, Vector<Vector3>& valueList, const char* seperate)
-	{
-		Vector<string> strList;
-		split(str, seperate, strList);
-		const int count = strList.size();
-		valueList.clearAndReserve(count);
-		FOR(count)
-		{
-			const string& curStr = strList[i];
-			if (curStr.length() > 0)
-			{
-				valueList.push_back(SToV3(curStr));
+				valueList.add(SToV2I(curStr));
 			}
 		}
 	}
 
-	Vector2 SToV2(const string& str, const char* seperate)
+	void SToV2Is(const string& str, HashMap<int, int>& valueList, const char* separate)
+	{
+		Vector<string> strList;
+		split(str, separate, strList);
+		for (const string& curStr : strList)
+		{
+			if (!curStr.empty())
+			{
+				const Vector2Int value = SToV2I(curStr);
+				valueList.add(value.x, value.y);
+			}
+		}
+	}
+
+	void SToV2s(const string& str, Vector<Vector2>& valueList, const char* separate)
+	{
+		Vector<string> strList;
+		split(str, separate, strList);
+		const int count = strList.size();
+		valueList.clearAndReserve(count);
+		FOR(count)
+		{
+			const string& curStr = strList[i];
+			if (!curStr.empty())
+			{
+				valueList.add(SToV2(curStr));
+			}
+		}
+	}
+	void SToV3Is(const string& str, Vector<Vector3Int>& valueList, const char* separate)
+	{
+		Vector<string> strList;
+		split(str, separate, strList);
+		const int count = strList.size();
+		valueList.clearAndReserve(count);
+		FOR(count)
+		{
+			const string& curStr = strList[i];
+			if (!curStr.empty())
+			{
+				valueList.add(SToV3I(curStr));
+			}
+		}
+	}
+
+	void SToV3s(const string& str, Vector<Vector3>& valueList, const char* separate)
+	{
+		Vector<string> strList;
+		split(str, separate, strList);
+		const int count = strList.size();
+		valueList.clearAndReserve(count);
+		FOR(count)
+		{
+			const string& curStr = strList[i];
+			if (!curStr.empty())
+			{
+				valueList.add(SToV3(curStr));
+			}
+		}
+	}
+
+	Vector2 SToV2(const string& str, const char* separate)
 	{
 		ArrayList<2, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { SToF(valueList[0]), SToF(valueList[1]) };
 		}
 		return {};
 	}
 
-	Vector2Int SToV2I(const string& str, const char* seperate)
+	Vector2Int SToV2I(const string& str, const char* separate)
 	{
 		ArrayList<2, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { SToI(valueList[0]), SToI(valueList[1]) };
 		}
 		return {};
 	}
 
-	Vector2UInt SToV2UI(const string& str, const char* seperate)
+	Vector2UInt SToV2UI(const string& str, const char* separate)
 	{
 		ArrayList<2, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { (uint)SToI(valueList[0]), (uint)SToI(valueList[1]) };
 		}
 		return {};
 	}
 
-	Vector2Short SToV2S(const string& str, const char* seperate)
+	Vector2Short SToV2S(const string& str, const char* separate)
 	{
 		ArrayList<2, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { (short)SToI(valueList[0]), (short)SToI(valueList[1]) };
 		}
 		return {};
 	}
 
-	Vector2UShort SToV2US(const string& str, const char* seperate)
+	Vector2UShort SToV2US(const string& str, const char* separate)
 	{
 		ArrayList<2, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { (ushort)SToI(valueList[0]), (ushort)SToI(valueList[1]) };
 		}
 		return {};
 	}
 
-	Vector3 SToV3(const string& str, const char* seperate)
+	Vector3 SToV3(const string& str, const char* separate)
 	{
 		ArrayList<3, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { SToF(valueList[0]), SToF(valueList[1]), SToF(valueList[2]) };
 		}
 		return {};
 	}
 
-	Vector3Int SToV3I(const string& str, const char* seperate)
+	Vector3Int SToV3I(const string& str, const char* separate)
 	{
 		ArrayList<3, string> valueList;
-		if (splitFull(str, seperate, valueList))
+		if (splitFull(str, separate, valueList))
 		{
 			return { SToI(valueList[0]), SToI(valueList[1]), SToI(valueList[2]) };
 		}
@@ -1642,6 +1921,37 @@ namespace StringUtility
 		tempBuffer.mArray[length] = '\0';
 		MEMCPY(tempBuffer.mArray, size, buffer, length);
 		return tempBuffer.mArray;
+	}
+
+	string V2IsToS(const Vector<Vector2Int>& value, const char* separate) 
+	{
+		string str;
+		const int count = (int)value.size();
+		FOR(count)
+		{
+			str += V2IToS(value[i]);
+			if (i != count - 1)
+			{
+				str += separate;
+			}
+		}
+		return str;
+	}
+
+	string V2IsToS(const HashMap<int, int>& value, const char* separate) 
+	{
+		string str;
+		bool first = true;
+		for (const auto& item : value)
+		{
+			if (!first)
+			{
+				str += separate;
+			}
+			str += V2IToS({ item.first, item.second });
+			first = false;
+		}
+		return str;
 	}
 
 	bool endWith(const char* oriString, const char* pattern, const bool sensitive)
@@ -2300,9 +2610,9 @@ namespace StringUtility
 	{
 		FOR(preTableCount)
 		{
-			str += "\t";
+			str += '\t';
 		}
-		str += "[";
+		str += '[';
 		if (returnLine)
 		{
 			str += "\r\n";
@@ -2314,7 +2624,7 @@ namespace StringUtility
 		removeLastComma(str);
 		FOR(preTableCount)
 		{
-			str += "\t";
+			str += '\t';
 		}
 		str += "],";
 		if (returnLine)
@@ -2327,9 +2637,9 @@ namespace StringUtility
 	{
 		FOR(preTableCount)
 		{
-			str += "\t";
+			str += '\t';
 		}
-		str += "{";
+		str += '{';
 		if (returnLine)
 		{
 			str += "\r\n";
@@ -2341,7 +2651,7 @@ namespace StringUtility
 		removeLastComma(str);
 		FOR(preTableCount)
 		{
-			str += "\t";
+			str += '\t';
 		}
 		str += "},";
 		if (returnLine)
@@ -2354,9 +2664,9 @@ namespace StringUtility
 	{
 		FOR(preTableCount)
 		{
-			str += "\t";
+			str += '\t';
 		}
-		str += "\"" + name + "\":\"" + value + "\",";
+		str += '\"' + name + "\":\"" + value + "\",";
 		if (returnLine)
 		{
 			str += "\r\n";
@@ -2367,9 +2677,9 @@ namespace StringUtility
 	{
 		FOR(preTableCount)
 		{
-			str += "\t";
+			str += '\t';
 		}
-		str += "\"" + name + "\":" + value + ",";
+		str += '\"' + name + "\":" + value + ',';
 		if (returnLine)
 		{
 			str += "\r\n";
@@ -2531,6 +2841,25 @@ namespace StringUtility
 		return posFind != -1;
 	}
 
+	bool findString(const char* res, const char key, int* pos, const int startIndex)
+	{
+		int posFind = -1;
+		const int searchLength = strlength(res);
+		for (int i = startIndex; i < searchLength; ++i)
+		{
+			if (res[i] == key)
+			{
+				posFind = i;
+				break;
+			}
+		}
+		if (pos != nullptr)
+		{
+			*pos = posFind;
+		}
+		return posFind != -1;
+	}
+
 	int findStringPos(const char* res, const char* dst, const int startIndex, const bool direction)
 	{
 		int pos = -1;
@@ -2549,7 +2878,7 @@ namespace StringUtility
 	{
 		FOR(str.length())
 		{
-			if (!valid.find_first_of(str[i]))
+			if ((int)valid.find_first_of(str[i]) < 0)
 			{
 				return false;
 			}
@@ -2575,10 +2904,10 @@ namespace StringUtility
 		const char* charPool = upper ? "ABCDEF" : "abcdef";
 		const byte highBit = value >> 4;
 		// 高字节的十六进制
-		byteHex[0] = (highBit < (byte)10) ? ('0' + highBit) : charPool[highBit - 10];
+		byteHex.add((highBit < (byte)10) ? ('0' + highBit) : charPool[highBit - 10]);
 		// 低字节的十六进制
 		const byte lowBit = value & 0x0F;
-		byteHex[1] = (lowBit < (byte)10) ? ('0' + lowBit) : charPool[lowBit - 10];
+		byteHex.add((lowBit < (byte)10) ? ('0' + lowBit) : charPool[lowBit - 10]);
 		return byteHex.str();
 	}
 
@@ -2895,10 +3224,10 @@ namespace StringUtility
 	void initIntToString()
 	{
 		// double check 防止在多线程执行时多次重复初始化
-		if (mIntString[0].length() == 0)
+		if (mIntString[0].empty())
 		{
 			THREAD_LOCK(mIntStringLock);
-			if (mIntString[0].length() > 0)
+			if (!mIntString[0].empty())
 			{
 				return;
 			}
@@ -2910,23 +3239,22 @@ namespace StringUtility
 					continue;
 				}
 				constexpr int SIZE = 16;
-				MyString<SIZE> buffer;
-				int index = 0;
+				MyString<SIZE> temp;
 				while (true)
 				{
-					// 将数字放入buffer的尾部
-					if ((llong)i < POWER_INT_10[index])
+					const int index = temp.length();
+					// 将数字放入temp
+					if ((llong)i < POWER_INT_10[index] ||
+						!temp.add((int)((llong)i % POWER_INT_10[index + 1] / POWER_INT_10[index]) + '0'))
 					{
 						break;
 					}
-					buffer[SIZE - 1 - index] = (int)((llong)i % POWER_INT_10[index + 1] / POWER_INT_10[index]);
-					++index;
 				}
-				// 将数字从数组末尾移动到开头,并且将数字转换为数字字符
-				const int lengthToHead = SIZE - index;
-				FOR_J(index)
+				MyString<SIZE> buffer;
+				// 将数字从数组末尾移动到开头
+				FOR_J(temp.length())
 				{
-					buffer[j] = buffer[j + lengthToHead] + '0';
+					buffer.add(buffer[temp.length() - j - 1]);
 				}
 				mIntString[i] = buffer.str();
 			}
@@ -3033,21 +3361,22 @@ namespace StringUtility
 		return (value << shift) | (value >> (32 - shift));
 	}
 	// 工具函数：填充消息
-	vector<uint8_t> pad_message(const string& message)
+	Vector<uint8_t> pad_message(const string& message)
 	{
-		vector<uint8_t> padded_message(message.begin(), message.end());
-		uint64_t message_length_bits = message.size() * 8;
+		Vector<uint8_t> padded_message;
+		padded_message.setData((byte*)message.data(), (int)message.size());
+		const uint64_t message_length_bits = message.size() * 8;
 		// 添加 '1' 位
-		padded_message.push_back(0x80);
+		padded_message.add(0x80);
 		// 填充零直到长度对 512 取余为 448
 		while ((padded_message.size() * 8) % 512 != 448) 
 		{
-			padded_message.push_back(0);
+			padded_message.add(0);
 		}
 		// 添加原始消息长度（64 位，大端序）
-		for (int i = 7; i >= 0; --i) 
+		FOR_INVERSE(8)
 		{
-			padded_message.push_back((message_length_bits >> (i * 8)) & 0xFF);
+			padded_message.add((message_length_bits >> (i * 8)) & 0xFF);
 		}
 		return padded_message;
 	}
@@ -3074,9 +3403,9 @@ namespace StringUtility
 		uint32_t H3 = 0x10325476;
 		uint32_t H4 = 0xC3D2E1F0;
 		// 消息填充
-		vector<uint8_t> padded_message = pad_message(message);
+		Vector<uint8_t> padded_message = pad_message(message);
 		// 处理每个 512 位的消息块
-		for (size_t i = 0; i < padded_message.size(); i += 64)
+		for (int i = 0; i < (int)padded_message.size(); i += 64)
 		{
 			uint32_t W[80]{}; // 消息调度数组
 			// 初始化 W 前 16 个字

@@ -6,7 +6,7 @@ void HttpManager::init()
     curl_global_init(CURL_GLOBAL_ALL);
 
     // 创建curl线程,该线程只需要执行命令即可
-    mThread = mThreadManager->createThread("curl", curlThread, this);
+    mThread = mThreadManager->createThread("curl", nullptr);
     mThread->setBackground(false);
     mThread->setCmdDebug(true);
     mThread->setTime(50);
@@ -15,7 +15,6 @@ void HttpManager::init()
 void HttpManager::quit()
 {
     mThreadManager->destroyThread(mThread);
-    mThread = nullptr;
     curl_global_cleanup();
 }
 

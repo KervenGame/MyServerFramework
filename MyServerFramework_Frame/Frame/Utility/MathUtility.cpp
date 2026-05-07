@@ -169,6 +169,19 @@ namespace MathUtility
 		return randValue % (maxInt - minInt + 1) + minInt;
 	}
 
+	llong randomLong(const llong minLong, const llong maxLong)
+	{
+		if (minLong >= maxLong)
+		{
+			return minLong;
+		}
+		const llong r = ((llong)(rand() & 0x7FFF) << 45) |
+						((llong)(rand() & 0x7FFF) << 30) |
+						((llong)(rand() & 0x7FFF) << 15) |
+						((llong)(rand() & 0x7FFF));
+		return r % (maxLong - minLong + 1) + minLong;
+	}
+
 	void randomSelectQuick(const int count, const int selectCount, Vector<int>& selectIndexes)
 	{
 		selectIndexes.clear();
@@ -177,7 +190,7 @@ namespace MathUtility
 			selectIndexes.reserve(count);
 			FOR(count)
 			{
-				selectIndexes.push_back(i);
+				selectIndexes.add(i);
 			}
 			return;
 		}
@@ -192,7 +205,7 @@ namespace MathUtility
 			int* ptr = replacedList.getPtr(randIndex);
 			int randValue = randIndex;
 			// 替换后的值也可能是之前替换过的,所以还是要查询一下指定下标上当前的值
-			const int oldValue = replacedList.tryGet(i, i);
+			const int oldValue = replacedList.get(i, i);
 			if (ptr != nullptr)
 			{
 				randValue = *ptr;
@@ -200,9 +213,9 @@ namespace MathUtility
 			}
 			else
 			{
-				replacedList.insert(randIndex, oldValue);
+				replacedList.add(randIndex, oldValue);
 			}
-			selectIndexes.push_back(randValue);
+			selectIndexes.add(randValue);
 		}
 	}
 
@@ -214,7 +227,7 @@ namespace MathUtility
 			selectIndexes.reserve(count);
 			FOR(count)
 			{
-				selectIndexes.push_back(i);
+				selectIndexes.add(i);
 			}
 			return;
 		}
@@ -222,14 +235,14 @@ namespace MathUtility
 		Vector<int> indexList(count);
 		FOR(count)
 		{
-			indexList.push_back(i);
+			indexList.add(i);
 		}
 		selectIndexes.reserve(selectCount);
 		FOR(selectCount)
 		{
 			// 随机数生成器，范围[i, count - 1]  
 			const int randIndex = randomInt(i, count - 1);
-			selectIndexes.push_back(indexList[randIndex]);
+			selectIndexes.add(indexList[randIndex]);
 			// 由于随机的下标范围在不断缩小,所以已经不会在小于i的范围内随机,所以只需要将i下标上的值覆盖到已经选中的下标上即可
 			indexList[randIndex] = indexList[i];
 		}
@@ -246,7 +259,7 @@ namespace MathUtility
 		{
 			FOR(count)
 			{
-				selectIndexes.insert(i);
+				selectIndexes.add(i);
 			}
 			return;
 		}
@@ -254,45 +267,47 @@ namespace MathUtility
 		Vector<int> indexList(count);
 		FOR(count)
 		{
-			indexList.push_back(i);
+			indexList.add(i);
 		}
 		FOR(selectCount)
 		{
 			// 随机数生成器，范围[i, count - 1]  
 			const int randIndex = randomInt(i, count - 1);
-			selectIndexes.insert(indexList[randIndex]);
+			selectIndexes.add(indexList[randIndex]);
 			// 由于随机的下标范围在不断缩小,所以已经不会在小于i的范围内随机,所以只需要将i下标上的值覆盖到已经选中的下标上即可
 			indexList[randIndex] = indexList[i];
 		}
 	}
 
-	void randomSelect(const Vector<int>& oddsList, const int selectCount, Vector<int>& selectIndexes)
+	void randomSelect(const int* oddsList, const int oddsCount, const int selectCount, Vector<int>& selectIndexes)
 	{
-		const int allCount = oddsList.size();
 		selectIndexes.clear();
-		if (selectCount >= allCount)
+		if (selectCount >= oddsCount)
 		{
-			selectIndexes.reserve(allCount);
-			FOR(allCount)
+			selectIndexes.reserve(oddsCount);
+			FOR(oddsCount)
 			{
-				selectIndexes.push_back(i);
+				selectIndexes.add(i);
 			}
 			return;
 		}
 
 		int max = 0;
-		for (const int value : oddsList)
+		FOR(oddsCount)
 		{
-			max += value;
+			max += oddsList[i];
+		}
+		if (max <= 0)
+		{
+			return;
 		}
 
 		selectIndexes.reserve(selectCount);
 		FOR(selectCount)
 		{
-			const int random = randomInt(0, max);
+			const int random = randomInt(1, max);
 			int curValue = 0;
-			const int count = oddsList.size();
-			FOR_J(count)
+			FOR_J(oddsCount)
 			{
 				// 已经被选中的下标就需要排除掉
 				if (selectIndexes.contains(j))
@@ -302,7 +317,7 @@ namespace MathUtility
 				curValue += oddsList[j];
 				if (random <= curValue)
 				{
-					selectIndexes.push_back(j);
+					selectIndexes.add(j);
 					// 选出一个就去除此下标的权重
 					max -= oddsList[j];
 					break;
@@ -311,16 +326,21 @@ namespace MathUtility
 		}
 	}
 
-	int randomSelect(const Vector<int>& oddsList)
+	int randomSelect(const int* oddsList, const int oddsCount)
 	{
 		int max = 0;
-		for (const int value : oddsList)
+		FOR(oddsCount)
 		{
-			max += value;
+			max += oddsList[i];
 		}
-		const int random = randomInt(0, max);
+		if (max <= 0)
+		{
+			return -1;
+		}
+
+		const int random = randomInt(1, max);
 		int curValue = 0;
-		FOR_VECTOR(oddsList)
+		FOR(oddsCount)
 		{
 			curValue += oddsList[i];
 			if (random <= curValue)
@@ -408,7 +428,7 @@ namespace MathUtility
 			// 找到匹配的)
 			findString(str, ")", &expressionEnd, 0, false);
 			// expressionBegin + 1 去掉 /
-			string calculateValue = str.substr(expressionBegin + 1, expressionEnd - expressionBegin + 1);
+			string calculateValue = str.substr(expressionBegin + 1, expressionEnd - expressionBegin);
 			replaceKeywordAndCalculate(calculateValue, keyword, keyValue, floatOrInt);
 			// 替换掉最后一个\\()之间的内容
 			replace(str, expressionBegin, expressionEnd + 1, calculateValue);
@@ -435,8 +455,8 @@ namespace MathUtility
 		{
 			// 先判断有没有括号，如果有括号就先算括号里的,如果没有就退出while循环
 			const int leftBracket = (int)newStr.find_first_of('(');
-			const int rightBracket = (int)newStr.find_first_of('(');
-			if (leftBracket == FrameDefine::NOT_FIND && rightBracket == FrameDefine::NOT_FIND)
+			const int rightBracket = (int)newStr.find_first_of(')');
+			if (leftBracket == FrameDefine::NOT_FIND || rightBracket == FrameDefine::NOT_FIND)
 			{
 				break;
 			}
@@ -450,7 +470,7 @@ namespace MathUtility
 			{
 				// 如果括号中计算出来是负数,则将负号提取出来,将左边的第一个加减号改为相反的符号
 				bool changeMark = false;
-				for (int i = leftBracket - 1; i >= 0; --i)
+				FOR_INVERSE(leftBracket)
 				{
 					// 找到第一个+号,则直接改为减号,然后退出遍历
 					if (newStr[i] == '+')
@@ -493,7 +513,7 @@ namespace MathUtility
 			// 遍历到了最后一个字符,则直接把最后一个数字放入列表,然后退出循环
 			if (i == strLen - 1)
 			{
-				numbers.push_back(SToF(newStr.substr(beginPos, strLen - beginPos)));
+				numbers.add(SToF(newStr.substr(beginPos, strLen - beginPos)));
 				break;
 			}
 			// 找到第一个运算符
@@ -501,14 +521,14 @@ namespace MathUtility
 			{
 				if (i != 0)
 				{
-					numbers.push_back(SToF(newStr.substr(beginPos, i - beginPos)));
+					numbers.add(SToF(newStr.substr(beginPos, i - beginPos)));
 				}
 				// 如果在表达式的开始就发现了运算符,则表示第一个数是负数,那就处理为0减去这个数的绝对值
 				else
 				{
-					numbers.push_back(0);
+					numbers.add(0);
 				}
-				factors.push_back(newStr[i]);
+				factors.add(newStr[i]);
 				beginPos = i + 1;
 			}
 		}
@@ -540,7 +560,7 @@ namespace MathUtility
 						num3 = divide(num1, num2);
 					}
 					// 删除第i + 1个数,然后将第i个数替换为计算结果
-					numbers.eraseAt(i + 1);
+					numbers.removeAt(i + 1);
 					if (numbers.isEmpty())
 					{
 						// 计算错误
@@ -548,7 +568,7 @@ namespace MathUtility
 					}
 					numbers[i] = num3;
 					// 删除第i个运算符
-					factors.eraseAt(i);
+					factors.removeAt(i);
 					hasMS = true;
 					break;
 				}
@@ -580,7 +600,7 @@ namespace MathUtility
 					num3 = num1 - num2;
 				}
 				// 删除第1个数,然后将第0个数替换为计算结果
-				numbers.eraseAt(1);
+				numbers.removeAt(1);
 				if (numbers.isEmpty())
 				{
 					// 计算错误
@@ -588,7 +608,7 @@ namespace MathUtility
 				}
 				numbers[0] = num3;
 				// 删除第0个运算符
-				factors.eraseAt(0);
+				factors.removeAt(0);
 			}
 		}
 		float result = 0.0f;
@@ -619,8 +639,8 @@ namespace MathUtility
 		{
 			// 先判断有没有括号，如果有括号就先算括号里的,如果没有就退出while循环
 			const int leftBracket = (int)newStr.find_first_of('(');
-			const int rightBracket = (int)newStr.find_first_of('(');
-			if (leftBracket == FrameDefine::NOT_FIND && rightBracket == FrameDefine::NOT_FIND)
+			const int rightBracket = (int)newStr.find_first_of(')');
+			if (leftBracket == FrameDefine::NOT_FIND || rightBracket == FrameDefine::NOT_FIND)
 			{
 				break;
 			}
@@ -634,7 +654,7 @@ namespace MathUtility
 			{
 				// 如果括号中计算出来是负数,则将负号提取出来,将左边的第一个加减号改为相反的符号
 				bool changeMark = false;
-				for (int i = leftBracket - 1; i >= 0; --i)
+				FOR_INVERSE(leftBracket)
 				{
 					// 找到第一个+号,则直接改为减号,然后退出遍历
 					if (newStr[i] == '+')
@@ -647,7 +667,7 @@ namespace MathUtility
 					// 如果减号的左边不是数字,则该减号是负号,将减号去掉,
 					if (newStr[i] == '-')
 					{
-						if (newStr[i - 1] >= '0' && newStr[i - 1] <= '9')
+						if (isNumber(newStr[i - 1]))
 						{
 							newStr[i] = '+';
 						}
@@ -677,22 +697,22 @@ namespace MathUtility
 			// 遍历到了最后一个字符,则直接把最后一个数字放入列表,然后退出循环
 			if (i == strLen - 1)
 			{
-				numbers.push_back(SToI(newStr.substr(beginPos, strLen - beginPos)));
+				numbers.add(SToI(newStr.substr(beginPos, strLen - beginPos)));
 				break;
 			}
 			// 找到第一个运算符
-			if ((newStr[i] < '0' || newStr[i] > '9') && newStr[i] != '.')
+			if (!isNumber(newStr[i]) && newStr[i] != '.')
 			{
 				if (i != 0)
 				{
-					numbers.push_back(SToI(newStr.substr(beginPos, i - beginPos)));
+					numbers.add(SToI(newStr.substr(beginPos, i - beginPos)));
 				}
 				// 如果在表达式的开始就发现了运算符,则表示第一个数是负数,那就处理为0减去这个数的绝对值
 				else
 				{
-					numbers.push_back(0);
+					numbers.add(0);
 				}
-				factors.push_back(newStr[i]);
+				factors.add(newStr[i]);
 				beginPos = i + 1;
 			}
 		}
@@ -728,7 +748,7 @@ namespace MathUtility
 						num3 = num1 % num2;
 					}
 					// 删除第i + 1个数,然后将第i个数替换为计算结果
-					numbers.eraseAt(i + 1);
+					numbers.removeAt(i + 1);
 					if (numbers.isEmpty())
 					{
 						// 计算错误
@@ -736,7 +756,7 @@ namespace MathUtility
 					}
 					numbers[i] = num3;
 					// 删除第i个运算符
-					factors.eraseAt(i);
+					factors.removeAt(i);
 					hasMS = true;
 					break;
 				}
@@ -768,7 +788,7 @@ namespace MathUtility
 					num3 = num1 - num2;
 				}
 				// 删除第1个数,然后将第0个数替换为计算结果
-				numbers.eraseAt(1);
+				numbers.removeAt(1);
 				if (numbers.isEmpty())
 				{
 					// 计算错误
@@ -776,7 +796,7 @@ namespace MathUtility
 				}
 				numbers[0] = num3;
 				// 删除第0个运算符
-				factors.eraseAt(0);
+				factors.removeAt(0);
 			}
 		}
 		int result = 0;
@@ -787,30 +807,6 @@ namespace MathUtility
 		return result;
 	}
 
-	constexpr float HueToRGB(const float v1, const float v2, float vH)
-	{
-		if (vH < 0.0f)
-		{
-			vH += 1.0f;
-		}
-		if (vH > 1.0f)
-		{
-			vH -= 1.0f;
-		}
-		if (6.0f * vH < 1.0f)
-		{
-			return v1 + (v2 - v1) * 6.0f * vH;
-		}
-		else if (2.0f * vH < 1.0f)
-		{
-			return v2;
-		}
-		else if (3.0f * vH < 2.0f)
-		{
-			return v1 + (v2 - v1) * (2.0f / 3.0f - vH) * 6.0f;
-		}
-		return v1;
-	}
 
 	int findPointIndex(const Vector<float>& distanceListFromStart, const float curDistance, const int startIndex, const int endIndex)
 	{

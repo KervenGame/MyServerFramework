@@ -1,6 +1,7 @@
 ﻿#include "GameHeader.h"
 
 // auto generate start
+CSServerCheckPing CSServerCheckPing::mStaticObject;
 string CSServerCheckPing::mPacketName = STR(CSServerCheckPing);
 // auto generate end
 

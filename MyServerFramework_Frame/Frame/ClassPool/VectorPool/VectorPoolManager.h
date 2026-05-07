@@ -12,7 +12,7 @@ public:
 	template<typename T>
 	static VectorPoolThread<T>* getPoolThread()
 	{
-		auto* ptr = static_cast<VectorPoolThread<T>*>(mVectorPoolThreadList.tryGet((llong)typeid(T).hash_code()));
+		auto* ptr = static_cast<VectorPoolThread<T>*>(mVectorPoolThreadList.get((llong)typeid(T).hash_code()));
 		if (ptr == nullptr)
 		{
 			ERROR("T类型的VectorPool未注册 type:" + string(typeid(T).name()));
@@ -22,7 +22,7 @@ public:
 	template<typename T>
 	void registeVectorPool()
 	{
-		if (!mVectorPoolThreadList.insert((llong)typeid(T).hash_code(), new VectorPoolThread<T>()))
+		if (!mVectorPoolThreadList.add((llong)typeid(T).hash_code(), new VectorPoolThread<T>()))
 		{
 			ERROR("注册列表对象池失败");
 		}

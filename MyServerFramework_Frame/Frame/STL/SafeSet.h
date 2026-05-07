@@ -31,7 +31,7 @@ public:
 	{
 		mForeaching = false;
 		// 在结束遍历时同步一次
-		if (mModifyList.size() > 0)
+		if (!mModifyList.isEmpty())
 		{
 			sync();
 		}
@@ -44,38 +44,54 @@ public:
 	int size() const					{ return mMainList.size(); }
 	bool isEmpty() const				{ return mMainList.isEmpty(); }
 	bool contains(const T& value) const { return mMainList.contains(value); }
-	bool insert(const T& value)
+	bool addIf(const T& value, bool condition) 
 	{
-		if (!mMainList.insert(value))
+		if (condition)
+		{
+			return add(value);
+		}
+		return false;
+	}
+	bool add(const T& value)
+	{
+		if (!mMainList.add(value))
 		{
 			return false;
 		}
 		// 只有当正在遍历中对列表进行修改时,才会记录修改操作
 		if (mForeaching)
 		{
-			mModifyList.emplace_back(value, true);
+			mModifyList.emplace(value, true);
 		}
 		// 没有在遍历,则对mUpdateList做与mMainList相同的操作
 		else
 		{
-			mUpdateList.insert(value);
+			mUpdateList.add(value);
 		}
 		return true;
 	}
-	bool erase(const T& value)
+	bool removeIf(const T& value, bool condition)
 	{
-		if (!mMainList.erase(value))
+		if (condition)
+		{
+			return remove(value);
+		}
+		return false;
+	}
+	bool remove(const T& value)
+	{
+		if (!mMainList.remove(value))
 		{
 			return false;
 		}
 		// 只有当正在遍历中对列表进行修改时,才会记录修改操作
 		if (mForeaching)
 		{
-			mModifyList.emplace_back(value, false);
+			mModifyList.emplace(value, false);
 		}
 		else
 		{
-			mUpdateList.erase(value);
+			mUpdateList.remove(value);
 		}
 		return true;
 	}
@@ -108,20 +124,13 @@ protected:
 				FOR(modifyCount)
 				{
 					auto& modifyValue = mModifyList[i];
-					if (modifyValue.mAdd)
-					{
-						mUpdateList.insert(modifyValue.mValue);
-					}
-					else
-					{
-						mUpdateList.erase(modifyValue.mValue);
-					}
+					mUpdateList.addOrRemove(modifyValue.mValue, modifyValue.mAdd);
 				}
 			}
 			// 更新操作较多,则直接复制列表
 			else
 			{
-				mMainList.clone(mUpdateList);
+				mMainList.cloneTo(mUpdateList);
 			}
 		}
 		mModifyList.clear();

@@ -94,7 +94,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdMySQLManager;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -112,7 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdMySQLManager;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -130,8 +130,9 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdMySQLManager;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -150,8 +151,9 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdMySQLManager;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MYSQL_HOME)/include;$(OPENSSL_ROOT_DIR)/include;./;Frame;Frame/Character;Frame/Character/Component;Frame/Character/Component/DecisionTree;Frame/Character/Component/StateMachine;Frame/ClassPool;Frame/ClassPool/ArrayPool;Frame/ClassPool/Pool;Frame/ClassPool/VectorPool;Frame/CommandSystem;Frame/CommandSystem/CmdCharacterManager;Frame/CommandSystem/CmdGlobal;Frame/CommandSystem/CmdHttp;Frame/CommandSystem/CmdNetServer;Frame/Common;Frame/Component;Frame/Component/BaseComponent;Frame/Component/ComponentMovableObject;Frame/Config;Frame/DataBase;Frame/DataBase/Excel;Frame/DataBase/MySQL;Frame/DataBase/SQLite;Frame/Dependency;Frame/Dependency/curl;Frame/Dependency/libevent;Frame/Dependency/lz4;Frame/Dependency/md5;Frame/Dependency/sqlite3;Frame/EventSystem;Frame/Factory;Frame/InputSystem;Frame/KeyframeManager;Frame/KeyframeManager/Curve;Frame/Log;Frame/Math;Frame/Memory;Frame/Net;Frame/Net/Http;Frame/Net/TCPClient;Frame/Net/TCPServer;Frame/Net/UDPServer;Frame/Net/WebSocketServer;Frame/Param;Frame/Serialize;Frame/ServerFramework;Frame/StateManager;Frame/STL;Frame/Thread;Frame/Ticker;Frame/TimePointSystem;Frame/TimePointSystem/TimePoint;Frame/TimeTaskSystem;Frame/UnitTest;Frame/Utility;Frame/Utility/FileStruct;Frame/Utility/MathStruct;Frame/Utility/TypeTraits;</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -223,6 +225,7 @@
     <ClInclude Include="Frame\ClassPool\ClassTypePoolThread.h" />
     <ClInclude Include="Frame\ClassPool\IntPoolThread.h" />
     <ClInclude Include="Frame\ClassPool\PodPoolThread.h" />
+    <ClInclude Include="Frame\ClassPool\SPSCQueue.h" />
     <ClInclude Include="Frame\ClassPool\ArrayPool\ArrayPool.cpp" />
     <ClInclude Include="Frame\ClassPool\ArrayPool\ArrayPool.h" />
     <ClInclude Include="Frame\ClassPool\ArrayPool\ArrayPoolSingle.cpp" />
@@ -243,18 +246,18 @@
     <ClInclude Include="Frame\ClassPool\Pool\CounterThreadPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\DelayCommandPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\DTNodePool.h" />
-    <ClInclude Include="Frame\ClassPool\Pool\EventInfoPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\GameComponentPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\LogInfoPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\MySQLCacheDataPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\MySQLDataPool.h" />
+    <ClInclude Include="Frame\ClassPool\Pool\PacketTCPCSThreadPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\PacketTCPPool.h" />
-    <ClInclude Include="Frame\ClassPool\Pool\PacketTCPThreadPool.h" />
+    <ClInclude Include="Frame\ClassPool\Pool\PacketTCPSCThreadPool.h" />
+    <ClInclude Include="Frame\ClassPool\Pool\PacketUDPThreadPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\PacketWebSocketPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\PacketWebSocketThreadPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\StateParamPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\StatePool.h" />
-    <ClInclude Include="Frame\ClassPool\Pool\TickerPool.h" />
     <ClInclude Include="Frame\ClassPool\Pool\TimePointPool.h" />
     <ClInclude Include="Frame\ClassPool\VectorPool\FrameSTLPoolRegister.cpp" />
     <ClInclude Include="Frame\ClassPool\VectorPool\FrameSTLPoolRegister.h" />
@@ -267,6 +270,8 @@
     <ClInclude Include="Frame\CommandSystem\CommandReceiver.h" />
     <ClInclude Include="Frame\CommandSystem\CommandSystem.cpp" />
     <ClInclude Include="Frame\CommandSystem\CommandSystem.h" />
+    <ClInclude Include="Frame\CommandSystem\DelayCallSystem.cpp" />
+    <ClInclude Include="Frame\CommandSystem\DelayCallSystem.h" />
     <ClInclude Include="Frame\CommandSystem\DelayCommand.h" />
     <ClInclude Include="Frame\CommandSystem\GameCommand.cpp" />
     <ClInclude Include="Frame\CommandSystem\GameCommand.h" />
@@ -277,60 +282,23 @@
     <ClInclude Include="Frame\CommandSystem\CmdHttp\CmdHttpGet.h" />
     <ClInclude Include="Frame\CommandSystem\CmdHttp\CmdHttpPost.cpp" />
     <ClInclude Include="Frame\CommandSystem\CmdHttp\CmdHttpPost.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteAll.cpp" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteAll.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByID.cpp" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByID.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByLLong2AndT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByLLongIntAndT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByLLongT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByStringT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLInsertDataT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLInsertOrUpdateDataT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryAllT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByIDT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByIntT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByLLongT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByStringT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryCountByIntT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryCountByLLong2OrT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryCountByLLongT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryExistByStringT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByIDT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByIntT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByLLongListT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByLLongT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByStringListT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByStringT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateAllIntT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateBoolT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateDataT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateFloat2T.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateFloatT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateInt2T.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateIntFloatT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateIntT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateLLongIntT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateLLongListT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateLLongT.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateString2T.h" />
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateStringT.h" />
     <ClInclude Include="Frame\CommandSystem\CmdNetServer\CmdNetServerLogoutAccount.cpp" />
     <ClInclude Include="Frame\CommandSystem\CmdNetServer\CmdNetServerLogoutAccount.h" />
     <ClInclude Include="Frame\CommandSystem\CmdNetServer\CmdNetServerReceiveUDPPacket.cpp" />
     <ClInclude Include="Frame\CommandSystem\CmdNetServer\CmdNetServerReceiveUDPPacket.h" />
     <ClInclude Include="Frame\Common\ComponentRegisterFrame.cpp" />
     <ClInclude Include="Frame\Common\ComponentRegisterFrame.h" />
+    <ClInclude Include="Frame\Common\CrashHandler.cpp" />
+    <ClInclude Include="Frame\Common\CrashHandler.h" />
     <ClInclude Include="Frame\Common\DoubleBuffer.cpp" />
     <ClInclude Include="Frame\Common\DoubleBuffer.h" />
     <ClInclude Include="Frame\Common\DoubleBufferReadScope.h" />
-    <ClInclude Include="Frame\Common\Dump.cpp" />
-    <ClInclude Include="Frame\Common\Dump.h" />
     <ClInclude Include="Frame\Common\ErrorProfile.cpp" />
     <ClInclude Include="Frame\Common\ErrorProfile.h" />
     <ClInclude Include="Frame\Common\FrameBase.cpp" />
     <ClInclude Include="Frame\Common\FrameBase.h" />
     <ClInclude Include="Frame\Common\FrameCallback.h" />
+    <ClInclude Include="Frame\Common\FrameCallbackClean.h" />
     <ClInclude Include="Frame\Common\FrameClassDeclare.h" />
     <ClInclude Include="Frame\Common\FrameDefine.cpp" />
     <ClInclude Include="Frame\Common\FrameDefine.h" />
@@ -342,6 +310,9 @@
     <ClInclude Include="Frame\Common\Keyframe.h" />
     <ClInclude Include="Frame\Common\LocaleGBKScope.h" />
     <ClInclude Include="Frame\Common\LocaleUTF8Scope.h" />
+    <ClInclude Include="Frame\Common\MemoryOperation.h" />
+    <ClInclude Include="Frame\Common\MemoryTracker.cpp" />
+    <ClInclude Include="Frame\Common\MemoryTracker.h" />
     <ClInclude Include="Frame\Common\ObjectTool.cpp" />
     <ClInclude Include="Frame\Common\ObjectTool.h" />
     <ClInclude Include="Frame\Common\Profiler.cpp" />
@@ -350,6 +321,7 @@
     <ClInclude Include="Frame\Common\ProfilerScope.h" />
     <ClInclude Include="Frame\Common\RandomSystem.cpp" />
     <ClInclude Include="Frame\Common\RandomSystem.h" />
+    <ClInclude Include="Frame\Common\Ref.h" />
     <ClInclude Include="Frame\Common\Singleton.h" />
     <ClInclude Include="Frame\Common\StreamBuffer.cpp" />
     <ClInclude Include="Frame\Common\StreamBuffer.h" />
@@ -632,6 +604,7 @@
     <ClInclude Include="Frame\STL\HashMap.h" />
     <ClInclude Include="Frame\STL\Map.h" />
     <ClInclude Include="Frame\STL\MapModify.h" />
+    <ClInclude Include="Frame\STL\MyCharArray.h" />
     <ClInclude Include="Frame\STL\MyString.h" />
     <ClInclude Include="Frame\STL\Queue.h" />
     <ClInclude Include="Frame\STL\SafeHashMap.h" />
@@ -640,6 +613,7 @@
     <ClInclude Include="Frame\STL\SafeSet.h" />
     <ClInclude Include="Frame\STL\SafeSetScope.h" />
     <ClInclude Include="Frame\STL\SafeVector.h" />
+    <ClInclude Include="Frame\STL\SafeVector0.h" />
     <ClInclude Include="Frame\STL\SafeVectorScope.h" />
     <ClInclude Include="Frame\STL\Set.h" />
     <ClInclude Include="Frame\STL\Stack.h" />
@@ -678,8 +652,176 @@
     <ClInclude Include="Frame\TimeTaskSystem\TimeTask.h" />
     <ClInclude Include="Frame\TimeTaskSystem\TimeTaskSystem.cpp" />
     <ClInclude Include="Frame\TimeTaskSystem\TimeTaskSystem.h" />
+    <ClInclude Include="Frame\UnitTest\AnimationCurveTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\AnimationCurveTest.h" />
+    <ClInclude Include="Frame\UnitTest\ArrayExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ArrayExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\ArrayListExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ArrayListExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\ArrayPoolSingleTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ArrayPoolSingleTest.h" />
+    <ClInclude Include="Frame\UnitTest\ArrayScopeDeepTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ArrayScopeDeepTest.h" />
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityDeepTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityDeepTest.h" />
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\CharacterTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\CharacterTest.h" />
+    <ClInclude Include="Frame\UnitTest\ClassBaseTypePoolTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ClassBaseTypePoolTest.h" />
+    <ClInclude Include="Frame\UnitTest\ClassKeyPoolTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ClassKeyPoolTest.h" />
+    <ClInclude Include="Frame\UnitTest\ClassObjectTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ClassObjectTest.h" />
+    <ClInclude Include="Frame\UnitTest\ClassPoolTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ClassPoolTest.h" />
+    <ClInclude Include="Frame\UnitTest\ClassTypePoolTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ClassTypePoolTest.h" />
+    <ClInclude Include="Frame\UnitTest\ColorQuaternionTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ColorQuaternionTest.h" />
+    <ClInclude Include="Frame\UnitTest\CommandReceiverTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\CommandReceiverTest.h" />
+    <ClInclude Include="Frame\UnitTest\ContainerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ContainerTest.h" />
+    <ClInclude Include="Frame\UnitTest\CRC16Test.cpp" />
+    <ClInclude Include="Frame\UnitTest\CRC16Test.h" />
+    <ClInclude Include="Frame\UnitTest\DoubleBufferTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\DoubleBufferTest.h" />
+    <ClInclude Include="Frame\UnitTest\EventSystemExtendedTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\EventSystemExtendedTest.h" />
+    <ClInclude Include="Frame\UnitTest\EventSystemTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\EventSystemTest.h" />
+    <ClInclude Include="Frame\UnitTest\FactoryManagerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\FactoryManagerTest.h" />
+    <ClInclude Include="Frame\UnitTest\FileContentTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\FileContentTest.h" />
+    <ClInclude Include="Frame\UnitTest\FileUtilityDeepTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\FileUtilityDeepTest.h" />
+    <ClInclude Include="Frame\UnitTest\FileUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\FileUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\FrameUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\FrameUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\GeometryTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\GeometryTest.h" />
+    <ClInclude Include="Frame\UnitTest\HashMapBoundaryTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\HashMapBoundaryTest.h" />
+    <ClInclude Include="Frame\UnitTest\HashMapExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\HashMapExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\IntPoolThreadTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\IntPoolThreadTest.h" />
+    <ClInclude Include="Frame\UnitTest\IsPODTypeTraitsTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\IsPODTypeTraitsTest.h" />
+    <ClInclude Include="Frame\UnitTest\LogFileInfoTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\LogFileInfoTest.h" />
+    <ClInclude Include="Frame\UnitTest\LogInfoTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\LogInfoTest.h" />
+    <ClInclude Include="Frame\UnitTest\MapExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MapExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\MathExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MathExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\MathStructTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MathStructTest.h" />
+    <ClInclude Include="Frame\UnitTest\MathTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MathTest.h" />
+    <ClInclude Include="Frame\UnitTest\MathUtilityDeepTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MathUtilityDeepTest.h" />
+    <ClInclude Include="Frame\UnitTest\MathUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MathUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\MemoryTrackerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MemoryTrackerTest.h" />
+    <ClInclude Include="Frame\UnitTest\MovableObjectTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MovableObjectTest.h" />
+    <ClInclude Include="Frame\UnitTest\MySQLCacheDataTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MySQLCacheDataTest.h" />
+    <ClInclude Include="Frame\UnitTest\MySQLCacheTableTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MySQLCacheTableTest.h" />
+    <ClInclude Include="Frame\UnitTest\MyStringEdgeTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\MyStringEdgeTest.h" />
+    <ClInclude Include="Frame\UnitTest\PacketTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\PacketTest.h" />
+    <ClInclude Include="Frame\UnitTest\PodPoolThreadTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\PodPoolThreadTest.h" />
+    <ClInclude Include="Frame\UnitTest\ProfilerScopeTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ProfilerScopeTest.h" />
+    <ClInclude Include="Frame\UnitTest\QueueAndModifyTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\QueueAndModifyTest.h" />
+    <ClInclude Include="Frame\UnitTest\QuickSortTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\QuickSortTest.h" />
+    <ClInclude Include="Frame\UnitTest\RandomSystemTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\RandomSystemTest.h" />
+    <ClInclude Include="Frame\UnitTest\SafeContainerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SafeContainerTest.h" />
+    <ClInclude Include="Frame\UnitTest\SafeHashMapTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SafeHashMapTest.h" />
+    <ClInclude Include="Frame\UnitTest\SafeMapTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SafeMapTest.h" />
+    <ClInclude Include="Frame\UnitTest\SafeScopeContainerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SafeScopeContainerTest.h" />
+    <ClInclude Include="Frame\UnitTest\SafeVector0Test.cpp" />
+    <ClInclude Include="Frame\UnitTest\SafeVector0Test.h" />
+    <ClInclude Include="Frame\UnitTest\SafeVectorTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SafeVectorTest.h" />
+    <ClInclude Include="Frame\UnitTest\SerializerBitRoundTripTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SerializerBitRoundTripTest.h" />
+    <ClInclude Include="Frame\UnitTest\SerializerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SerializerTest.h" />
     <ClInclude Include="Frame\UnitTest\SerializeTest.cpp" />
     <ClInclude Include="Frame\UnitTest\SerializeTest.h" />
+    <ClInclude Include="Frame\UnitTest\SetExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SetExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\SingletonTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SingletonTest.h" />
+    <ClInclude Include="Frame\UnitTest\SPSCQueueTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SPSCQueueTest.h" />
+    <ClInclude Include="Frame\UnitTest\StackExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\StackExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\STLExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\STLExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferEdgeTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferEdgeTest.h" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferSwapLinearizeTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferSwapLinearizeTest.h" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\StreamBufferTest.h" />
+    <ClInclude Include="Frame\UnitTest\StringUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\StringUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\SystemExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SystemExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\SystemTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SystemTest.h" />
+    <ClInclude Include="Frame\UnitTest\SystemUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\SystemUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\ThreadLockTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ThreadLockTest.h" />
+    <ClInclude Include="Frame\UnitTest\TickerTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\TickerTest.h" />
+    <ClInclude Include="Frame\UnitTest\TimePointTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\TimePointTest.h" />
+    <ClInclude Include="Frame\UnitTest\TimeValueExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\TimeValueExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\TypeUtilityExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\TypeUtilityExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\TypeUtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\TypeUtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\UnitTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\UnitTest.h" />
+    <ClInclude Include="Frame\UnitTest\UtilityTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\UtilityTest.h" />
+    <ClInclude Include="Frame\UnitTest\ValueModifyTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\ValueModifyTest.h" />
+    <ClInclude Include="Frame\UnitTest\Vector2ExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\Vector2ExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\Vector3ExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\Vector3ExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\Vector4ExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\Vector4ExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\VectorExtTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\VectorExtTest.h" />
+    <ClInclude Include="Frame\UnitTest\VectorPoolTest.cpp" />
+    <ClInclude Include="Frame\UnitTest\VectorPoolTest.h" />
     <ClInclude Include="Frame\Utility\BinaryUtility.cpp" />
     <ClInclude Include="Frame\Utility\BinaryUtility.h" />
     <ClInclude Include="Frame\Utility\CmdUtility.h" />

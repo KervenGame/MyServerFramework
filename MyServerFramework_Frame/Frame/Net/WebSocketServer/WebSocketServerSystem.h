@@ -14,14 +14,15 @@ public:
 	WebSocketServerSystem();
 	void init() override;
 	void quit() override;
-	void update(const float elapsedTime) override;
+	void update(float elapsedTime) override;
 	float getHeartBeatTimeOut()	const											{ return mHeartBeatTimeOut; }
 	bool getOutputLog() const 													{ return mOutputLog; }
 	bool isAvailable() const													{ return mSocket != INVALID_SOCKET; }
 	int getClientCount() const													{ return mClientList.size(); }
 	ushort getPort() const														{ return mPort; }
-	WebSocketServerClient* getClient(int clientGUID) const						{ return mClientList.tryGet(clientGUID); }
+	WebSocketServerClient* getClient(int clientGUID) const						{ return mClientList.get(clientGUID); }
 	WebServerCheckPingCallback getServerCheckPingCallback() const				{ return mServerCheckPing; }
+	const SerializerWrite* getPacketDataBuffer() const							{ return mPacketDataBuffer; }
 	void setServerCheckPingCallback(WebServerCheckPingCallback callback)		{ mServerCheckPing = callback; }
 	void setFreezeAccountCallback(FreezeAccountCallback callback)				{ mFreezeAccount = callback; }
 	void increaseSendPacketCount()												{ ++mSendPacketCount; }
@@ -29,18 +30,13 @@ public:
 	void freezeAccount(llong accountGUID, llong timeSecond, const char* reason) { CALL(mFreezeAccount, accountGUID, timeSecond, reason); }
 	// 将消息数据写入到缓冲区,在发送消息前调用
 	void writePacket(PacketWebSocket* packet);
-	const SerializerWrite* getPacketDataBuffer() const							{ return mPacketDataBuffer; }
 	void logoutAll();
-	static void encrypt(char* data, int length, const byte* key, int keyLen, byte param);
-	static void decrypt(char* data, int length, const byte* key, int keyLen, byte param);
 protected:
-	static void acceptThread(CustomThread* thread);
-	static void receiveThread(CustomThread* thread) { static_cast<This*>(thread->getArgs())->processRecv(); }
-	static void sendThread(CustomThread* thread) { static_cast<This*>(thread->getArgs())->processSend(); }
 	int notifyAcceptClient(MY_SOCKET socket, const string& ip);
 	void disconnectSocket(int clientGUID, const string& reason);	// 与客户端断开连接,只能在主线程中调用
-	void processSend();
-	void processRecv();
+	void acceptThread();
+	void sendThread();
+	void recvThread();
 	int generateSocketGUID() { return mSocketGUIDSeed++; }
 	void checkSendRecvError(WebSocketServerClient* client, int successLength) const;
 protected:
@@ -64,7 +60,6 @@ protected:
 	float mDumpPacketTimer = 0.0f;								// 用于每隔一定时间打印一次收发包信息的计时器
 	int mServerHeartBeat = 0;									// 服务器当前心跳次数
 	int mSocketGUIDSeed = 1;									// 客户端连接的ID种子
-	int mMaxSocket = 0;											// 连接的客户端的套接字的最大值
 	int mWritePacketBytes = 0;									// 记录写包数据的大小
 	int mWritePacketCount = 0;									// 记录写包数据的数量
 	int mSendPacketCount = 0;									// 记录发包的数量
@@ -74,8 +69,4 @@ protected:
 	bool mOutputLog = true;										// 是否输出日志
 	static constexpr float mDumpPacketTimeInternal = 10.0f;		// 每10秒打印一次收发数据信息
 	static constexpr float mServerHeartBeatTimeOut = 60.0f;		// 服务器自身心跳间隔时间
-	static constexpr int mKey0 = 41;
-	static constexpr int mKey1 = 3;
-	static constexpr int mKey2 = 600;
-	static constexpr int mKey3 = 34;
 };

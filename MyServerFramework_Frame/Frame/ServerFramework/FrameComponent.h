@@ -21,7 +21,7 @@ public:
 	// 程序全部初始化完成后,启动时调用
 	virtual void launch() {}
 	// 每一帧调用
-	virtual void update(const float elapsedTime) {}
+	virtual void update(float elapsedTime) {}
 	// 所有系统的update调用完以后再调用lateUpdate
 	virtual void lateUpdate(const float elapsedTime) {}
 	virtual bool isClassPool() const 		{ return false; }

@@ -16,17 +16,17 @@ public:
 	bool readBufferNoCopy(const char*& destBuffer, int readLength);
 	// 可以读取2个及以上的参数
 	template<typename T, typename... Args>
-	bool readSigned(T& value0, T& value1, Args&... args)
+	bool readSigned(const bool needReadSign, T& value0, T& value1, Args&... args)
 	{
 #ifdef WINDOWS
 		static_assert(conjunction<is_same<T, Args>...>::value, "All types must be the same");
 #endif
 		static_assert(isSignedInteger<T>(), "All types must be POD signed integer types");
 		Array<sizeof...(args) + 2, T*> list{ &value0, & value1, & args... };
-		return readSignedIntegerListBit(mBuffer, mBufferSize, mBitIndex, list);
+		return readSignedIntegerListBit(mBuffer, mBufferSize, mBitIndex, list, needReadSign);
 	}
 	template<typename T, typename TypeCheck = typename IsPodSignedIntegerType<T>::mType>
-	bool readSigned(T& value) { return readSignedIntegerBit(mBuffer, mBufferSize, mBitIndex, value); }
+	bool readSigned(const bool needReadSign, T& value) { return readSignedIntegerBit(mBuffer, mBufferSize, mBitIndex, value, needReadSign); }
 	// 可以读取2个及以上的参数
 	template<typename T, typename... Args>
 	bool readUnsigned(T& value0, T& value1, Args&... args)
@@ -41,51 +41,51 @@ public:
 	template<typename T, typename TypeCheck = typename IsPodUnsignedIntegerType<T>::mType>
 	bool readUnsigned(T& value) { return readUnsignedIntegerBit(mBuffer, mBufferSize, mBitIndex, value); }
 	template<typename T, typename TypeCheck = typename IsPodSignedIntegerType<T>::mType>
-	bool readSignedList(Vector<T>& list) { return readSignedIntegerListBit(mBuffer, mBufferSize, mBitIndex, list); }
+	bool readSignedList(bool needReadSign, Vector<T>& list) { return readSignedIntegerListBit(mBuffer, mBufferSize, mBitIndex, list, needReadSign); }
 	template<typename T, typename TypeCheck = typename IsPodUnsignedIntegerType<T>::mType>
 	bool readUnsignedList(Vector<T>& list) { return readUnsignedIntegerListBit(mBuffer, mBufferSize, mBitIndex, list); }
 	// 可以读取2个及以上的参数
 	template<typename... Args>
-	bool readFloat(float& value0, float& value1, Args&... args)
+	bool readFloat(const bool needReadSign, float& value0, float& value1, Args&... args)
 	{
 #ifdef WINDOWS
 		static_assert(conjunction<is_same<float, Args>...>::value, "All types must be the same");
 #endif
 		Array<sizeof...(args) + 2, float*> list{ &value0, & value1, & args... };
-		return readFloatListBit(mBuffer, mBufferSize, mBitIndex, list, 3);
+		return readFloatListBit(mBuffer, mBufferSize, mBitIndex, list, needReadSign, 3);
 	}
-	bool readFloat(float& value, const int precision = 3)
+	bool readFloat(const bool needReadSign, float& value, const int precision = 3)
 	{
-		return readFloatBit(mBuffer, mBufferSize, mBitIndex, value, precision);
+		return readFloatBit(mBuffer, mBufferSize, mBitIndex, value, needReadSign, precision);
 	}
 	// 可以读取2个及以上的参数
 	template<typename... Args>
-	bool readDouble(double& value0, double& value1, Args&... args)
+	bool readDouble(const bool needReadSign, double& value0, double& value1, Args&... args)
 	{
 #ifdef WINDOWS
 		static_assert(conjunction<is_same<double, Args>...>::value, "All types must be the same");
 #endif
 		Array<sizeof...(args) + 2, double*> list{ &value0, & value1, & args... };
-		return readDoubleListBit(mBuffer, mBufferSize, mBitIndex, list, 4);
+		return readDoubleListBit(mBuffer, mBufferSize, mBitIndex, list, needReadSign, 4);
 	}
-	bool readDouble(double& value, const int precision = 4) { return readDoubleBit(mBuffer, mBufferSize, mBitIndex, value, precision); }
-	bool readVector2(Vector2& vec) { return readFloat(vec.x, vec.y); }
-	bool readVector2Int(Vector2Int& vec) { return readSigned(vec.x, vec.y); }
-	bool readVector2UInt(Vector2UInt& vec) { return readUnsigned(vec.x, vec.y); }
-	bool readVector2Short(Vector2Short& vec) { return readSigned(vec.x, vec.y); }
-	bool readVector2UShort(Vector2UShort& vec) { return readUnsigned(vec.x, vec.y); }
-	bool readVector3(Vector3& vec) { return readFloat(vec.x, vec.y, vec.z); }
-	bool readVector4(Vector4& vec) { return readFloat(vec.x, vec.y, vec.z, vec.w); }
+	bool readDouble(const bool needReadSign, double& value, const int precision = 4){ return readDoubleBit(mBuffer, mBufferSize, mBitIndex, value, needReadSign, precision); }
+	bool readVector2(const bool needReadSign, Vector2& vec)							{ return readFloat(needReadSign, vec.x, vec.y); }
+	bool readVector2Int(const bool needReadSign, Vector2Int& vec)					{ return readSigned(needReadSign, vec.x, vec.y); }
+	bool readVector2UInt(Vector2UInt& vec)											{ return readUnsigned(vec.x, vec.y); }
+	bool readVector2Short(const bool needReadSign, Vector2Short& vec)				{ return readSigned(needReadSign, vec.x, vec.y); }
+	bool readVector2UShort(Vector2UShort& vec)										{ return readUnsigned(vec.x, vec.y); }
+	bool readVector3(const bool needReadSign, Vector3& vec)							{ return readFloat(needReadSign, vec.x, vec.y, vec.z); }
+	bool readVector4(const bool needReadSign, Vector4& vec)							{ return readFloat(needReadSign, vec.x, vec.y, vec.z, vec.w); }
 	// 自定义数据类型,需要继承SerializableData才能通过此方法读取数据
 	template<typename T, typename TypeCheck = typename IsSubClassOf<SerializableBitData, T>::mType>
-	bool readCustom(T& value) { return value.readFromBuffer(this); }
+	bool readCustom(const bool needReadSign, T& value) { return value.readFromBuffer(this, needReadSign); }
 	bool readString(string& str);
 	// 自定义数据类型,需要继承SerializableData才能通过此方法读取数据
 	template<typename T, typename TypeCheck = typename IsSubClassOf<SerializableBitData, T>::mType>
-	bool readCustomList(Vector<T>& list)
+	bool readCustomList(const bool needReadSign, Vector<T>& list)
 	{
-		int count;
-		if (!readSigned(count))
+		uint count;
+		if (!readUnsigned(count))
 		{
 			return false;
 		}
@@ -93,19 +93,19 @@ public:
 		list.resize(count);
 		FOR(count)
 		{
-			result = result && readCustom(list[i]);
+			result = result && readCustom(needReadSign, list[i]);
 		}
 		return result;
 	}
-	bool readFloatList(Vector<float>& list, const int precision = 3) { return readFloatListBit(mBuffer, mBufferSize, mBitIndex, list, precision); }
-	bool readDoubleList(Vector<double>& list, const int precision = 4){ return readDoubleListBit(mBuffer, mBufferSize, mBitIndex, list, precision); }
+	bool readFloatList(bool needReadSign, Vector<float>& list, const int precision = 3) { return readFloatListBit(mBuffer, mBufferSize, mBitIndex, list, needReadSign, precision); }
+	bool readDoubleList(bool needReadSign, Vector<double>& list, const int precision = 4){ return readDoubleListBit(mBuffer, mBufferSize, mBitIndex, list, needReadSign, precision); }
 	bool readStringList(Vector<string>& list);
-	void skipToByteEnd()			{ mBitIndex = bitCountToByteCount(mBitIndex) << 3; }
-	void setBitIndex(int index)		{ mBitIndex = index; }
-	const char* getBuffer() const	{ return mBuffer; }
-	int getBufferSize() const		{ return mBufferSize; }
-	int getBitIndex() const			{ return mBitIndex; }
-	int getReadByteCount() const	{ return bitCountToByteCount(mBitIndex); }
+	void skipToByteEnd()				{ mBitIndex = bitCountToByteCount(mBitIndex) << 3; }
+	void setBitIndex(const int index)	{ mBitIndex = index; }
+	const char* getBuffer() const		{ return mBuffer; }
+	int getBufferSize() const			{ return mBufferSize; }
+	int getBitIndex() const				{ return mBitIndex; }
+	int getReadByteCount() const		{ return bitCountToByteCount(mBitIndex); }
 protected:
 	const char* mBuffer = nullptr;	// 正在读的缓冲区
 	int mBufferSize = 0;			// 缓冲区大小

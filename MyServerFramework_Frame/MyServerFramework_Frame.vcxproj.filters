@@ -46,9 +46,6 @@
     <Filter Include="Frame\CommandSystem\CmdHttp">
       <UniqueIdentifier>{ab883888-6ba4-4a7b-b8fd-7298b0558d2a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Frame\CommandSystem\CmdMySQLManager">
-      <UniqueIdentifier>{f0b1d39c-4f64-4620-ade8-553b56a6e3a6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Frame\CommandSystem\CmdNetServer">
       <UniqueIdentifier>{ed84c5f3-45de-47ac-bdb7-81c06b922650}</UniqueIdentifier>
     </Filter>
@@ -348,6 +345,9 @@
     <ClInclude Include="Frame\ClassPool\PodPoolThread.h">
       <Filter>Frame\ClassPool</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\ClassPool\SPSCQueue.h">
+      <Filter>Frame\ClassPool</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\ClassPool\ArrayPool\ArrayPool.cpp">
       <Filter>Frame\ClassPool\ArrayPool</Filter>
     </ClInclude>
@@ -408,9 +408,6 @@
     <ClInclude Include="Frame\ClassPool\Pool\DTNodePool.h">
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
-    <ClInclude Include="Frame\ClassPool\Pool\EventInfoPool.h">
-      <Filter>Frame\ClassPool\Pool</Filter>
-    </ClInclude>
     <ClInclude Include="Frame\ClassPool\Pool\GameComponentPool.h">
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
@@ -423,10 +420,16 @@
     <ClInclude Include="Frame\ClassPool\Pool\MySQLDataPool.h">
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\ClassPool\Pool\PacketTCPCSThreadPool.h">
+      <Filter>Frame\ClassPool\Pool</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\ClassPool\Pool\PacketTCPPool.h">
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
-    <ClInclude Include="Frame\ClassPool\Pool\PacketTCPThreadPool.h">
+    <ClInclude Include="Frame\ClassPool\Pool\PacketTCPSCThreadPool.h">
+      <Filter>Frame\ClassPool\Pool</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\ClassPool\Pool\PacketUDPThreadPool.h">
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
     <ClInclude Include="Frame\ClassPool\Pool\PacketWebSocketPool.h">
@@ -439,9 +442,6 @@
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
     <ClInclude Include="Frame\ClassPool\Pool\StatePool.h">
-      <Filter>Frame\ClassPool\Pool</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\ClassPool\Pool\TickerPool.h">
       <Filter>Frame\ClassPool\Pool</Filter>
     </ClInclude>
     <ClInclude Include="Frame\ClassPool\Pool\TimePointPool.h">
@@ -480,6 +480,12 @@
     <ClInclude Include="Frame\CommandSystem\CommandSystem.h">
       <Filter>Frame\CommandSystem</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\CommandSystem\DelayCallSystem.cpp">
+      <Filter>Frame\CommandSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\CommandSystem\DelayCallSystem.h">
+      <Filter>Frame\CommandSystem</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\CommandSystem\DelayCommand.h">
       <Filter>Frame\CommandSystem</Filter>
     </ClInclude>
@@ -510,120 +516,6 @@
     <ClInclude Include="Frame\CommandSystem\CmdHttp\CmdHttpPost.h">
       <Filter>Frame\CommandSystem\CmdHttp</Filter>
     </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteAll.cpp">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteAll.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByID.cpp">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByID.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByLLong2AndT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByLLongIntAndT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByLLongT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLDeleteByStringT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLInsertDataT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLInsertOrUpdateDataT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryAllT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByIDT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByIntT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByLLongT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryByStringT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryCountByIntT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryCountByLLong2OrT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryCountByLLongT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryExistByStringT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByIDT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByIntT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByLLongListT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByLLongT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByStringListT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLQueryListByStringT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateAllIntT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateBoolT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateDataT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateFloat2T.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateFloatT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateInt2T.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateIntFloatT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateIntT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateLLongIntT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateLLongListT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateLLongT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateString2T.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\CommandSystem\CmdMySQLManager\CmdMySQLUpdateStringT.h">
-      <Filter>Frame\CommandSystem\CmdMySQLManager</Filter>
-    </ClInclude>
     <ClInclude Include="Frame\CommandSystem\CmdNetServer\CmdNetServerLogoutAccount.cpp">
       <Filter>Frame\CommandSystem\CmdNetServer</Filter>
     </ClInclude>
@@ -642,6 +534,12 @@
     <ClInclude Include="Frame\Common\ComponentRegisterFrame.h">
       <Filter>Frame\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\Common\CrashHandler.cpp">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Common\CrashHandler.h">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\Common\DoubleBuffer.cpp">
       <Filter>Frame\Common</Filter>
     </ClInclude>
@@ -649,12 +547,6 @@
       <Filter>Frame\Common</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Common\DoubleBufferReadScope.h">
-      <Filter>Frame\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\Common\Dump.cpp">
-      <Filter>Frame\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\Common\Dump.h">
       <Filter>Frame\Common</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Common\ErrorProfile.cpp">
@@ -670,6 +562,9 @@
       <Filter>Frame\Common</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Common\FrameCallback.h">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Common\FrameCallbackClean.h">
       <Filter>Frame\Common</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Common\FrameClassDeclare.h">
@@ -705,6 +600,15 @@
     <ClInclude Include="Frame\Common\LocaleUTF8Scope.h">
       <Filter>Frame\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\Common\MemoryOperation.h">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Common\MemoryTracker.cpp">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Common\MemoryTracker.h">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\Common\ObjectTool.cpp">
       <Filter>Frame\Common</Filter>
     </ClInclude>
@@ -727,6 +631,9 @@
       <Filter>Frame\Common</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Common\RandomSystem.h">
+      <Filter>Frame\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Common\Ref.h">
       <Filter>Frame\Common</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Common\Singleton.h">
@@ -1539,6 +1446,9 @@
     <ClInclude Include="Frame\STL\MapModify.h">
       <Filter>Frame\STL</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\STL\MyCharArray.h">
+      <Filter>Frame\STL</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\STL\MyString.h">
       <Filter>Frame\STL</Filter>
     </ClInclude>
@@ -1561,6 +1471,9 @@
       <Filter>Frame\STL</Filter>
     </ClInclude>
     <ClInclude Include="Frame\STL\SafeVector.h">
+      <Filter>Frame\STL</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\STL\SafeVector0.h">
       <Filter>Frame\STL</Filter>
     </ClInclude>
     <ClInclude Include="Frame\STL\SafeVectorScope.h">
@@ -1677,10 +1590,514 @@
     <ClInclude Include="Frame\TimeTaskSystem\TimeTaskSystem.h">
       <Filter>Frame\TimeTaskSystem</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\UnitTest\AnimationCurveTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\AnimationCurveTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayListExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayListExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayPoolSingleTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayPoolSingleTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayScopeDeepTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ArrayScopeDeepTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityDeepTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityDeepTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\BinaryUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\CharacterTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\CharacterTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassBaseTypePoolTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassBaseTypePoolTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassKeyPoolTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassKeyPoolTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassObjectTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassObjectTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassPoolTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassPoolTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassTypePoolTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ClassTypePoolTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ColorQuaternionTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ColorQuaternionTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\CommandReceiverTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\CommandReceiverTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ContainerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ContainerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\CRC16Test.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\CRC16Test.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\DoubleBufferTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\DoubleBufferTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\EventSystemExtendedTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\EventSystemExtendedTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\EventSystemTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\EventSystemTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FactoryManagerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FactoryManagerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FileContentTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FileContentTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FileUtilityDeepTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FileUtilityDeepTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FileUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FileUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FrameUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\FrameUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\GeometryTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\GeometryTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\HashMapBoundaryTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\HashMapBoundaryTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\HashMapExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\HashMapExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\IntPoolThreadTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\IntPoolThreadTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\IsPODTypeTraitsTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\IsPODTypeTraitsTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\LogFileInfoTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\LogFileInfoTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\LogInfoTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\LogInfoTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MapExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MapExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathStructTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathStructTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathUtilityDeepTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathUtilityDeepTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MathUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MemoryTrackerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MemoryTrackerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MovableObjectTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MovableObjectTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MySQLCacheDataTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MySQLCacheDataTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MySQLCacheTableTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MySQLCacheTableTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MyStringEdgeTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\MyStringEdgeTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\PacketTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\PacketTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\PodPoolThreadTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\PodPoolThreadTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ProfilerScopeTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ProfilerScopeTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\QueueAndModifyTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\QueueAndModifyTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\QuickSortTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\QuickSortTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\RandomSystemTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\RandomSystemTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeContainerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeContainerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeHashMapTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeHashMapTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeMapTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeMapTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeScopeContainerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeScopeContainerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeVector0Test.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeVector0Test.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeVectorTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SafeVectorTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SerializerBitRoundTripTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SerializerBitRoundTripTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SerializerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SerializerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\UnitTest\SerializeTest.cpp">
       <Filter>Frame\UnitTest</Filter>
     </ClInclude>
     <ClInclude Include="Frame\UnitTest\SerializeTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SetExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SetExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SingletonTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SingletonTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SPSCQueueTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SPSCQueueTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StackExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StackExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\STLExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\STLExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferEdgeTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferEdgeTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferSwapLinearizeTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferSwapLinearizeTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StreamBufferTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StringUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\StringUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SystemExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SystemExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SystemTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SystemTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SystemUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\SystemUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ThreadLockTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ThreadLockTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TickerTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TickerTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TimePointTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TimePointTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TimeValueExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TimeValueExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TypeUtilityExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TypeUtilityExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TypeUtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\TypeUtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\UnitTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\UnitTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\UtilityTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\UtilityTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ValueModifyTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\ValueModifyTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\Vector2ExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\Vector2ExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\Vector3ExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\Vector3ExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\Vector4ExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\Vector4ExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\VectorExtTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\VectorExtTest.h">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\VectorPoolTest.cpp">
+      <Filter>Frame\UnitTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UnitTest\VectorPoolTest.h">
       <Filter>Frame\UnitTest</Filter>
     </ClInclude>
     <ClInclude Include="Frame\Utility\BinaryUtility.cpp">

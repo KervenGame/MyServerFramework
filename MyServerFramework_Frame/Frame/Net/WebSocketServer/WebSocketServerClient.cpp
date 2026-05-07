@@ -94,8 +94,9 @@ void WebSocketServerClient::sendPacket(PacketWebSocket* packet)
 	{
 		THREAD_LOCK(mPacketTempBufferLock);
 		bool success = mPacketTempBuffer0->write(packetType);
+		success = success && mPacketTempBuffer0->write(false);
 		success = success && mPacketTempBuffer0->write(packet->getFieldFlag());
-		success = success && mPacketTempBuffer0->write(bodySize);
+		success = success && mPacketTempBuffer0->write((uint)bodySize);
 		if (bodySize > 0)
 		{
 			success = success && mPacketTempBuffer0->writeBuffer(packetDataBuffer->getBuffer(), bodySize);
@@ -114,7 +115,7 @@ void WebSocketServerClient::sendPacket(PacketWebSocket* packet)
 		INT_STR(packetTypeStr, packetType);
 		INT_STR(packetSizeStr, bodySize);
 		MyString<2048> allInfo;
-		strcat_t(allInfo, "已发送: ", packetTypeStr.str(), ", ", packetInfo.str(), ", 字节数:", packetSizeStr.str());
+		allInfo.add("已发送: ", packetTypeStr.str(), ", ", packetInfo.str(), ", 字节数:", packetSizeStr.str());
 		debugInfo(allInfo.str());
 	}
 #endif
@@ -142,6 +143,7 @@ void WebSocketServerClient::sendPacket(const ushort packetType)
 	{
 		THREAD_LOCK(mPacketTempBufferLock);
 		mPacketTempBuffer0->write(packetType);
+		mPacketTempBuffer0->write(false);
 		mPacketTempBuffer0->write(FrameDefine::FULL_FIELD_FLAG);
 		mPacketTempBuffer0->write(0);
 	}
@@ -162,10 +164,11 @@ int WebSocketServerClient::generateSend(const char* message, int length, char* d
 	{
 		int index = 0;
 		// FIN=1, RSV=0, 操作码=0x2 (二进制消息)
-		destBuffer[index++] = (char)0x82;
-		destBuffer[index++] = 126;
-		destBuffer[index++] = (char)((length >> 8) & 0xFF);
-		destBuffer[index++] = (char)(length & 0xFF);
+		destBuffer[index + 0] = (char)0x82;
+		destBuffer[index + 1] = 126;
+		destBuffer[index + 2] = (char)((length >> 8) & 0xFF);
+		destBuffer[index + 3] = (char)(length & 0xFF); 
+		index += 4;
 		MEMCPY(destBuffer + index, destBufferSize - index, message, length);
 		return index + length;
 	}
@@ -175,7 +178,7 @@ int WebSocketServerClient::generateSend(const char* message, int length, char* d
 		// FIN=1, RSV=0, 操作码=0x2 (二进制消息)
 		destBuffer[index++] = (char)0x82;
 		destBuffer[index++] = 127;
-		for (int i = 7; i >= 0; --i) 
+		FOR_INVERSE(8)
 		{
 			destBuffer[index++] = (char)(length >> (i * 8)) & 0xFF;
 		}
@@ -207,31 +210,38 @@ void WebSocketServerClient::writeToSendBuffer()
 		{
 			break;
 		}
+		bool hasSign = false;
+		if (!reader.read(hasSign))
+		{
+			ERROR("读取错误");
+			break;
+		}
 		ullong fieldFlag = 0;
 		if (!reader.read(fieldFlag))
 		{
 			ERROR("读取错误");
 			break;
 		}
-		int bodySize = 0;
+		uint bodySize = 0;
 		if (!reader.read(bodySize))
 		{
 			ERROR("读取错误");
 			break;
 		}
 		char* bodyBuffer = (char*)reader.getBuffer() + reader.getIndex();
-		const int sequence = ++mSequenceNumber;
+		const uint sequence = ++mSequenceNumber;
 		if (bodySize > 0)
 		{
 			reader.setIndex(reader.getIndex() + bodySize);
 			// 只在将包体数据写入到buffer时才会加密包体
-			TCPServerSystem::encrypt(bodyBuffer, bodySize, FrameDefine::ENCRYPT_KEY, FrameDefine::ENCRYPT_KEY_LENGTH, (byte)(packetType + bodySize + (sequence ^ 123 ^ (int)packetType)));
+			TCPServerSystem::encrypt(bodyBuffer, bodySize, (byte)(packetType + bodySize + (sequence ^ 123 ^ (int)packetType)));
 		}
 
 		mSendWriter->clear();
 		mSendWriter->write(bodySize);
 		mSendWriter->write(packetType);
 		mSendWriter->write(sequence);
+		mSendWriter->write(hasSign);
 		mSendWriter->write(fieldFlag != FrameDefine::FULL_FIELD_FLAG);
 		if (fieldFlag != FrameDefine::FULL_FIELD_FLAG)
 		{
@@ -246,7 +256,7 @@ void WebSocketServerClient::writeToSendBuffer()
 		const int tempBufferSize = getGreaterPower2(mSendWriter->getDataSize() + 16);
 		char* tempBuffer = mArrayPoolThread->newCharArray(tempBufferSize);
 		const int finalLength = generateSend(mSendWriter->getBuffer(), mSendWriter->getDataSize(), tempBuffer, tempBufferSize);
-		mSendBuffer.push_back(make_pair(tempBuffer, Vector2Int(finalLength, tempBufferSize)));
+		mSendBuffer.add(make_pair(tempBuffer, Vector2Int(finalLength, tempBufferSize)));
 	}
 	mPacketTempBuffer1->clear();
 }
@@ -297,7 +307,7 @@ HashMap<string, string> WebSocketServerClient::parseRequestHeader(const string& 
 			findString(line, ": ", &index);
 			if (index >= 0)
 			{
-				headers.insert(line.substr(0, index), line.substr(index + 2));
+				headers.add(line.substr(0, index), line.substr(index + 2));
 			}
 		}
 	}
@@ -309,12 +319,12 @@ string WebSocketServerClient::handle_websocket_handshake(const string& request)
 	// 解析请求头
 	const auto headers = parseRequestHeader(request);
 	// 检查必要的头字段
-	if (headers.tryGet("Upgrade") != "websocket" || headers.tryGet("Connection") != "Upgrade")
+	if (headers.get("Upgrade") != "websocket" || headers.get("Connection") != "Upgrade")
 	{
 		return "HTTP/1.1 400 Bad Request\r\n\r\n";
 	}
 	// 提取 Sec-WebSocket-Key
-	const string& websocket_key = headers.tryGet("Sec-WebSocket-Key");
+	const string& websocket_key = headers.get("Sec-WebSocket-Key");
 	if (websocket_key.empty())
 	{
 		return "HTTP/1.1 400 Bad Request\r\n\r\n";
@@ -371,7 +381,7 @@ void WebSocketServerClient::recvData(const char* data, const int dataCount)
 		else if (payloadLength == 127)
 		{
 			payloadLength = 0;
-			for (int i = 0; i < 8; ++i)
+			FOR(8)
 			{
 				payloadLength = (payloadLength << 8) | data[offset + i];
 			}
@@ -389,7 +399,8 @@ void WebSocketServerClient::recvData(const char* data, const int dataCount)
 		// 解码 Payload 数据
 		mPayloadBuffer->clear();
 		mPayloadBuffer->addEmptyToBack(payloadLength);
-		for (int i = 0; i < payloadLength; ++i)
+		mPayloadBuffer->linearize();
+		FOR(payloadLength)
 		{
 			mPayloadBuffer->getData()[i] = data[offset + i] ^ (mask ? masking_key[i % 4] : 0);
 		}
@@ -478,7 +489,7 @@ void WebSocketServerClient::handle_complete_message(char* data, const int dataCo
 		// 数据未接收完全
 		if (parseResult == PARSE_RESULT::SUCCESS)
 		{
-			mTempPacketList.push_back(packet);
+			mTempPacketList.add(packet);
 			// 将已经解析的数据移除
 			mRecvBuffer->removeDataFromFront(index);
 			++parsedCount;
@@ -533,12 +544,14 @@ void WebSocketServerClient::handle_complete_message(char* data, const int dataCo
 
 PARSE_RESULT WebSocketServerClient::packetRead(int& index, PacketWebSocket*& packet, string& reason)
 {
+	mRecvBuffer->linearize();
 	SerializerRead reader(mRecvBuffer->getData(), mRecvBuffer->getDataLength());
 	reader.setIndex(index);
 	packet = nullptr;
-	int bodySize = 0;
+	uint bodySize = 0;
 	ushort packetType = 0;
-	int sequenceNumber = 0;
+	uint sequenceNumber = 0;
+	bool hasSign = false;
 	bool useFlag = false;
 	ullong fieldFlag = FrameDefine::FULL_FIELD_FLAG;
 	const char* bodyBuffer = nullptr;
@@ -551,6 +564,10 @@ PARSE_RESULT WebSocketServerClient::packetRead(int& index, PacketWebSocket*& pac
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
 	if (!reader.read(sequenceNumber))
+	{
+		return PARSE_RESULT::NOT_ENOUGH;
+	}
+	if (!reader.read(hasSign))
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
@@ -569,11 +586,8 @@ PARSE_RESULT WebSocketServerClient::packetRead(int& index, PacketWebSocket*& pac
 	}
 
 	// 解密包体数据
-	if (bodyBuffer != nullptr)
-	{
-		// bodyBuffer指向的是mRecvBuffer中的buffer,此buffer允许修改,所以此处强转为char*
-		TCPServerSystem::decrypt((char*)bodyBuffer, bodySize, FrameDefine::ENCRYPT_KEY, FrameDefine::ENCRYPT_KEY_LENGTH, (byte)((int)packetType + bodySize + (sequenceNumber ^ 123 ^ (int)packetType)));
-	}
+	// bodyBuffer指向的是mRecvBuffer中的buffer,此buffer允许修改,所以此处强转为char*
+	TCPServerSystem::decrypt((char*)bodyBuffer, bodySize, (byte)((int)packetType + bodySize + (sequenceNumber ^ 123 ^ (int)packetType)));
 
 	// 如果是消息解析数不足,并且收到无效消息时,不会报错
 	if (mParsedCount < FrameDefine::MIN_PARSE_COUNT && mPacketWebSocketFactoryManager->getFactory(packetType) == nullptr)
@@ -594,7 +608,9 @@ PARSE_RESULT WebSocketServerClient::packetRead(int& index, PacketWebSocket*& pac
 		SerializerRead bodyReader(bodyBuffer, bodySize);
 		if (!packet->readFromBuffer(&bodyReader))
 		{
-			mPacketWebSocketThreadPool->destroyClass(packet);
+			// 延迟到主线程销毁
+			delayCall([packet]() { auto* temp = packet; mPacketWebSocketThreadPool->destroyClass(temp); });
+			packet = nullptr;
 			reason = "消息解析错误! 消息类型ID:" + IToS((int)packetType);
 			return PARSE_RESULT::PACKET_PARSE_FAILED;
 		}
@@ -602,14 +618,16 @@ PARSE_RESULT WebSocketServerClient::packetRead(int& index, PacketWebSocket*& pac
 
 	// 校验序列号是否正确
 	packet->setSequenceNumber(sequenceNumber);
-	if (sequenceNumber != mLastReceiveNumber + 1 && mPlayerGUID > 0 && mLastReceiveNumber != 0x7FFFFFFF)
+	if (sequenceNumber != mLastReceiveNumber + 1 && mPlayerGUID > 0 && mLastReceiveNumber != 0xFFFFFFFF)
 	{
 		const string info = "丢包:" + IToS(sequenceNumber - mLastReceiveNumber - 1) + 
 							", 角色ID:" + LLToS(mPlayerGUID) + ", 已接收包数量:" + UIToS(mParsedCount) +
 							", 当前包序列号:" + IToS(sequenceNumber);
 		LOG(info);
 		PLAYER_LOG_NO_PRINT(info, mPlayerGUID);
-		mPacketWebSocketThreadPool->destroyClass(packet);
+		// 延迟到主线程销毁
+		delayCall([packet]() { auto* temp = packet; mPacketWebSocketThreadPool->destroyClass(temp); });
+		packet = nullptr;
 		reason = "sequence number check error! lastNumber:" + IToS(mLastReceiveNumber) + 
 						", receiveNumber:" + IToS(sequenceNumber);
 		return PARSE_RESULT::SEQUENCE_NUMBER_ERROR;
@@ -640,6 +658,7 @@ void WebSocketServerClient::executeAllPacket()
 			LOG("单个客户端一帧执行的消息数量:" + IToS(packetCount));
 		}
 		mTempExecutePacketCountList.clear();
+		mWillDestroyList.clear();
 		for (PacketWebSocket* packetReply : *readScope.mReadList)
 		{
 			if (packetReply == nullptr)
@@ -653,7 +672,11 @@ void WebSocketServerClient::executeAllPacket()
 			}
 			if (mIsDeadClient)
 			{
-				mPacketWebSocketThreadPool->destroyClass(packetReply);
+				if (!mWillDestroyList.add(packetReply))
+				{
+					mPacketWebSocketThreadPool->destroyClassList(mWillDestroyList);
+					mWillDestroyList.add(packetReply);
+				}
 				continue;
 			}
 			packetReply->execute();
@@ -663,11 +686,19 @@ void WebSocketServerClient::executeAllPacket()
 				MyString<1024> packetInfo;
 				packetReply->debugInfo(packetInfo);
 				MyString<2048> allInfo;
-				strcat_t(allInfo, "已接收 : ", packetTypeStr.str(), ", ", packetInfo.str());
+				allInfo.add("已接收 : ", packetTypeStr.str(), ", ", packetInfo.str());
 				debugInfo(allInfo.str());
 			}
-			mTempExecutePacketCountList.insertOrGet(packetReply->getType()) += 1;
-			mPacketWebSocketThreadPool->destroyClass(packetReply);
+			mTempExecutePacketCountList.addOrGet(packetReply->getType()) += 1;
+			if (!mWillDestroyList.add(packetReply))
+			{
+				mPacketWebSocketThreadPool->destroyClassList(mWillDestroyList);
+				mWillDestroyList.add(packetReply);
+			}
+		}
+		if (!mWillDestroyList.isEmpty())
+		{
+			mPacketWebSocketThreadPool->destroyClassList(mWillDestroyList);
 		}
 		const llong time1 = getRealTimeMS();
 		if (time1 - time0 > 10)
@@ -701,16 +732,13 @@ void WebSocketServerClient::debugInfo(const string& info) const
 	if (mAccountGUID != 0)
 	{
 		LLONG_STR(accountGUIDStr, mAccountGUID);
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 账号GUID:", accountGUIDStr.str(), 
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 账号GUID:", accountGUIDStr.str());
+		fullInfo.add(", 角色GUID:", charGUIDStr.str(), ", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	else
 	{
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 角色GUID:", charGUIDStr.str());
+		fullInfo.add(", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	if (mPlayerGUID > 0)
 	{
@@ -727,16 +755,13 @@ void WebSocketServerClient::debugError(const string& info) const
 	if (mAccountGUID != 0)
 	{
 		LLONG_STR(accountGUIDStr, mAccountGUID);
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 账号GUID:", accountGUIDStr.str(), 
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 账号GUID:", accountGUIDStr.str());
+		fullInfo.add(", 角色GUID:", charGUIDStr.str(), ", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	else
 	{
-		strcat_t(fullInfo, "IP:", mIP.c_str(),
-			", 角色GUID:", charGUIDStr.str(), 
-			", 名字:", name.c_str(), " ||\t", info.c_str());
+		fullInfo.add("IP:", mIP.c_str(), ", 角色GUID:", charGUIDStr.str());
+		fullInfo.add(", 名字:", name.c_str(), " ||\t", info.c_str());
 	}
 	if (mPlayerGUID > 0)
 	{
@@ -747,7 +772,7 @@ void WebSocketServerClient::debugError(const string& info) const
 void WebSocketServerClient::notifyPing()
 {
 	mHeartBeatTime = mWebSocketServerSystem->getHeartBeatTimeOut();
-	mLastPingList.push_back(getRealTimeMS());
+	mLastPingList.add(getRealTimeMS());
 	if (mLastPingList.size() > 10)
 	{
 		// 每次心跳是2秒,如果3次心跳的时间小于17秒,留15%的误差空间,则可认为是开了加速外挂,加速了客户端的全局时间

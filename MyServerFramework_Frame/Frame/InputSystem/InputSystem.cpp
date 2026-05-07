@@ -5,9 +5,9 @@ InputSystem::InputSystem()
 	KeyState state;
 	state.mStateTime = 0.0f;
 	state.mState = KEY_STATE::KEEP_UP;
-	mMouseState.insert(MOUSE_BUTTON::LEFT, state);
-	mMouseState.insert(MOUSE_BUTTON::RIGHT, state);
-	mMouseState.insert(MOUSE_BUTTON::MIDDLE, state);
+	mMouseState.add(MOUSE_BUTTON::LEFT, state);
+	mMouseState.add(MOUSE_BUTTON::RIGHT, state);
+	mMouseState.add(MOUSE_BUTTON::MIDDLE, state);
 }
 
 void InputSystem::quit()
@@ -63,7 +63,7 @@ void InputSystem::keyDown(const int key)
 		{
 			state->mState = KEY_STATE::CURRENT_DOWN;
 			state->mStateTime = 0.0f;
-			mCurDownKeyList.insert(key);
+			mCurDownKeyList.add(key);
 		}
 	}
 	else
@@ -71,8 +71,8 @@ void InputSystem::keyDown(const int key)
 		KeyState keyState;
 		keyState.mStateTime = 0.0f;
 		keyState.mState = KEY_STATE::CURRENT_DOWN;
-		mKeyState.insert(key, keyState);
-		mCurDownKeyList.insert(key);
+		mKeyState.add(key, keyState);
+		mCurDownKeyList.add(key);
 	}
 }
 
@@ -91,29 +91,29 @@ void InputSystem::keyUp(const int key)
 		KeyState keyState;
 		keyState.mStateTime = 0.0f;
 		keyState.mState = KEY_STATE::CURRENT_UP;
-		mKeyState.insert(key, keyState);
+		mKeyState.add(key, keyState);
 	}
 }
 
 bool InputSystem::isKeyDown(const int key) const
 {
-	const KEY_STATE state = mKeyState.tryGet(key).mState;
+	const KEY_STATE state = mKeyState.get(key).mState;
 	return state == KEY_STATE::CURRENT_DOWN || state == KEY_STATE::KEEP_DOWN;
 }
 
 bool InputSystem::isKeyCurrentDown(const int key) const
 {
-	return mKeyState.tryGet(key).mState == KEY_STATE::CURRENT_DOWN;
+	return mKeyState.get(key).mState == KEY_STATE::CURRENT_DOWN;
 }
 
 bool InputSystem::isKeyCurrentUp(const int key) const
 {
-	return mKeyState.tryGet(key).mState == KEY_STATE::CURRENT_UP;
+	return mKeyState.get(key).mState == KEY_STATE::CURRENT_UP;
 }
 
 float InputSystem::getKeyTime(const int key) const
 {
-	return mKeyState.tryGet(key).mStateTime;
+	return mKeyState.get(key).mStateTime;
 }
 
 void InputSystem::mouseLeftDown(const Vector2 position)

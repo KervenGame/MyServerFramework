@@ -1,6 +1,7 @@
 ﻿#include "GameHeader.h"
 
 // auto generate start
+CSLogin CSLogin::mStaticObject;
 string CSLogin::mPacketName = STR(CSLogin);
 // auto generate end
 
@@ -23,6 +24,6 @@ void CSLogin::execute()
 
 	MyString<256> info;
 	LLONG_STR(idStr, player->getGUID());
-	strcat_t(info, "玩家登录：", player->getPrintName().c_str(), ", ID:", idStr.str());
+	info.add("玩家登录：", player->getPrintName().c_str(), ", ID:", idStr.str());
 	LOG(info.str());
 }

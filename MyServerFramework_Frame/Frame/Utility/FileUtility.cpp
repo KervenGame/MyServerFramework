@@ -47,7 +47,8 @@ namespace FileUtility
 				continue;
 			}
 			//判断是否为文件夹
-			SPRINTF(szTmpPath.toBuffer(), szTmpPath.size(), "%s%s", tempPath.c_str(), pDirent->d_name);
+			szTmpPath.add(tempPath.c_str());
+			szTmpPath.add(pDirent->d_name);
 			if (isDirectory(szTmpPath.str()))
 			{
 				if (recursive)
@@ -64,14 +65,14 @@ namespace FileUtility
 					{
 						if (endWith(szTmpPath.str(), patterns[i].c_str(), false))
 						{
-							files.push_back(szTmpPath.str());
+							files.add(szTmpPath.str());
 							break;
 						}
 					}
 				}
 				else
 				{
-					files.push_back(szTmpPath.str());
+					files.add(szTmpPath.str());
 				}
 			}
 		}
@@ -97,11 +98,12 @@ namespace FileUtility
 				continue;
 			}
 			//判断是否为文件夹
-			SPRINTF(szTmpPath.toBuffer(), szTmpPath.size(), "%s%s", tempPath.c_str(), pDirent->d_name);
+			szTmpPath.add(tempPath.c_str());
+			szTmpPath.add(pDirent->d_name);
 			// 如果是文件夹,则先将文件夹放入列表,然后判断是否递归查找
 			if (isDirectory(szTmpPath.str()))
 			{
-				folders.push_back(szTmpPath.str());
+				folders.add(szTmpPath.str());
 				if (recursive)
 				{
 					findFolders(szTmpPath.str(), folders, recursive);
@@ -131,7 +133,8 @@ namespace FileUtility
 				continue;
 			}
 			//判断是否为文件夹
-			SPRINTF(szTmpPath.toBuffer(), szTmpPath.size(), "%s%s", tempPath.c_str(), pDirent->d_name);
+			szTmpPath.add(tempPath.c_str());
+			szTmpPath.add(pDirent->d_name);
 			// 如果是文件夹,则递归删除空文件夹
 			if (isDirectory(szTmpPath.str()))
 			{
@@ -174,7 +177,8 @@ namespace FileUtility
 				continue;
 			}
 			//判断是否为文件夹
-			SPRINTF(szTmpPath.toBuffer(), szTmpPath.size(), "%s%s", tempPath.c_str(), pDirent->d_name);
+			szTmpPath.add(tempPath.c_str());
+			szTmpPath.add(pDirent->d_name);
 			// 如果是文件夹,则递归删除文件夹
 			if (isDirectory(szTmpPath.str()))
 			{
@@ -228,13 +232,13 @@ namespace FileUtility
 					{
 						if (endWith(fullname, patterns[i].c_str(), false))
 						{
-							files.push_back(fullname);
+							files.add(fullname);
 						}
 					}
 				}
 				else
 				{
-					files.push_back(fullname);
+					files.add(fullname);
 				}
 			}
 		} while (FindNextFileA(hFind, &FindFileData));
@@ -266,7 +270,7 @@ namespace FileUtility
 			// 是文件夹则先放入列表,然后判断是否递归查找
 			if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
-				folders.push_back(fullname);
+				folders.add(fullname);
 				if (recursive)
 				{
 					findFolders(fullname, folders, recursive);
@@ -392,7 +396,7 @@ namespace FileUtility
 		{
 			return false;
 		}
-		createFolder(getFilePath(destFile));
+		createFolder(getFilePath(destFile, false));
 		return writeFileSimple(destFile, file.mBuffer, file.mFileSize);
 	}
 
@@ -417,7 +421,7 @@ namespace FileUtility
 			return true;
 		}
 		// 如果有上一级目录,并且上一级目录不存在,则先创建上一级目录
-		const string parentDir = getFilePath(path);
+		const string parentDir = getFilePath(path, false);
 		if (parentDir != path)
 		{
 			createFolder(parentDir);
@@ -478,7 +482,7 @@ namespace FileUtility
 		// 检查路径
 		string newPath = filePath;
 		rightToLeft(newPath);
-		const string path = getFilePath(newPath);
+		const string path = getFilePath(newPath, false);
 		if (!createFolder(path))
 		{
 			ERROR("can not create folder, name : " + path);
@@ -582,7 +586,7 @@ namespace FileUtility
 		{
 			return false;
 		}
-		split(fileContent, "\n", fileLines);
+		split(fileContent, '\n', fileLines);
 		for (string& item : fileLines)
 		{
 			removeAll(item, '\r');
@@ -596,7 +600,7 @@ namespace FileUtility
 		{
 			return true;
 		}
-		createFolder(getFilePath(newName));
+		createFolder(getFilePath(newName, false));
 		return renameFile(fileName, newName, forceCover);
 	}
 

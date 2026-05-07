@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// auto generate start
+#pragma once
 
 #include "MySQLData.h"
 
@@ -32,7 +33,7 @@ public:
 	void parseResult(const HashMap<int, char*>& resultRow) override;
 	void paramList(string& params) const override;
 	void generateUpdate(string& params, ullong flag) const override;
-	void clone(MySQLData* target) const override;
+	void cloneTo(MySQLData* target) const override;
 	void cloneWithFlag(MySQLData* target, ullong flag) const override;
 	void resetProperty() override;
 	bool updateBool(bool value, int index) override;
@@ -51,3 +52,4 @@ public:
 	llong getLLong(int index) override;
 	const string& getString(int index) override;
 };
+// auto generate end

@@ -25,7 +25,7 @@ public:
         mList.reserve(list.size());
         for (MySQLData* data : list)
         {
-            mList.push_back(static_cast<T*>(data));
+            mList.add(static_cast<T*>(data));
         }
         mCounter = mCounterThreadPool->newClass();
         mCounter->increase();
@@ -48,7 +48,7 @@ public:
         {
             return;
         }
-        other.mList.clone(mList);
+        other.mList.cloneTo(mList);
         mCounter->increase();
     }
     // 移动构造函数
@@ -90,13 +90,10 @@ public:
     const Vector<T*>& get() const&& = delete;
     bool isValid() const            { return mList.size() != 0; }
     // 如果已经确认data在外部被销毁了,则可以从当前列表中移除
-    void erase(T* data) { mList.eraseElement(data); }
-    void erase(const Vector<T*>& dataList)
+    void remove(T* data)            { mList.remove(data); }
+    void remove(const Vector<T*>& dataList)
     {
-        for (T* data : dataList)
-        {
-            mList.eraseElement(data);
-        }
+        mList.remove(dataList);
     }
     void release()
     {

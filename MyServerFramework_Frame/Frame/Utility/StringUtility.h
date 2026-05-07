@@ -3,10 +3,8 @@
 #include "BinaryUtility.h"
 #include "ThreadLock.h"
 #include "CharArrayScopeThread.h"
-#include "Vector.h"
-#include "Set.h"
-#include "ArrayList.h"
 #include "MyString.h"
+#include "MyCharArray.h"
 
 namespace StringUtility
 {
@@ -50,8 +48,8 @@ namespace StringUtility
 	MICRO_LEGEND_FRAME_API string getFileNameNoSuffix(const string& str, bool removePath);
 	MICRO_LEGEND_FRAME_API string getFirstFolderName(const string& dir);
 	MICRO_LEGEND_FRAME_API string removeFirstPath(const string& dir);
-	MICRO_LEGEND_FRAME_API string getFilePath(const string& dir);
-	MICRO_LEGEND_FRAME_API string getFileSuffix(const string& fileName);
+	MICRO_LEGEND_FRAME_API string getFilePath(const string& dir, bool keepSlash);
+	MICRO_LEGEND_FRAME_API string getFileSuffix(const string& fileName, bool keepDot);
 	MICRO_LEGEND_FRAME_API string removeStartString(const string& fileName, const string& startStr);
 	MICRO_LEGEND_FRAME_API string removeEndString(const string& fileName, const string& endStr);
 	string replaceSuffix(const string& fileName, const string& suffix) { return getFileNameNoSuffix(fileName, false) + suffix; }
@@ -70,26 +68,28 @@ namespace StringUtility
 	MICRO_LEGEND_FRAME_API int split(const char* str, char key, string* stringBuffer, int bufferSize, bool removeEmpty = true);
 	MICRO_LEGEND_FRAME_API void split(const char* str, const char* key, Vector<string>& vec, bool removeEmpty = true);
 	MICRO_LEGEND_FRAME_API void split(const string& str, const char* key, Vector<string>& vec, bool removeEmpty = true);
+	MICRO_LEGEND_FRAME_API void split(const string& str, const char key, Vector<string>& vec, bool removeEmpty = true);
 	MICRO_LEGEND_FRAME_API int split(const char* str, const char* key, string* stringBuffer, int bufferSize, bool removeEmpty = true);
 	// 将字符串全部转为小写再查找
 	MICRO_LEGEND_FRAME_API bool findStringLower(const string& res, const string& sub, int* pos = nullptr, int startIndex = 0, bool direction = true);
 	// 可指定从后或者从头查找子字符串
 	MICRO_LEGEND_FRAME_API bool findString(const string& res, const char* dst, int* pos = nullptr, int startIndex = 0, bool direction = true);
 	MICRO_LEGEND_FRAME_API bool findString(const char* res, const char* dst, int* pos = nullptr, int startIndex = 0, bool direction = true);
+	MICRO_LEGEND_FRAME_API bool findString(const char* res, char key, int* pos = nullptr, int startIndex = 0);
 	MICRO_LEGEND_FRAME_API int findStringPos(const char* res, const char* dst, int startIndex = 0, bool direction = true);
 	MICRO_LEGEND_FRAME_API int findStringPos(const string& res, const string& dst, int startIndex = 0, bool direction = true);
 	// 将str中的[begin,end)替换为reStr
+	MICRO_LEGEND_FRAME_API void replace(char* str, int strBufferSize, int begin, int end, const char* reStr);
 	template<int Length>
 	void replace(MyString<Length>& str, const int begin, const int end, const char* reStr)
 	{
-		replace(str.toBuffer(), Length, begin, end, reStr);
+		replace(str.data(), Length, begin, end, reStr);
 	}
-	MICRO_LEGEND_FRAME_API void replace(char* str, int strBufferSize, int begin, int end, const char* reStr);
 	MICRO_LEGEND_FRAME_API void replace(string& str, int begin, int end, const string& reStr);
 	template<int Length>
 	void replaceAll(MyString<Length>& str, const char* key, const char* newWord)
 	{
-		replaceAll(str.toBuffer(), Length, key, newWord);
+		replaceAll(str.data(), Length, key, newWord);
 	}
 	MICRO_LEGEND_FRAME_API void replaceAll(char* str, int strBufferSize, const char* key, const char* newWord);
 	MICRO_LEGEND_FRAME_API void replaceAll(string& str, const string& key, const string& newWord);
@@ -106,7 +106,7 @@ namespace StringUtility
 		}
 		// 从子字符串的位置,后面的数据覆盖前面的数据
 		int subLength = strlength(subString);
-		memmove(str.toBuffer() + subPos, str.toBuffer() + subPos + subLength, Length - subLength - subPos);
+		memmove(str.data() + subPos, str.data() + subPos + subLength, Length - subLength - subPos);
 		return true;
 	}
 	MICRO_LEGEND_FRAME_API bool removeString(char* str, int length, const char* subString);
@@ -119,52 +119,6 @@ namespace StringUtility
 	// 将source拼接到destBuffer后面
 	MICRO_LEGEND_FRAME_API void strcat_s(char* destBuffer, int size, const char* source);
 	MICRO_LEGEND_FRAME_API void strcat_s(char* destBuffer, int size, const char* source, int length);
-	template<int Length>
-	void strcat_s(MyString<Length>& destBuffer, const string& source)
-	{
-		const int destIndex = destBuffer.length();
-		destBuffer.copy(destIndex, source);
-		destBuffer[destIndex + (int)source.length()] = '\0';
-	}
-	template<int Length>
-	void strcat_s(MyString<Length>& destBuffer, const string& source, const int length)
-	{
-		const int destIndex = destBuffer.length();
-		destBuffer.copy(destIndex, source, length);
-		destBuffer[destIndex + length] = '\0';
-	}
-	template<int Length>
-	void strcat_s(MyString<Length>& destBuffer, const char* source)
-	{
-		const int destIndex = destBuffer.length();
-		const int length = strlength(source);
-		destBuffer.copy(destIndex, source, length);
-		destBuffer[destIndex + length] = '\0';
-	}
-	template<int Length>
-	void strcat_s(MyString<Length>& destBuffer, const char* source, const int length)
-	{
-		const int destIndex = destBuffer.length();
-		destBuffer.copy(destIndex, source, length);
-		destBuffer[destIndex + length] = '\0';
-	}
-	template<int Length>
-	void strcat_s(MyString<Length>& destBuffer, const char** sourceArray, const int sourceCount)
-	{
-		int destIndex = destBuffer.length();
-		FOR(sourceCount)
-		{
-			const char* curSource = sourceArray[i];
-			if (curSource == nullptr)
-			{
-				continue;
-			}
-			const int length = strlength(curSource);
-			destBuffer.copy(destIndex, curSource, length);
-			destIndex += length;
-		}
-		destBuffer[destIndex] = '\0';
-	}
 	template<int SourceLength>
 	void strcat_s(char* destBuffer, const int destSize, const Array<SourceLength, const char*>& sourceArray)
 	{
@@ -191,57 +145,22 @@ namespace StringUtility
 	{
 		strcat_s(destBuffer, destSize, Array<sizeof...(params), const char*>{ forward<TypeList>(params)... });
 	}
-	template<int Length, int SourceLength>
-	void strcat_s(MyString<Length>& destBuffer, const Array<SourceLength, const char*>& sourceArray)
-	{
-		int destIndex = destBuffer.length();
-		for (const char* curSource : sourceArray)
-		{
-			if (curSource == nullptr)
-			{
-				continue;
-			}
-			const int length = strlength(curSource);
-			destBuffer.copy(destIndex, curSource, length);
-			destIndex += length;
-		}
-		destBuffer[destIndex] = '\0';
-	}
-	template<int Length, typename... TypeList>
-	void strcat_t(MyString<Length>& destBuffer, TypeList&&... params)
-	{
-		strcat_s(destBuffer, Array<sizeof...(params), const char*>{ forward<TypeList>(params)... });
-	}
 	MICRO_LEGEND_FRAME_API void strcpy_s(char* destBuffer, int size, const char* source);
 	// 以string类型返回count个0
 	MICRO_LEGEND_FRAME_API string zeroString(int zeroCount);
-	template<int Length>
-	void zeroString(MyString<Length>& charArray, const int zeroCount)
-	{
-		if ((int)Length <= zeroCount)
-		{
-			ERROR("buffer is too small");
-			return;
-		}
-		FOR(zeroCount)
-		{
-			charArray[i] = '0';
-		}
-		charArray[zeroCount] = '\0';
-	}
 	// 基础数据类型转换为字符串
 	//-----------------------------------------------------------------------------------------------------------------------------
 	string BToS(const bool value) { return value ? "True" : "False"; }
 	// 返回string类型的数字字符串,速度较慢
 	MICRO_LEGEND_FRAME_API string LLToS(llong value, int limitLen = 0);
 	template<int Length>
-	int _i64toa_s(llong value, MyString<Length>& charArray)
+	int _i64toa_s_(llong value, MyString<Length>& charArray)
 	{
+		charArray.clear();
 		if (value == 0)
 		{
-			charArray[0] = '0';
-			charArray[1] = '\0';
-			return 1;
+			charArray.set('0');
+			return charArray.length();
 		}
 		int sign = 1;
 		// 负数需要转换为正数才能正常转换为字符串
@@ -255,80 +174,58 @@ namespace StringUtility
 		{
 			value = maxLLong;
 		}
-		int index = 0;
+		MyString<Length> temp;
 		while (true)
 		{
-			// 如果是正数,则数字个数不能超过size - 1
-			// 如果是负数,则数字个数不能超过size - 2
-			if ((sign > 0 && index >= (int)Length) ||
-				(sign < 0 && index >= (int)Length - 1))
-			{
-				ERROR("buffer is too small!");
-				break;
-			}
-			// 将数字放入numberArray的尾部
-			if (value < POWER_LLONG_10[index])
+			const int index = temp.length();
+			// 将数字放入temp
+			if (value < POWER_LLONG_10[index] ||
+				!temp.add((int)(value % POWER_LLONG_10[index + 1] / POWER_LLONG_10[index]) + '0'))
 			{
 				break;
 			}
-			charArray[Length - 1 - index] = (int)(value % POWER_LLONG_10[index + 1] / POWER_LLONG_10[index]);
-			++index;
 		}
-		// 将数字从数组末尾移动到开头,并且将数字转换为数字字符
-		if (sign > 0)
+		// 将数字从数组末尾移动到开头
+		if (sign < 0)
 		{
-			const int lengthToHead = Length - index;
-			FOR(index)
-			{
-				charArray[i] = charArray[i + lengthToHead] + '0';
-			}
-			charArray[index] = '\0';
+			charArray.add('-');
 		}
-		else
+		FOR(temp.length())
 		{
-			charArray[0] = '-';
-			const int lengthToHead = Length - index;
-			FOR(index)
-			{
-				charArray[i + 1] = charArray[i + lengthToHead] + '0';
-			}
-			charArray[++index] = '\0';
+			charArray.add(temp[temp.length() - i - 1]);
 		}
-		return index;
+		return charArray.length();
 	}
 	template<int Length>
 	int LLToS(MyString<Length>& charArray, const llong value, const int limitLen = 0)
 	{
+		charArray.clear();
 		if (limitLen == 0)
 		{
-			return _i64toa_s(value, charArray);
+			return _i64toa_s_(value, charArray);
 		}
 		MyString<32> temp;
-		const int len = _i64toa_s(value, temp);
+		const int len = _i64toa_s_(value, temp);
 		// 判断是否需要在前面补0
 		if (limitLen > len)
 		{
-			MyString<16> zeroArray;
-			zeroString(zeroArray, limitLen - len);
-			strcat_t(charArray, zeroArray.str(), temp.str());
-			charArray[limitLen] = '\0';
-			return limitLen;
+			charArray.setCount('0', limitLen - len);
+			charArray.add(temp.str());
 		}
 		else
 		{
-			charArray.copy(temp.str(), len);
-			charArray[len] = '\0';
-			return len;
+			charArray.set(temp.str(), len);
 		}
+		return charArray.length();
 	}
 	template<int Length>
 	int _itoa_s(int value, MyString<Length>& charArray)
 	{
+		charArray.clear();
 		if (value == 0)
 		{
-			charArray[0] = '0';
-			charArray[1] = '\0';
-			return 1;
+			charArray.set('0');
+			return charArray.length();
 		}
 
 		if (mIntString[0].length() == 0)
@@ -336,7 +233,7 @@ namespace StringUtility
 			initIntToString();
 		}
 		// 优先查表,但是前提是表已经有值
-		if (mIntString[mIntString.size() - 1].length() > 0 && value >= 0 && value < (int)mIntString.size())
+		if (!mIntString[mIntString.size() - 1].empty() && value >= 0 && value < mIntString.size())
 		{
 			const string& str = mIntString[value];
 			const int strLength = (int)str.length();
@@ -345,72 +242,54 @@ namespace StringUtility
 				ERROR("int value is too large:" + LLToS((llong)value));
 				return 0;
 			}
-			charArray.copy(str, strLength);
-			charArray[strLength] = '\0';
-			return strLength;
+			charArray.set(str);
+			return charArray.length();
 		}
 
 		int sign = 1;
+		unsigned int absValue = (unsigned int)value;
 		if (value < 0)
 		{
-			value = -value;
+			// 用 unsigned int 保存绝对值，避免 INT_MIN 取负溢出
+			absValue = (uint)(-(llong)value);
 			sign = -1;
 		}
-		if ((llong)value > POWER_INT_10[POWER_INT_10.size() - 1])
+		if ((llong)absValue > POWER_INT_10[POWER_INT_10.size() - 1])
 		{
 			ERROR("int value is too large:" + LLToS((llong)value));
 			return 0;
 		}
-		int index = 0;
+		MyString<Length> temp;
 		while (true)
 		{
-			// 如果是正数,则数字个数不能超过size - 1
-			// 如果是负数,则数字个数不能超过size - 2
-			if ((sign > 0 && index >= (int)Length) ||
-				(sign < 0 && index >= (int)Length - 1))
-			{
-				ERROR("buffer is too small!");
-				break;
-			}
-			// 将数字放入numberArray的尾部
-			if ((llong)value < POWER_INT_10[index])
+			const int index = temp.length();
+			// 将数字放入temp
+			if ((llong)absValue < POWER_INT_10[index] ||
+				!temp.add((int)((llong)absValue % POWER_INT_10[index + 1] / POWER_INT_10[index]) + '0'))
 			{
 				break;
 			}
-			charArray[Length - 1 - index] = (int)((llong)value % POWER_INT_10[index + 1] / POWER_INT_10[index]);
-			++index;
 		}
-		// 将数字从数组末尾移动到开头,并且将数字转换为数字字符
-		if (sign > 0)
+		// 将数字从数组末尾移动到开头
+		if (sign < 0)
 		{
-			const int lengthToHead = Length - index;
-			FOR(index)
-			{
-				charArray[i] = charArray[i + lengthToHead] + '0';
-			}
-			charArray[index] = '\0';
+			charArray.add('-');
 		}
-		else
+		FOR(temp.length())
 		{
-			charArray[0] = '-';
-			const int lengthToHead = Length - index;
-			FOR(index)
-			{
-				charArray[i + 1] = charArray[i + lengthToHead] + '0';
-			}
-			charArray[++index] = '\0';
+			charArray.add(temp[temp.length() - i - 1]);
 		}
-		return index;
+		return charArray.length();
 	}
 	// 这里有问题,应该是
 	template<int Length>
 	int _uitoa_s(const uint value, MyString<Length>& charArray)
 	{
+		charArray.clear();
 		if (value == 0)
 		{
-			charArray[0] = '0';
-			charArray[1] = '\0';
-			return 1;
+			charArray.set('0');
+			return charArray.length();
 		}
 
 		if (mIntString[0].length() == 0)
@@ -418,7 +297,7 @@ namespace StringUtility
 			initIntToString();
 		}
 		// 优先查表,但是前提是表已经有值
-		if (mIntString[mIntString.size() - 1].length() > 0 && value < (uint)mIntString.size())
+		if (!mIntString[mIntString.size() - 1].empty() && value < (uint)mIntString.size())
 		{
 			const string& str = mIntString[value];
 			const int strLength = (int)str.length();
@@ -427,9 +306,8 @@ namespace StringUtility
 				ERROR("uint value is too large:" + LLToS((llong)value));
 				return 0;
 			}
-			charArray.copy(str, strLength);
-			charArray[strLength] = '\0';
-			return strLength;
+			charArray.set(str, strLength);
+			return charArray.length();
 		}
 
 		if ((llong)value > POWER_INT_10[POWER_INT_10.size() - 1])
@@ -437,77 +315,62 @@ namespace StringUtility
 			ERROR("uint value is too large:" + LLToS((llong)value));
 			return 0;
 		}
-		int index = 0;
+		MyString<Length> temp;
 		while (true)
 		{
-			// 数字个数不能超过size - 1
-			if (index >= (int)Length)
-			{
-				ERROR("buffer is too small!");
-				break;
-			}
-			// 将数字放入numberArray的尾部
-			if ((llong)value < POWER_INT_10[index])
+			const int index = temp.length();
+			// 将数字放入temp
+			if ((llong)value < POWER_INT_10[index] ||
+				!temp.add((int)((llong)value % POWER_INT_10[index + 1] / POWER_INT_10[index]) + '0'))
 			{
 				break;
 			}
-			charArray[Length - 1 - index] = (int)((llong)value % POWER_INT_10[index + 1] / POWER_INT_10[index]);
-			++index;
 		}
-		// 将数字从数组末尾移动到开头,并且将数字转换为数字字符
-		const int lengthToHead = Length - index;
-		FOR(index)
+		// 将数字从数组末尾移动到开头
+		FOR(temp.length())
 		{
-			charArray[i] = charArray[i + lengthToHead] + '0';
+			charArray.add(temp[temp.length() - i - 1]);
 		}
-		charArray[index] = '\0';
-		return index;
+		return charArray.length();
 	}
 	template<int Length>
 	int _ui64toa_s(const ullong value, MyString<Length>& charArray)
 	{
+		charArray.clear();
 		if (value == 0)
 		{
-			charArray[0] = '0';
-			charArray[1] = '\0';
-			return 1;
+			charArray.set('0');
+			return charArray.length();
 		}
 		if (value > (ullong)POWER_LLONG_10[POWER_LLONG_10.size() - 1])
 		{
 			ERROR("ullong value is too large");
 			return 0;
 		}
-		int index = 0;
+		MyString<Length> temp;
 		while (true)
 		{
-			// 如果是正数,则数字个数不能超过Length - 1
-			if (index >= (int)Length)
-			{
-				ERROR("buffer is too small!");
-				break;
-			}
-			// 将数字放入numberArray的尾部
-			if (value < (ullong)POWER_LLONG_10[index])
+			const int index = temp.length();
+			// 将数字放入temp
+			if (value < (ullong)POWER_LLONG_10[index] ||
+				!temp.add((int)(value % POWER_LLONG_10[index + 1] / POWER_LLONG_10[index]) + '0'))
 			{
 				break;
 			}
-			charArray[Length - 1 - index] = (int)(value % POWER_LLONG_10[index + 1] / POWER_LLONG_10[index]);
-			++index;
 		}
-		// 将数字从数组末尾移动到开头,并且将数字转换为数字字符
-		const int lengthToHead = Length - index;
-		FOR(index)
+		// 将数字从数组末尾移动到开头
+		FOR(temp.length())
 		{
-			charArray[i] = charArray[i + lengthToHead] + '0';
+			charArray.add(temp[temp.length() - i - 1]);
 		}
-		charArray[index] = '\0';
-		return index;
+		return charArray.length();
 	}
 	// 返回string类型的数字字符串,速度较慢,limitLen是字符串的最小长度,如果整数的位数不足最小长度,则会在前面加0
 	MICRO_LEGEND_FRAME_API string UIToS(int value, int limitLen = 0);
 	template<int Length>
 	int UIToS(MyString<Length>& charArray, const int value, const int limitLen = 0)
 	{
+		charArray.clear();
 		if (limitLen == 0)
 		{
 			return _itoa_s(value, charArray);
@@ -519,24 +382,21 @@ namespace StringUtility
 		if (limitLen > len)
 		{
 			// 因为当前函数设计为线程安全,所以只能使用栈内存中的数组
-			MyString<16> zeroArray;
-			zeroString(zeroArray, limitLen - len);
-			strcat_t(charArray, zeroArray.str(), temp.str());
-			charArray[limitLen] = '\0';
-			return limitLen;
+			charArray.setCount('0', limitLen - len);
+			charArray.add(temp.str());
 		}
 		else
 		{
-			charArray.copy(temp.str(), len);
-			charArray[len] = '\0';
-			return len;
+			charArray.set(temp.str(), len);
 		}
+		return charArray.length();
 	}
 	// 返回string类型的数字字符串,速度较慢,limitLen是字符串的最小长度,如果整数的位数不足最小长度,则会在前面加0
 	MICRO_LEGEND_FRAME_API string IToS(const int value, int limitLen = 0);
 	template<int Length>
 	int IToS(MyString<Length>& charArray, const int value, const int limitLen = 0)
 	{
+		charArray.clear();
 		if (limitLen == 0)
 		{
 			return _itoa_s(value, charArray);
@@ -548,24 +408,21 @@ namespace StringUtility
 		if (limitLen > len)
 		{
 			// 因为当前函数设计为线程安全,所以只能使用栈内存中的数组
-			MyString<16> zeroArray;
-			zeroString(zeroArray, limitLen - len);
-			strcat_t(charArray, zeroArray.str(), temp.str());
-			charArray[limitLen] = '\0';
-			return limitLen;
+			charArray.setCount('0', limitLen - len);
+			charArray.add(temp.str());
 		}
 		else
 		{
-			charArray.copy(temp.str(), len);
-			charArray[len] = '\0';
-			return len;
+			charArray.set(temp.str(), len);
 		}
+		return charArray.length();
 	}
 	// 返回string类型的数字字符串,速度较慢
 	MICRO_LEGEND_FRAME_API string ULLToS(ullong value, int limitLen = 0);
 	template<int Length>
 	int ULLToS(MyString<Length>& charArray, const ullong value, const int limitLen = 0)
 	{
+		charArray.clear();
 		if (limitLen == 0)
 		{
 			return _ui64toa_s(value, charArray);
@@ -575,26 +432,23 @@ namespace StringUtility
 		// 判断是否需要在前面补0
 		if (limitLen > len)
 		{
-			MyString<16> zeroArray;
-			zeroString(zeroArray, limitLen - len);
-			strcat_t(charArray, zeroArray.str(), temp.str());
-			charArray[limitLen] = '\0';
-			return limitLen;
+			charArray.setCount('0', limitLen - len);
+			charArray.add(temp.str());
 		}
 		else
 		{
-			charArray.copy(temp.str(), len);
-			charArray[len] = '\0';
-			return len;
+			charArray.set(temp.str(), len);
 		}
+		return charArray.length();
 	}
 	// precision为精度,保留的小数的位数,removeZero为是否去除末尾无用的0,速度较慢
 	MICRO_LEGEND_FRAME_API string floatToStringExtra(float f, int precision = 4, bool removeTailZero = true);
 	// 将浮点数转换为字符串,速度较快
-	MICRO_LEGEND_FRAME_API string FToS(float f);
+	MICRO_LEGEND_FRAME_API string FToS(float f, int precision = 4);
 	template<int Length>
-	int FToS(MyString<Length>& charArray, float f)
+	int FToS(MyString<Length>& charArray, float f, int precision = 4)
 	{
+		charArray.clear();
 		if (f > 99999999.0f)
 		{
 			f = 99999999.0f;
@@ -603,8 +457,16 @@ namespace StringUtility
 		{
 			f = -99999999.0f;
 		}
-		SPRINTF(charArray.toBuffer(), Length, "%.4f", f);
-		charArray[Length - 1] = '\0';
+		const char* PRECISION[6] = { "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f" };
+		if (precision > 5)
+		{
+			precision = 5;
+		}
+		else if (precision < 0)
+		{
+			precision = 0;
+		}
+		charArray.sprintf(PRECISION[precision], f);
 		// 先查找小数点和结束符的位置
 		int dotPos = -1;
 		int strLen = 0;
@@ -629,113 +491,113 @@ namespace StringUtility
 				// 如果找到了小数点仍然没有找到一个不为'0'的字符,则从小数点部分截断字符串
 				if (index == dotPos)
 				{
-					charArray[dotPos] = '\0';
-					strLen = dotPos;
+					charArray.truncate(dotPos);
 					break;
 				}
 				// 找到小数点后的从后往前的第一个不为'0'的字符,从此处截断字符串
-				if (charArray[index] != '0' && index + 1 < strLen)
+				if (charArray[index] != '0' && index + 1 <= strLen)
 				{
-					charArray[index + 1] = '\0';
-					strLen = index + 1;
+					charArray.truncate(index + 1);
 					break;
 				}
 			}
 		}
-		return strLen;
+		return charArray.length();
 	}
 	MICRO_LEGEND_FRAME_API string bytesToString(const char* buffer, int length);
-	string V2ToS(Vector2 vec, const char* seperate = ",") { return FToS(vec.x) + seperate + FToS(vec.y); }
+	string V2ToS(Vector2 vec, const char* separate = ",") { return FToS(vec.x) + separate + FToS(vec.y); }
 	template<int Length>
-	void V2ToS(MyString<Length>& buffer, Vector2 vec, const char* seperate = ",")
+	void V2ToS(MyString<Length>& buffer, Vector2 vec, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		FLOAT_STR(xStr, vec.x);
 		FLOAT_STR(yStr, vec.y);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str());
+		buffer.add(xStr.str(), separate, yStr.str());
 	}
-	string V3ToS(const Vector3& vec, const char* seperate = ",") { return FToS(vec.x) + seperate + FToS(vec.y) + seperate + FToS(vec.z); }
+	string V3ToS(const Vector3& vec, const char* separate = ",") { return FToS(vec.x) + separate + FToS(vec.y) + separate + FToS(vec.z); }
 	template<int Length>
-	void V3ToS(MyString<Length>& buffer, const Vector3& vec, const char* seperate = ",")
+	void V3ToS(MyString<Length>& buffer, const Vector3& vec, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		FLOAT_STR(xStr, vec.x);
 		FLOAT_STR(yStr, vec.y);
 		FLOAT_STR(zStr, vec.z);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str(), seperate, zStr.str());
+		buffer.add(xStr.str(), separate, yStr.str(), separate, zStr.str());
 	}
-	string V3IToS(const Vector3Int& vec, const char* seperate = ",") { return IToS(vec.x) + seperate + IToS(vec.y) + seperate + IToS(vec.z); }
+	string V3IToS(const Vector3Int& vec, const char* separate = ",") { return IToS(vec.x) + separate + IToS(vec.y) + separate + IToS(vec.z); }
 	template<int Length>
-	void V3IToS(MyString<Length>& buffer, const Vector3Int& vec, const char* seperate = ",")
+	void V3IToS(MyString<Length>& buffer, const Vector3Int& vec, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		INT_STR(xStr, vec.x);
 		INT_STR(yStr, vec.y);
 		INT_STR(zStr, vec.z);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str(), seperate, zStr.str());
+		buffer.add(xStr.str(), separate, yStr.str(), separate, zStr.str());
 	}
-	string V2IToS(Vector2Int value, const char* seperate = ",") { return IToS(value.x) + seperate + IToS(value.y); }
-	string V2UIToS(Vector2UInt value, const char* seperate = ",") { return UIToS(value.x) + seperate + UIToS(value.y); }
+	string V2IToS(Vector2Int value, const char* separate = ",") { return IToS(value.x) + separate + IToS(value.y); }
+	MICRO_LEGEND_FRAME_API string V2IsToS(const Vector<Vector2Int>& value, const char* separate = "|");
+	MICRO_LEGEND_FRAME_API string V2IsToS(const HashMap<int, int>& value, const char* separate = "|");
+	string V2UIToS(Vector2UInt value, const char* separate = ",") { return UIToS(value.x) + separate + UIToS(value.y); }
 	template<int Length>
-	void V2IToS(MyString<Length>& buffer, Vector2Int value, const char* seperate = ",")
+	void V2IToS(MyString<Length>& buffer, Vector2Int value, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		INT_STR(xStr, value.x);
 		INT_STR(yStr, value.y);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str());
+		buffer.add(xStr.str(), separate, yStr.str());
 	}
 	template<int Length>
-	void V2UIToS(MyString<Length>& buffer, Vector2UInt value, const char* seperate = ",")
+	void V2UIToS(MyString<Length>& buffer, Vector2UInt value, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		INT_STR(xStr, value.x);
 		INT_STR(yStr, value.y);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str());
+		buffer.add(xStr.str(), separate, yStr.str());
 	}
-	string V2SToS(Vector2Short value, const char* seperate = ",") { return IToS(value.x) + seperate + IToS(value.y); }
+	string V2SToS(Vector2Short value, const char* separate = ",") { return IToS(value.x) + separate + IToS(value.y); }
 	template<int Length>
-	void V2SToS(MyString<Length>& buffer, Vector2Short value, const char* seperate = ",")
+	void V2SToS(MyString<Length>& buffer, Vector2Short value, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		INT_STR(xStr, value.x);
 		INT_STR(yStr, value.y);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str());
+		buffer.add(xStr.str(), separate, yStr.str());
 	}
-	string V2USToS(Vector2UShort value, const char* seperate = ",") { return IToS(value.x) + seperate + IToS(value.y); }
+	string V2USToS(Vector2UShort value, const char* separate = ",") { return IToS(value.x) + separate + IToS(value.y); }
 	template<int Length>
-	void V2USToS(MyString<Length>& buffer, Vector2UShort value, const char* seperate = ",")
+	void V2USToS(MyString<Length>& buffer, Vector2UShort value, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		INT_STR(xStr, value.x);
 		INT_STR(yStr, value.y);
-		strcat_t(buffer, xStr.str(), seperate, yStr.str());
+		buffer.add(xStr.str(), separate, yStr.str());
 	}
 	//-----------------------------------------------------------------------------------------------------------------------------
 	// 字符串转换为基础数据类型
 	//-----------------------------------------------------------------------------------------------------------------------------
-	bool SToB(const string& str) { return str == "True" || str == "true"; }
-	bool SToB(const char* str) { return strcmp(str, "True") == 0 || strcmp(str, "true") == 0; }
-	int SToI(const string& str) { return atoi(str.c_str()); }
-	int SToI(const char* str) { return atoi(str); }
-	ullong stringToULLong(const string& str) { return (ullong)atoll(str.c_str()); }
-	ullong stringToULLong(const char* str) { return (ullong)atoll(str); }
-	llong SToLL(const string& str) { return atoll(str.c_str()); }
-	llong SToLL(const char* str) { return atoll(str); }
-	float SToF(const string& str) { return (float)atof(str.c_str()); }
-	float SToF(const char* str) { return (float)atof(str); }
-	MICRO_LEGEND_FRAME_API Vector2 SToV2(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector2Int SToV2I(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector2UInt SToV2UI(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector2Short SToV2S(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector2UShort SToV2US(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector3 SToV3(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector3Int SToV3I(const string& str, const char* seperate = ",");
+	bool SToB(const string& str)					{ return str == "True" || str == "true"; }
+	bool SToB(const char* str)						{ return strcmp(str, "True") == 0 || strcmp(str, "true") == 0; }
+	int SToI(const string& str)						{ return atoi(str.c_str()); }
+	int SToI(const char* str)						{ return atoi(str); }
+	ullong stringToULLong(const string& str)		{ return (ullong)atoll(str.c_str()); }
+	ullong stringToULLong(const char* str)			{ return (ullong)atoll(str); }
+	llong SToLL(const string& str)					{ return atoll(str.c_str()); }
+	llong SToLL(const char* str)					{ return atoll(str); }
+	float SToF(const string& str)					{ return (float)atof(str.c_str()); }
+	float SToF(const char* str)						{ return (float)atof(str); }
+	MICRO_LEGEND_FRAME_API Vector2 SToV2(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector2Int SToV2I(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector2UInt SToV2UI(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector2Short SToV2S(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector2UShort SToV2US(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector3 SToV3(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector3Int SToV3I(const string& str, const char* separate = ",");
 	//-----------------------------------------------------------------------------------------------------------------------------
 	// 基础数据类型数组转换为字符串
 	//-----------------------------------------------------------------------------------------------------------------------------
-	MICRO_LEGEND_FRAME_API string ULLsToS(const Vector<ullong>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API string ULLsToS(const Vector<ullong>& valueList, const char* separate = ",");
 	template<int Length>
-	string ULLsToS(const Array<Length, ullong>& valueList, const int count = -1, const char* seperate = ",")
+	string ULLsToS(const Array<Length, ullong>& valueList, const int count = -1, const char* separate = ",")
 	{
 		if (count == -1)
 		{
@@ -751,7 +613,7 @@ namespace StringUtility
 			ULLToS(temp, valueList[i]);
 			if (i != count - 1)
 			{
-				strcat_t(charArray.mArray, arrayLen, temp.str(), seperate);
+				strcat_t(charArray.mArray, arrayLen, temp.str(), separate);
 			}
 			else
 			{
@@ -761,9 +623,9 @@ namespace StringUtility
 		return charArray.mArray;
 	}
 	template<int Length>
-	void ULLsToS(MyString<Length>& buffer, const ullong* valueList, const int count, const char* seperate = ",")
+	void ULLsToS(MyString<Length>& buffer, const ullong* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
@@ -774,18 +636,18 @@ namespace StringUtility
 			ULLToS(temp, valueList[i]);
 			if (i != count - 1)
 			{
-				strcat_t(buffer, temp.str(), seperate);
+				buffer.add(temp.str(), separate);
 			}
 			else
 			{
-				strcat_s(buffer, temp.str());
+				buffer.add(temp.str());
 			}
 		}
 	}
 	template<int Length>
-	void ULLsToS(MyString<Length>& buffer, const Vector<ullong>& valueList, const char* seperate = ",")
+	void ULLsToS(MyString<Length>& buffer, const Vector<ullong>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
@@ -797,40 +659,19 @@ namespace StringUtility
 			ULLToS(temp, valueList[i]);
 			if (i != count - 1)
 			{
-				strcat_t(buffer, temp.str(), seperate);
+				buffer.add(temp.str(), separate);
 			}
 			else
 			{
-				strcat_s(buffer, temp.str());
+				buffer.add(temp.str());
 			}
 		}
 	}
-	void ULLsToS(char* buffer, const int bufferSize, const Vector<ullong>& valueList, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-		MyString<32> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			ULLToS(temp, valueList[i]);
-			if (i != count - 1)
-			{
-				strcat_t(buffer, bufferSize, temp.str(), seperate);
-			}
-			else
-			{
-				strcat_s(buffer, bufferSize, temp.str());
-			}
-		}
-	}
-	MICRO_LEGEND_FRAME_API string LLsToS(const Vector<llong>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API string LLsToS(const llong* valueList, int valueCount, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void ULLsToS(char* buffer, const int bufferSize, const Vector<ullong>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string LLsToS(const Vector<llong>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string LLsToS(const llong* valueList, int valueCount, const char* separate = ",");
 	template<int Length>
-	string LLsToS(const Array<Length, llong>& valueList, int count = -1, const char* seperate = ",")
+	string LLsToS(const Array<Length, llong>& valueList, int count = -1, const char* separate = ",")
 	{
 		if (count == -1)
 		{
@@ -840,7 +681,7 @@ namespace StringUtility
 		const int arrayLen = 32 * greaterPower2(count);
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		FOR(count)
 		{
@@ -848,20 +689,20 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 	template<int Length>
-	string LLsToS(const ArrayList<Length, llong>& valueList, const char* seperate = ",")
+	string LLsToS(const ArrayList<Length, llong>& valueList, const char* separate = ",")
 	{
 		const int count = valueList.size();
 		// 根据列表长度选择适当的数组长度,每个llong默认数字长度为32个字符
 		const int arrayLen = 32 * greaterPower2(count);
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		FOR(count)
 		{
@@ -869,226 +710,167 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 	template<int Length>
-	void LLsToS(MyString<Length>& buffer, const llong* valueList, const int count, const char* seperate = ",")
+	void LLsToS(MyString<Length>& buffer, const llong* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		FOR(count)
 		{
 			const int len = LLToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void LLsToS(MyString<Length>& buffer, const Vector<llong>& valueList, const char* seperate = ",")
+	void LLsToS(MyString<Length>& buffer, const Vector<llong>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<32> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = LLToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	void LLsToS(char* buffer, const int bufferSize, const Vector<llong>& valueList, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-		const int seperateLen = strlength(seperate);
-		MyString<32> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = LLToS(temp, valueList[i]);
-			strcat_s(buffer, bufferSize, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
-			}
-		}
-	}
+	MICRO_LEGEND_FRAME_API void LLsToS(char* buffer, const int bufferSize, const Vector<llong>& valueList, const char* separate = ",");
 	template<int Length, int ValueCount>
-	void LLsToS(MyString<Length>& buffer, const Array<ValueCount, llong>& valueList, int count = -1, const char* seperate = ",")
+	void LLsToS(MyString<Length>& buffer, const Array<ValueCount, llong>& valueList, int count = -1, const char* separate = ",")
 	{
 		if (count == -1)
 		{
 			count = (int)ValueCount;
 		}
-		const int seperateLen = strlength(seperate);
-		buffer[0] = '\0';
+		const int separateLen = strlength(separate);
+		buffer.clear();
 		MyString<32> temp;
 		FOR(count)
 		{
 			const int len = LLToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	// 将byte数组当成整数数组转换为字符串,并非直接将byte数组转为字符串
-	MICRO_LEGEND_FRAME_API string bytesToString(const Vector<byte>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API string bytesToString(const Vector<byte>& valueList, const char* separate = ",");
 	template<int Length>
-	void bytesToString(MyString<Length>& buffer, byte* valueList, const int count, const char* seperate = ",")
+	void bytesToString(MyString<Length>& buffer, byte* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
-		MyString<4> temp;
+		const int separateLen = strlength(separate);
+		MyString<8> temp;
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void bytesToString(MyString<Length>& buffer, const Vector<byte>& valueList, const char* seperate = ",")
+	void bytesToString(MyString<Length>& buffer, const Vector<byte>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
-		MyString<4> temp;
+		const int separateLen = strlength(separate);
+		MyString<8> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	void bytesToString(char* buffer, const int bufferSize, const Vector<byte>& valueList, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-
-		const int seperateLen = strlength(seperate);
-		MyString<4> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, bufferSize, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
-			}
-		}
-	}
-	MICRO_LEGEND_FRAME_API string SsToS(const Vector<short>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void bytesToString(char* buffer, const int bufferSize, const Vector<byte>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string SsToS(const Vector<short>& valueList, const char* separate = ",");
 	template<int Length>
-	void SsToS(MyString<Length>& buffer, short* valueList, const int count, const char* seperate = ",")
+	void SsToS(MyString<Length>& buffer, short* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void SsToS(MyString<Length>& buffer, const Vector<short>& valueList, const char* seperate = ",")
+	void SsToS(MyString<Length>& buffer, const Vector<short>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	void SsToS(char* buffer, const int bufferSize, const Vector<short>& valueList, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-
-		const int seperateLen = strlength(seperate);
-		MyString<8> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, bufferSize, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
-			}
-		}
-	}
-	MICRO_LEGEND_FRAME_API string USsToS(const Vector<ushort>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SsToS(char* buffer, const int bufferSize, const Vector<short>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string USsToS(const Vector<ushort>& valueList, const char* separate = ",");
 	template<int Length>
-	string USsToS(const ArrayList<Length, ushort>& valueList, const char* seperate = ",")
+	string USsToS(const ArrayList<Length, ushort>& valueList, const char* separate = ",")
 	{
 		if (valueList.isEmpty())
 		{
@@ -1097,7 +879,7 @@ namespace StringUtility
 		const int arrayLen = 8 * greaterPower2(valueList.size());
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = '\0';
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -1106,78 +888,58 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 	template<int Length>
-	void USsToS(MyString<Length>& buffer, ushort* valueList, const int count, const char* seperate = ",")
+	void USsToS(MyString<Length>& buffer, ushort* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void USsToS(MyString<Length>& buffer, const Vector<ushort>& valueList, const char* seperate = ",")
+	void USsToS(MyString<Length>& buffer, const Vector<ushort>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<8> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	void USsToS(char* buffer, const int bufferSize, const Vector<ushort>& valueList, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-
-		const int seperateLen = strlength(seperate);
-		MyString<8> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, bufferSize, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
-			}
-		}
-	}
-	MICRO_LEGEND_FRAME_API string IsToS(const Vector<int>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void USsToS(char* buffer, const int bufferSize, const Vector<ushort>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string IsToS(const Vector<int>& valueList, const char* separate = ",");
 	template<int Length>
-	string IsToS(const Array<Length, int>& valueList, const int count, const char* seperate = ",")
+	string IsToS(const Array<Length, int>& valueList, const int count, const char* separate = ",")
 	{
 		if (count == 0)
 		{
@@ -1187,7 +949,7 @@ namespace StringUtility
 		const int arrayLen = 16 * greaterPower2(count);
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		FOR(count)
 		{
@@ -1195,13 +957,13 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 	template<int Length>
-	string IsToS(const Array<Length, int>& valueList, const char* seperate = ",")
+	string IsToS(const Array<Length, int>& valueList, const char* separate = ",")
 	{
 		const int count = valueList.size();
 		if (count == 0)
@@ -1212,7 +974,7 @@ namespace StringUtility
 		const int arrayLen = 16 * greaterPower2(count);
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		FOR(count)
 		{
@@ -1220,13 +982,13 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 	template<int Length>
-	string IsToS(const ArrayList<Length, int>& valueList, const char* seperate = ",")
+	string IsToS(const ArrayList<Length, int>& valueList, const char* separate = ",")
 	{
 		const int count = valueList.size();
 		if (count == 0)
@@ -1237,7 +999,7 @@ namespace StringUtility
 		const int arrayLen = 16 * greaterPower2(count);
 		CharArrayScopeThread charArray(arrayLen);
 		charArray.mArray[0] = 0;
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		FOR(count)
 		{
@@ -1245,55 +1007,57 @@ namespace StringUtility
 			strcat_s(charArray.mArray, arrayLen, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(charArray.mArray, arrayLen, seperate, seperateLen);
+				strcat_s(charArray.mArray, arrayLen, separate, separateLen);
 			}
 		}
 		return charArray.mArray;
 	}
 	template<int Length>
-	void IsToS(MyString<Length>& buffer, int* valueList, const int count, const char* seperate = ",")
+	void IsToS(MyString<Length>& buffer, int* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void IsToS(MyString<Length>& buffer, const Vector<int>& valueList, const char* seperate = ",")
+	void IsToS(MyString<Length>& buffer, const Vector<int>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	void IsToS(char* buffer, int bufferSize, const Vector<int>& valueList, const char* seperate = ",")
+	MICRO_LEGEND_FRAME_API void IsToS(char* buffer, int bufferSize, const Vector<int>& valueList, const char* separate = ",");
+	template<int Length>
+	void IsToS(char* buffer, int bufferSize, const ArrayList<Length, int>& valueList, const char* separate = ",")
 	{
 		buffer[0] = '\0';
 		if (valueList.isEmpty())
@@ -1301,7 +1065,7 @@ namespace StringUtility
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
@@ -1310,208 +1074,140 @@ namespace StringUtility
 			strcat_s(buffer, bufferSize, temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
+				strcat_s(buffer, bufferSize, separate, separateLen);
 			}
 		}
 	}
+	MICRO_LEGEND_FRAME_API string UIsToS(const Vector<uint>& valueList, const char* separate = ",");
 	template<int Length>
-	void IsToS(char* buffer, int bufferSize, const ArrayList<Length, int>& valueList, const char* seperate = ",")
+	void UIsToS(MyString<Length>& buffer, uint* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-
-		const int seperateLen = strlength(seperate);
-		MyString<16> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = IToS(temp, valueList[i]);
-			strcat_s(buffer, bufferSize, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
-			}
-		}
-	}
-	MICRO_LEGEND_FRAME_API string UIsToS(const Vector<uint>& valueList, const char* seperate = ",");
-	template<int Length>
-	void UIsToS(MyString<Length>& buffer, uint* valueList, const int count, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		FOR(count)
 		{
 			const int len = UIToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void UIsToS(MyString<Length>& buffer, const Vector<uint>& valueList, const char* seperate = ",")
+	void UIsToS(MyString<Length>& buffer, const Vector<uint>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = UIToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	void UIsToS(char* buffer, int bufferSize, const Vector<uint>& valueList, const char* seperate = ",")
-	{
-		buffer[0] = '\0';
-		if (valueList.isEmpty())
-		{
-			return;
-		}
-
-		const int seperateLen = strlength(seperate);
-		MyString<16> temp;
-		const int count = valueList.size();
-		FOR(count)
-		{
-			const int len = UIToS(temp, valueList[i]);
-			strcat_s(buffer, bufferSize, temp.str(), len);
-			if (i != count - 1)
-			{
-				strcat_s(buffer, bufferSize, seperate, seperateLen);
-			}
-		}
-	}
-	MICRO_LEGEND_FRAME_API string FsToS(const Vector<float>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API void FsToS(char* buffer, int bufferSize, const Vector<float>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void UIsToS(char* buffer, int bufferSize, const Vector<uint>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string FsToS(const Vector<float>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API void FsToS(char* buffer, int bufferSize, const Vector<float>& valueList, const char* separate = ",");
 	template<int Length>
-	void FsToS(MyString<Length>& buffer, float* valueList, const int count, const char* seperate = ",")
+	void FsToS(MyString<Length>& buffer, float* valueList, const int count, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList == nullptr || count == 0)
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		FOR(count)
 		{
 			const int len = FToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void FsToS(MyString<Length>& buffer, const Vector<float>& valueList, const char* seperate = ",")
+	void FsToS(MyString<Length>& buffer, const Vector<float>& valueList, const char* separate = ",")
 	{
-		buffer[0] = '\0';
+		buffer.clear();
 		if (valueList.isEmpty())
 		{
 			return;
 		}
 
-		const int seperateLen = strlength(seperate);
+		const int separateLen = strlength(separate);
 		MyString<16> temp;
 		const int count = valueList.size();
 		FOR(count)
 		{
 			const int len = FToS(temp, valueList[i]);
-			strcat_s(buffer, temp.str(), len);
+			buffer.add(temp.str(), len);
 			if (i != count - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
 	template<int Length>
-	void stringsToString(MyString<Length>& buffer, const char** strList, const int stringCount, const char* seperate = ",")
+	void stringsToString(MyString<Length>& buffer, const char** strList, const int stringCount, const char* separate = ",")
 	{
-		const int seperateLen = strlength(seperate);
-		buffer[0] = '\0';
+		const int separateLen = strlength(separate);
+		buffer.clear();
 		FOR(stringCount)
 		{
-			strcat_s(buffer, strList[i]);
+			buffer.add(strList[i]);
 			if (i != stringCount - 1)
 			{
-				strcat_s(buffer, seperate, seperateLen);
+				buffer.add(separate, separateLen);
 			}
 		}
 	}
-	string stringsToString(const Vector<string>& strList, const char* seperate = ",")
-	{
-		string totalStr;
-		FOR_VECTOR(strList)
-		{
-			totalStr += strList[i];
-			if (i != strList.size() - 1)
-			{
-				totalStr += seperate;
-			}
-		}
-		return totalStr;
-	}
-	string stringsToString(const Set<string>& strList, const char* seperate = ",")
-	{
-		int index = 0;
-		string totalStr;
-		for (const string& str : strList)
-		{
-			totalStr += str;
-			if (index++ != strList.size() - 1)
-			{
-				totalStr += seperate;
-			}
-		}
-		return totalStr;
-	}
+	MICRO_LEGEND_FRAME_API string stringsToString(const Vector<string>& strList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API string stringsToString(const Set<string>& strList, const char* separate = ",");
 	//-----------------------------------------------------------------------------------------------------------------------------
 	// 字符串转换为基础数据类型数组
 	//-----------------------------------------------------------------------------------------------------------------------------
-	MICRO_LEGEND_FRAME_API void SToBs(const string& str, Vector<byte>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API int SToBs(const char* str, byte* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToBs(const string& str, Vector<byte>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API int SToBs(const char* str, byte* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int SToBs(const char* str, Array<Length, byte>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToBs(const char* str, Array<Length, byte>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		const int sourceLen = strlength(str);
 		MyString<4> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1527,28 +1223,27 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void SToSs(const string& str, Vector<short>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API int SToSs(const char* str, short* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToSs(const string& str, Vector<short>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API int SToSs(const char* str, short* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int SToSs(const string& str, Array<Length, short>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToSs(const string& str, Array<Length, short>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = (int)str.length();
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str, startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1564,42 +1259,41 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void SToUSs(const string& str, Vector<ushort>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToUSs(const string& str, Vector<ushort>& valueList, const char* separate = ",");
 	template<int Length>
-	void SToUSs(const string& str, ArrayList<Length, ushort>& valueList, const char* seperate = ",")
+	void SToUSs(const string& str, ArrayList<Length, ushort>& valueList, const char* separate = ",")
 	{
 		Vector<string> strList;
-		split(str, seperate, strList);
+		split(str, separate, strList);
 		valueList.clear();
 		for (const string& curStr : strList)
 		{
-			if (curStr.length() > 0)
+			if (!curStr.empty())
 			{
 				valueList.add(SToI(curStr));
 			}
 		}
 	}
-	MICRO_LEGEND_FRAME_API int SToUSs(const char* str, ushort* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API int SToUSs(const char* str, ushort* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int SToUSs(const char* str, Array<Length, ushort>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToUSs(const char* str, Array<Length, ushort>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<8> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1615,28 +1309,28 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void SToIs(const string& str, Vector<int>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API int SToIs(const char* str, int* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToIs(const string& str, Vector<int>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector<int> SToIs(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API int SToIs(const char* str, int* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int SToIs(const string& str, Array<Length, int>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToIs(const string& str, Array<Length, int>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = (int)str.length();
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str, startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1653,24 +1347,23 @@ namespace StringUtility
 		return curCount;
 	}
 	template<int Length>
-	void SToIs(const string& str, ArrayList<Length, int>& buffer, const char* seperate = ",", const bool showError = true)
+	void SToIs(const string& str, ArrayList<Length, int>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		const int sourceLen = (int)str.length();
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str, startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1685,25 +1378,24 @@ namespace StringUtility
 		}
 	}
 	template<int Length>
-	int SToIs(const char* str, Array<Length, int>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToIs(const char* str, Array<Length, int>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1719,28 +1411,27 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void SToUIs(const string& str, Vector<uint>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API int SToUIs(const char* str, uint* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToUIs(const string& str, Vector<uint>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API int SToUIs(const char* str, uint* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int SToUIs(const char* str, Array<Length, uint>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToUIs(const char* str, Array<Length, uint>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<16> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1756,28 +1447,27 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void stringToULLongs(const char* str, Vector<ullong>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API int stringToULLongs(const char* str, ullong* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void stringToULLongs(const char* str, Vector<ullong>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API int stringToULLongs(const char* str, ullong* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int stringToULLongs(const char* str, Array<Length, ullong>& buffer, const char* seperate = ",", const bool showError = true)
+	int stringToULLongs(const char* str, Array<Length, ullong>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1793,30 +1483,29 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void SToLLs(const char* str, Vector<llong>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API void SToLLs(const string& str, Vector<llong>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API Vector<llong> SToLLs(const string& str, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API int SToLLs(const char* str, llong* buffer, int bufferSize, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToLLs(const char* str, Vector<llong>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API void SToLLs(const string& str, Vector<llong>& valueList, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API Vector<llong> SToLLs(const string& str, const char* separate = ",");
+	MICRO_LEGEND_FRAME_API int SToLLs(const char* str, llong* buffer, int bufferSize, const char* separate = ",");
 	template<int Length>
-	int SToLLs(const string& str, Array<Length, llong>& buffer, int destOffset = 0, const char* seperate = ",", const bool showError = true)
+	int SToLLs(const string& str, Array<Length, llong>& buffer, int destOffset = 0, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = destOffset;
 		const int sourceLen = (int)str.length();
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str, startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1833,24 +1522,23 @@ namespace StringUtility
 		return curCount;
 	}
 	template<int Length>
-	void SToLLs(const string& str, ArrayList<Length, llong>& buffer, const char* seperate = ",", const bool showError = true)
+	void SToLLs(const string& str, ArrayList<Length, llong>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		const int sourceLen = (int)str.length();
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str, startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1865,25 +1553,24 @@ namespace StringUtility
 		}
 	}
 	template<int Length>
-	int SToLLs(const char* str, Array<Length, llong>& buffer, int destOffset = 0, const char* seperate = ",", const bool showError = true)
+	int SToLLs(const char* str, Array<Length, llong>& buffer, int destOffset = 0, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = destOffset;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1900,24 +1587,23 @@ namespace StringUtility
 		return curCount;
 	}
 	template<int Length>
-	void SToLLs(const char* str, ArrayList<Length, llong>& buffer, int destOffset = 0, const char* seperate = ",", const bool showError = true)
+	void SToLLs(const char* str, ArrayList<Length, llong>& buffer, int destOffset = 0, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1931,27 +1617,26 @@ namespace StringUtility
 			}
 		}
 	}
-	MICRO_LEGEND_FRAME_API void SToFs(const string& str, Vector<float>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToFs(const string& str, Vector<float>& valueList, const char* separate = ",");
 	template<int Length>
-	int SToFs(const char* str, Array<Length, float>& buffer, const char* seperate = ",", const bool showError = true)
+	int SToFs(const char* str, Array<Length, float>& buffer, const char* separate = ",", const bool showError = true)
 	{
 		int startPos = 0;
 		int curCount = 0;
 		const int sourceLen = strlength(str);
-		const int keyLen = strlength(seperate);
+		const int keyLen = strlength(separate);
 		MyString<32> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		bool ret = true;
 		while (ret)
 		{
-			ret = findString(str, seperate, &devidePos, startPos);
+			ret = findString(str, separate, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			dividePos = ret ? dividePos : sourceLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 转换为长整数放入列表
-			if (curString[0] == '\0')
+			if (curString.isEmpty())
 			{
 				continue;
 			}
@@ -1967,10 +1652,11 @@ namespace StringUtility
 		}
 		return curCount;
 	}
-	MICRO_LEGEND_FRAME_API void SToV2Is(const string& str, Vector<Vector2Int>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API void SToV2s(const string& str, Vector<Vector2>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API void SToV3Is(const string& str, Vector<Vector3Int>& valueList, const char* seperate = ",");
-	MICRO_LEGEND_FRAME_API void SToV3s(const string& str, Vector<Vector3>& valueList, const char* seperate = ",");
+	MICRO_LEGEND_FRAME_API void SToV2Is(const string& str, Vector<Vector2Int>& valueList, const char* separate = "|");
+	MICRO_LEGEND_FRAME_API void SToV2Is(const string& str, HashMap<int, int>& valueList, const char* separate = "|");
+	MICRO_LEGEND_FRAME_API void SToV2s(const string& str, Vector<Vector2>& valueList, const char* separate = "|");
+	MICRO_LEGEND_FRAME_API void SToV3Is(const string& str, Vector<Vector3Int>& valueList, const char* separate = "|");
+	MICRO_LEGEND_FRAME_API void SToV3s(const string& str, Vector<Vector3>& valueList, const char* separate = "|");
 	// 从一个ullong数组的字符串中移除指定的value的字符串
 	template<int Length>
 	bool removeULLongsString(MyString<Length>& valueArrayString, const ullong value)
@@ -1985,7 +1671,7 @@ namespace StringUtility
 		else
 		{
 			MyString<32> needRemoveString;
-			strcat_t(needRemoveString, valueString.str(), ",");
+			needRemoveString.add(valueString.str(), ",");
 			return removeString(valueArrayString, needRemoveString.str());
 		}
 	}
@@ -1996,7 +1682,7 @@ namespace StringUtility
 		ULLONG_STR(idStr, value);
 		if (valueArrayString[0] != '\0')
 		{
-			strcat_t(valueArrayString, ",", idStr.str());
+			valueArrayString.add(",", idStr.str());
 		}
 		else
 		{
@@ -2017,7 +1703,7 @@ namespace StringUtility
 		else
 		{
 			MyString<32> needRemoveString;
-			strcat_t(needRemoveString, valueString.str(), ",");
+			needRemoveString.add(valueString.str(), ",");
 			return removeString(valueArrayString, needRemoveString.str());
 		}
 	}
@@ -2028,7 +1714,7 @@ namespace StringUtility
 		LLONG_STR(idStr, value);
 		if (valueArrayString[0] != '\0')
 		{
-			strcat_t(valueArrayString, ",", idStr.str());
+			valueArrayString.add(",", idStr.str());
 		}
 		else
 		{
@@ -2038,6 +1724,7 @@ namespace StringUtility
 	template<int Length>
 	int split(const string& str, const char* key, ArrayList<Length, string>& stringBuffer, const bool removeEmpty = true, const bool showError = true)
 	{
+		stringBuffer.clear();
 		const int sourceLen = (int)str.length();
 		if (sourceLen == 0)
 		{
@@ -2046,29 +1733,26 @@ namespace StringUtility
 		const int keyLen = strlength(key);
 		constexpr int STRING_BUFFER = 1024;
 		MyString<STRING_BUFFER> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		int startPos = 0;
 		bool ret = true;
-		int elementCount = 0;
 		while (ret)
 		{
-			ret = findString(str, key, &devidePos, startPos);
+			ret = findString(str, key, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			if (devidePos - startPos >= STRING_BUFFER)
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
-				return elementCount;
+				return stringBuffer.size();
 			}
-			curString.copy(str, startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
-			++elementCount;
 			if (!stringBuffer.add(curString.str()))
 			{
 				if (showError)
@@ -2078,11 +1762,55 @@ namespace StringUtility
 				break;
 			}
 		}
-		return elementCount;
+		return stringBuffer.size();
+	}
+	template<int Length>
+	int split(const string& str, const char key, ArrayList<Length, string>& stringBuffer, const bool removeEmpty = true, const bool showError = true)
+	{
+		stringBuffer.clear();
+		const int sourceLen = (int)str.length();
+		if (sourceLen == 0)
+		{
+			return 0;
+		}
+		constexpr int STRING_BUFFER = 1024;
+		MyString<STRING_BUFFER> curString;
+		int dividePos = -1;
+		int startPos = 0;
+		bool ret = true;
+		while (ret)
+		{
+			// 无论是否查找到,都将前面一段字符串截取出来
+			dividePos = (int)str.find_first_of(key, startPos);
+			ret = dividePos >= 0;
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
+			{
+				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
+				return stringBuffer.size();
+			}
+			curString.set(str.c_str() + startPos, dividePos - startPos);
+			startPos = dividePos + 1;
+			// 放入列表
+			if (curString.isEmpty() && removeEmpty)
+			{
+				continue;
+			}
+			if (!stringBuffer.add(curString.str()))
+			{
+				if (showError)
+				{
+					ERROR("string buffer is too small! bufferSize:" + IToS(Length));
+				}
+				break;
+			}
+		}
+		return stringBuffer.size();
 	}
 	template<int Length>
 	int split(const char* str, const char* key, ArrayList<Length, string>& stringBuffer, const bool removeEmpty = true, const bool showError = true)
 	{
+		stringBuffer.clear();
 		const int sourceLen = strlength(str);
 		if (sourceLen == 0)
 		{
@@ -2091,29 +1819,26 @@ namespace StringUtility
 		const int keyLen = strlength(key);
 		constexpr int STRING_BUFFER = 1024;
 		MyString<STRING_BUFFER> curString;
-		int devidePos = -1;
+		int dividePos = -1;
 		int startPos = 0;
 		bool ret = true;
-		int elementCount = 0;
 		while (ret)
 		{
-			ret = findString(str, key, &devidePos, startPos);
+			ret = findString(str, key, &dividePos, startPos);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			devidePos = ret ? devidePos : sourceLen;
-			if (devidePos - startPos >= STRING_BUFFER)
+			dividePos = ret ? dividePos : sourceLen;
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
-				return elementCount;
+				return stringBuffer.size();
 			}
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + keyLen;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + keyLen;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
-			++elementCount;
 			if (!stringBuffer.add(curString.str()))
 			{
 				if (showError)
@@ -2123,11 +1848,12 @@ namespace StringUtility
 				break;
 			}
 		}
-		return elementCount;
+		return stringBuffer.size();
 	}
 	template<int Length>
 	int split(const char* str, const char key, ArrayList<Length, string>& stringBuffer, const bool removeEmpty = true, const bool showError = true)
 	{
+		stringBuffer.clear();
 		const int sourceLen = strlength(str);
 		if (sourceLen == 0)
 		{
@@ -2137,30 +1863,27 @@ namespace StringUtility
 		constexpr int STRING_BUFFER = 1024;
 		MyString<STRING_BUFFER> curString;
 		bool ret = true;
-		int elementCount = 0;
 		while (ret)
 		{
-			int devidePos = strchar(str, key, startPos, sourceLen);
+			int dividePos = strchar(str, key, startPos, sourceLen);
 			// 无论是否查找到,都将前面一段字符串截取出来
-			if (devidePos == -1)
+			if (dividePos == -1)
 			{
-				devidePos = sourceLen;
+				dividePos = sourceLen;
 				ret = false;
 			}
-			if (devidePos - startPos >= STRING_BUFFER)
+			if (dividePos - startPos >= STRING_BUFFER)
 			{
 				ERROR("分隔字符串失败,缓冲区太小,当前缓冲区为" + IToS(STRING_BUFFER) + "字节");
-				return elementCount;
+				return stringBuffer.size();
 			}
-			curString.copy(str + startPos, devidePos - startPos);
-			curString[devidePos - startPos] = '\0';
-			startPos = devidePos + 1;
+			curString.set(str + startPos, dividePos - startPos);
+			startPos = dividePos + 1;
 			// 放入列表
-			if (curString[0] == '\0' && removeEmpty)
+			if (curString.isEmpty() && removeEmpty)
 			{
 				continue;
 			}
-			++elementCount;
 			if (!stringBuffer.add(curString.str()))
 			{
 				if (showError)
@@ -2170,7 +1893,7 @@ namespace StringUtility
 				break;
 			}
 		}
-		return elementCount;
+		return stringBuffer.size();
 	}
 
 	template<int Length>
@@ -2181,6 +1904,12 @@ namespace StringUtility
 	}
 	template<int Length>
 	bool splitFull(const string& str, const char* key, ArrayList<Length, string>& stringBuffer, const bool removeEmpty = true, const bool showError = true)
+	{
+		const int elementCount = split(str, key, stringBuffer, removeEmpty, showError);
+		return elementCount == stringBuffer.maxSize();
+	}
+	template<int Length>
+	bool splitFull(const string& str, char key, ArrayList<Length, string>& stringBuffer, const bool removeEmpty = true, const bool showError = true)
 	{
 		const int elementCount = split(str, key, stringBuffer, removeEmpty, showError);
 		return elementCount == stringBuffer.maxSize();
@@ -2256,7 +1985,7 @@ namespace StringUtility
 	MICRO_LEGEND_FRAME_API void leftToRight(string& str);
 	MICRO_LEGEND_FRAME_API bool checkString(const string& str, const string& valid);
 	bool checkIntString(const string& str, const string& valid = "") { return checkString(str, "0123456789" + valid); }
-	bool checkFloatString(const string& str, const string& valid = "") { return checkIntString(str, "." + valid); }
+	bool checkFloatString(const string& str, const string& valid = "") { return checkIntString(str, '.' + valid); }
 	MICRO_LEGEND_FRAME_API bool hasNonAscii(const char* str);
 	MICRO_LEGEND_FRAME_API string charToHexString(byte value, bool upper = true);
 	MICRO_LEGEND_FRAME_API int getCharCount(const string& str, char key);
@@ -2317,24 +2046,24 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(queryStr, "\"", str, addComma ? "\"," : "\"");
+			queryStr.add("\"", str, addComma ? "\"," : "\"");
 		}
 		else
 		{
-			strcat_t(queryStr, "\"", addComma ? "\"," : "\"");
+			queryStr.add("\"", addComma ? "\"," : "\"");
 		}
 	}
 	void sqlAddString(string& queryStr, const string& str, const bool addComma)
 	{
 		if (checkSQLString(str))
 		{
-			queryStr += "\"";
+			queryStr += '\"';
 			queryStr += str;
 			queryStr += addComma ? "\"," : "\"";
 		}
 		else
 		{
-			queryStr += "\"";
+			queryStr += '\"';
 			queryStr += addComma ? "\"," : "\"";
 		}
 	}
@@ -2348,16 +2077,16 @@ namespace StringUtility
 			ANSIToUTF8(str, utf8String, Length, false);
 			if (checkSQLString(str))
 			{
-				strcat_t(queryStr, "\"", utf8String, addComma ? "\"," : "\"");
+				queryStr.add("\"", utf8String, addComma ? "\"," : "\"");
 			}
 			else
 			{
-				strcat_t(queryStr, "\"", addComma ? "\"," : "\"");
+				queryStr.add("\"", addComma ? "\"," : "\"");
 			}
 		}
 		else
 		{
-			strcat_t(queryStr, "\"", addComma ? "\"," : "\"");
+			queryStr.add("\"", addComma ? "\"," : "\"");
 		}
 	}
 	void sqlAddInt(char* queryStr, int size, int value, bool addComma = true);
@@ -2367,7 +2096,7 @@ namespace StringUtility
 		queryStr += temp.str();
 		if (addComma)
 		{
-			queryStr += ",";
+			queryStr += ',';
 		}
 	}
 	template<int Length>
@@ -2376,11 +2105,11 @@ namespace StringUtility
 		INT_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(queryStr, temp.str(), ",");
+			queryStr.add(temp.str(), ",");
 		}
 		else
 		{
-			strcat_s(queryStr, temp.str());
+			queryStr.add(temp.str());
 		}
 	}
 	void sqlAddUInt(char* queryStr, int size, int value, bool addComma = true);
@@ -2390,11 +2119,11 @@ namespace StringUtility
 		UINT_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(queryStr, temp.str(), ",");
+			queryStr.add(temp.str(), ",");
 		}
 		else
 		{
-			strcat_s(queryStr, temp.str());
+			queryStr.add(temp.str());
 		}
 	}
 	void sqlAddFloat(char* queryStr, int size, float value, bool addComma = true);
@@ -2404,7 +2133,7 @@ namespace StringUtility
 		queryStr += temp.str();
 		if (addComma)
 		{
-			queryStr += ",";
+			queryStr += ',';
 		}
 	}
 	template<int Length>
@@ -2413,11 +2142,11 @@ namespace StringUtility
 		FLOAT_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(queryStr, temp.str(), ",");
+			queryStr.add(temp.str(), ",");
 		}
 		else
 		{
-			strcat_s(queryStr, temp.str());
+			queryStr.add(temp.str());
 		}
 	}
 	void sqlAddULLong(char* queryStr, int size, ullong value, bool addComma = true);
@@ -2427,11 +2156,11 @@ namespace StringUtility
 		ULLONG_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(queryStr, temp.str(), ",");
+			queryStr.add(temp.str(), ",");
 		}
 		else
 		{
-			strcat_s(queryStr, temp.str());
+			queryStr.add(temp.str());
 		}
 	}
 	void sqlAddLLong(char* queryStr, int size, llong value, bool addComma = true);
@@ -2441,11 +2170,11 @@ namespace StringUtility
 		LLONG_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(queryStr, temp.str(), ",");
+			queryStr.add(temp.str(), ",");
 		}
 		else
 		{
-			strcat_s(queryStr, temp.str());
+			queryStr.add(temp.str());
 		}
 	}
 	void sqlAddLLong(string& queryStr, const llong value, const bool addComma = true)
@@ -2454,7 +2183,7 @@ namespace StringUtility
 		queryStr += temp.str();
 		if (addComma)
 		{
-			queryStr += ",";
+			queryStr += ',';
 		}
 	}
 	template<int Length>
@@ -2646,11 +2375,11 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(condition, col.c_str(), "=\"", str, "\"");
+			condition.add(col.c_str(), "=\"", str, "\"");
 		}
 		else
 		{
-			strcat_t(condition, col.c_str(), "=\"", "\"");
+			condition.add(col.c_str(), "=\"", "\"");
 		}
 	}
 	template<int Length>
@@ -2658,11 +2387,11 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(condition, col.c_str(), relationalOperator, "\"", str, "\"", logicalOperator);
+			condition.add(col.c_str(), relationalOperator, "\"", str, "\"", logicalOperator);
 		}
 		else
 		{
-			strcat_t(condition, col.c_str(), relationalOperator, "\"\"", logicalOperator);
+			condition.add(col.c_str(), relationalOperator, "\"\"", logicalOperator);
 		}
 	}
 	void sqlConditionString(string& condition, const string& col, const char* str, const char* relationalOperator, const char* logicalOperator)
@@ -2696,12 +2425,12 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(condition, col.c_str(), " LIKE \"%", str, "%\"");
+			condition.add(col.c_str(), " LIKE \"%", str, "%\"");
 		}
 		else
 		{
 			// 此处不好处理,如果条件带引号,直接去除的话,会导致查询全表
-			strcat_t(condition, col.c_str(), " = \"\"");
+			condition.add(col.c_str(), " = \"\"");
 		}
 	}
 	template<int Length>
@@ -2709,11 +2438,11 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(condition, col.c_str(), " LIKE \"%", str, "%\"", logicalOperator);
+			condition.add(col.c_str(), " LIKE \"%", str, "%\"", logicalOperator);
 		}
 		else
 		{
-			strcat_t(condition, col.c_str(), " = \"\"", logicalOperator);
+			condition.add(col.c_str(), " = \"\"", logicalOperator);
 		}
 	}
 	template<int Length>
@@ -2721,11 +2450,11 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(condition, col.c_str(), " LIKE \"", prev, str, end, "\"", logicalOperator);
+			condition.add(col.c_str(), " LIKE \"", prev, str, end, "\"", logicalOperator);
 		}
 		else
 		{
-			strcat_t(condition, col.c_str(), " = \"\"", logicalOperator);
+			condition.add(col.c_str(), " = \"\"", logicalOperator);
 		}
 	}
 	void sqlConditionStringLike(string& condition, const string& col, const char* str)
@@ -2784,19 +2513,19 @@ namespace StringUtility
 	void sqlConditionInt(MyString<Length>& condition, const string& col, const int value)
 	{
 		INT_STR(temp, value);
-		strcat_t(condition, col.c_str(), "=", temp.str());
+		condition.add(col.c_str(), "=", temp.str());
 	}
 	template<int Length>
 	void sqlConditionInt(MyString<Length>& condition, const string& col, const int value, const char* relationalOperator)
 	{
 		INT_STR(temp, value);
-		strcat_t(condition, col.c_str(), relationalOperator, temp.str());
+		condition.add(col.c_str(), relationalOperator, temp.str());
 	}
 	template<int Length>
 	void sqlConditionInt(MyString<Length>& condition, const string& col, const int value, const char* relationalOperator, const char* logicalOperator)
 	{
 		INT_STR(temp, value);
-		strcat_t(condition, col.c_str(), relationalOperator, temp.str(), logicalOperator);
+		condition.add(col.c_str(), relationalOperator, temp.str(), logicalOperator);
 	}
 	void sqlConditionInt(string& condition, const string& col, const int value)
 	{
@@ -2824,19 +2553,19 @@ namespace StringUtility
 	void sqlConditionFloat(MyString<Length>& condition, const string& col, const float value)
 	{
 		FLOAT_STR(temp, value);
-		strcat_t(condition, col.c_str(), "=", temp.str());
+		condition.add(col.c_str(), "=", temp.str());
 	}
 	template<int Length>
 	void sqlConditionFloat(MyString<Length>& condition, const string& col, const float value, const char* relationalOperator)
 	{
 		FLOAT_STR(temp, value);
-		strcat_t(condition, col.c_str(), relationalOperator, temp.str());
+		condition.add(col.c_str(), relationalOperator, temp.str());
 	}
 	template<int Length>
 	void sqlConditionFloat(MyString<Length>& condition, const string& col, const float value, const char* relationalOperator, const char* logicalOperator)
 	{
 		FLOAT_STR(temp, value);
-		strcat_t(condition, col.c_str(), relationalOperator, temp.str(), logicalOperator);
+		condition.add(col.c_str(), relationalOperator, temp.str(), logicalOperator);
 	}
 	void sqlConditionFloat(string& condition, const string& col, const float value)
 	{
@@ -2864,19 +2593,19 @@ namespace StringUtility
 	void sqlConditionLLong(MyString<Length>& condition, const string& col, const llong value)
 	{
 		LLONG_STR(temp, value);
-		strcat_t(condition, col.c_str(), "=", temp.str());
+		condition.add(col.c_str(), "=", temp.str());
 	}
 	template<int Length>
 	void sqlConditionLLong(MyString<Length>& condition, const string& col, const llong value, const char* relationalOperator)
 	{
 		LLONG_STR(temp, value);
-		strcat_t(condition, col.c_str(), relationalOperator, temp.str());
+		condition.add(col.c_str(), relationalOperator, temp.str());
 	}
 	template<int Length>
 	void sqlConditionLLong(MyString<Length>& condition, const string& col, const llong value, const char* relationalOperator, const char* logicalOperator)
 	{
 		LLONG_STR(temp, value);
-		strcat_t(condition, col.c_str(), relationalOperator, temp.str(), logicalOperator);
+		condition.add(col.c_str(), relationalOperator, temp.str(), logicalOperator);
 	}
 	void sqlConditionLLong(string& condition, const string& col, const llong value)
 	{
@@ -2915,11 +2644,11 @@ namespace StringUtility
 			char* utf8String = nullptr;
 			CharArrayScopeThread scope(utf8String, Length);
 			ANSIToUTF8(str, utf8String, Length, false);
-			strcat_t(updateInfo, col.c_str(), " = \"", utf8String, addComma ? "\"," : "\"");
+			updateInfo.add(col.c_str(), " = \"", utf8String, addComma ? "\"," : "\"");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = \"", addComma ? "\"," : "\"");
+			updateInfo.add(col.c_str(), " = \"", addComma ? "\"," : "\"");
 		}
 	}
 	void sqlUpdateString(string& updateInfo, const string& col, const char* str, const bool addComma = true)
@@ -2945,11 +2674,11 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(updateInfo, col.c_str(), " = \"", str, addComma ? "\"," : "\"");
+			updateInfo.add(col.c_str(), " = \"", str, addComma ? "\"," : "\"");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = \"", addComma ? "\"," : "\"");
+			updateInfo.add(col.c_str(), " = \"", addComma ? "\"," : "\"");
 		}
 	}
 	template<int Length>
@@ -2957,13 +2686,13 @@ namespace StringUtility
 	{
 		if (checkSQLString(str))
 		{
-			strcat_t(updateInfo, col.c_str(), " = \"");
-			strcat_s(updateInfo, str, strLength);
-			strcat_t(updateInfo, addComma ? "\"," : "\"");
+			updateInfo.add(col.c_str(), " = \"");
+			updateInfo.add(str, strLength);
+			updateInfo.add(addComma ? "\"," : "\"");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = \"", addComma ? "\"," : "\"");
+			updateInfo.add(col.c_str(), " = \"", addComma ? "\"," : "\"");
 		}
 	}
 	void sqlUpdateString(string& updateInfo, const string& col, const string& str, const bool addComma = true)
@@ -2992,11 +2721,11 @@ namespace StringUtility
 		INT_STR(temp, intValue);
 		if (addComma)
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str(), ",");
+			updateInfo.add(col.c_str(), " = ", temp.str(), ",");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str());
+			updateInfo.add(col.c_str(), " = ", temp.str());
 		}
 	}
 	void sqlUpdateBool(string& updateInfo, const string& col, const bool value, const bool addComma = true)
@@ -3019,11 +2748,11 @@ namespace StringUtility
 		INT_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str(), ",");
+			updateInfo.add(col.c_str(), " = ", temp.str(), ",");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str());
+			updateInfo.add(col.c_str(), " = ", temp.str());
 		}
 	}
 	void sqlUpdateInt(string& updateInfo, const string& col, const int value, const bool addComma = true)
@@ -3044,11 +2773,11 @@ namespace StringUtility
 		FLOAT_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str(), ",");
+			updateInfo.add(col.c_str(), " = ", temp.str(), ",");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str());
+			updateInfo.add(col.c_str(), " = ", temp.str());
 		}
 	}
 	void sqlUpdateFloat(string& updateInfo, const string& col, const float value, const bool addComma = true)
@@ -3069,11 +2798,11 @@ namespace StringUtility
 		LLONG_STR(temp, value);
 		if (addComma)
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str(), ",");
+			updateInfo.add(col.c_str(), " = ", temp.str(), ",");
 		}
 		else
 		{
-			strcat_t(updateInfo, col.c_str(), " = ", temp.str());
+			updateInfo.add(col.c_str(), " = ", temp.str());
 		}
 	}
 	void sqlUpdateLLong(string& updateInfo, const string& col, const llong value, const bool addComma = true)
@@ -3195,7 +2924,7 @@ namespace StringUtility
 	MICRO_LEGEND_FRAME_API string base64_decode(const char* code, int codeLen);
 	// 计算一个字符串的SHA-1值
 	MICRO_LEGEND_FRAME_API uint32_t rotate_left(uint32_t value, int shift);
-	MICRO_LEGEND_FRAME_API vector<uint8_t> pad_message(const string& message);
+	MICRO_LEGEND_FRAME_API Vector<uint8_t> pad_message(const string& message);
 	MICRO_LEGEND_FRAME_API uint32_t bytes_to_uint32(const uint8_t* bytes);
 	MICRO_LEGEND_FRAME_API void uint32_to_bytes(uint32_t value, uint8_t* bytes);
 	MICRO_LEGEND_FRAME_API void sha1(const string& message, byte* buffer);
@@ -3288,6 +3017,7 @@ using StringUtility::INVERSE_POWER_INT_10;
 using StringUtility::POWER_LLONG_10;
 using StringUtility::INVERSE_POWER_LLONG_10;
 using StringUtility::V2IToS;
+using StringUtility::V2IsToS;
 using StringUtility::V2UIToS;
 using StringUtility::byteToHexChar;
 using StringUtility::removeLLongsString;
@@ -3301,3 +3031,33 @@ using StringUtility::SToV3Is;
 using StringUtility::base64_encode;
 using StringUtility::sha1;
 using StringUtility::appendWithAlign;
+using StringUtility::bytesToString;
+using StringUtility::findStringLower;
+using StringUtility::findStringPos;
+using StringUtility::floatToStringExtra;
+using StringUtility::getFileSuffix;
+using StringUtility::getFirstFolderName;
+using StringUtility::getLastChar;
+using StringUtility::getLastNotNumberPos;
+using StringUtility::getLastNumber;
+using StringUtility::removeEndString;
+using StringUtility::removeFirstPath;
+using StringUtility::removeLast;
+using StringUtility::removeStart;
+using StringUtility::removeString;
+using StringUtility::removeSuffix;
+using StringUtility::strcat_s;
+using StringUtility::strcpy_s;
+using StringUtility::stringToULLong;
+using StringUtility::V2SToS;
+using StringUtility::V2USToS;
+using StringUtility::zeroString;
+using StringUtility::findCharCount;
+using StringUtility::_itoa_s;
+using StringUtility::greaterPower2;
+using StringUtility::removeLastAll;
+using StringUtility::removeStartAll;
+using StringUtility::removeLastComma;
+using StringUtility::getNotNumberSubString;
+using StringUtility::_i64toa_s_;
+using StringUtility::replaceSuffix;

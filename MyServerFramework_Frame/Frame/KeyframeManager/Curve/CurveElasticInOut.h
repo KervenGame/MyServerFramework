@@ -18,15 +18,15 @@ public:
         }
 		const float period = 0.45f;
 		const float s = period / TWO_PI_RADIAN * asin(1.0f / mOvershootOrAmplitude);
-        if (time < 1.0f)
+        if (time < 0.5f)
         {
-            time -= 1.0f;
-            return -0.5f * (mOvershootOrAmplitude * pow(2.0f, 10.0f * time) * sin((time - s) * TWO_PI_RADIAN / period));
+            float t = time * 2.0f - 1.0f;
+            return -0.5f * (mOvershootOrAmplitude * pow(2.0f, 10.0f * t) * sin((t - s) * TWO_PI_RADIAN / period));
         }
         else
         {
-            time -= 1.0f;
-            return mOvershootOrAmplitude * pow(2.0f, -10.0f * time) * sin((time - s) * TWO_PI_RADIAN / period) * 0.5f + 1.0f;
+            float t = time * 2.0f - 1.0f;
+            return mOvershootOrAmplitude * pow(2.0f, -10.0f * t) * sin((t - s) * TWO_PI_RADIAN / period) * 0.5f + 1.0f;
         }
 	}
 };

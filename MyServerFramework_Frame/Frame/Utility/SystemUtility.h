@@ -20,6 +20,13 @@ namespace SystemUtility
 		usleep(timeMS * 1000);
 #endif
 	}
+	// 只需要在windows下才会暂停,linux中不需要暂停
+	void systemPause()
+	{
+#ifdef WINDOWS
+		system("pause");
+#endif
+	}
 	// 获取系统从启动到现在所经过的毫秒,每帧更新一次的
 	llong getTimeMSecondUTC() { return mTimeMSecondUTC; }
 	void setTimeMSecondUTC(const llong timeMS) { mTimeMSecondUTC = timeMS; }
@@ -99,7 +106,7 @@ namespace SystemUtility
 	// 获得程序当前所在路径,带文件名
 	string getProgramFile()
 	{
-		MyString<256> name;
+		MyCharArray<256> name;
 #ifdef WINDOWS
 		GetModuleFileNameA(nullptr, name.toBuffer(), name.size());
 #elif defined LINUX
@@ -172,9 +179,13 @@ using SystemUtility::setTimeMSecondUTC;
 using SystemUtility::setTimeSecondUTC;
 using SystemUtility::makeIDThread;
 using SystemUtility::sleep;
+using SystemUtility::systemPause;
 using SystemUtility::getTimeStruct;
 using SystemUtility::convertToTimestamp;
 using SystemUtility::daysToSeconds;
 using SystemUtility::getTodayEnd;
 using SystemUtility::getTodayBegin;
 using SystemUtility::getDaysInMonth;
+using SystemUtility::isLeapYear;
+using SystemUtility::getCPUCoreCount;
+using SystemUtility::getProgramFile;

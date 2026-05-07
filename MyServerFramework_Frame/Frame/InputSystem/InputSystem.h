@@ -12,7 +12,7 @@ public:
 	void lateUpdate(float elapsedTime) override;
 	void keyDown(int key);
 	void keyUp(int key);
-	void onChar(const char key) { mCurCharList.insert(key); }
+	void onChar(const char key) { mCurCharList.add(key); }
 	bool isKeyDown(int key) const;
 	bool isKeyCurrentDown(int key) const;
 	bool isKeyCurrentUp(int key) const;

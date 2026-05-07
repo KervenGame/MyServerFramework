@@ -8,7 +8,7 @@ class MICRO_LEGEND_FRAME_API SerializerRead
 {
 public:
 	SerializerRead(const char* buffer, int bufferSize);
-	template<typename T, typename TypeCheck = typename IsPodType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodType<T>::mValue>>
 	bool read(T& value)
 	{
 		return BinaryUtility::read<T>(mBuffer, mBufferSize, mIndex, value);
@@ -39,12 +39,12 @@ public:
 	{
 		return value.readFromBuffer(this);
 	}
-	template<typename T, typename TypeCheck = typename IsPodType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodType<T>::mValue>>
 	T read()
 	{
 		return BinaryUtility::read<T>(mBuffer, mBufferSize, mIndex);
 	}
-	template<typename T, typename TypeCheck = typename IsPodType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodType<T>::mValue>>
 	bool readList(Vector<T>& list)
 	{
 		int count;

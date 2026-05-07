@@ -8,7 +8,7 @@ void ComponentKeyframe::onFrameTick(const float elapsedTime)
 	}
 	mCurrentTime += elapsedTime;
 	bool done = false;
-	// 无限播放当前震动
+	// 无限播放当前动画
 	if (mPlayLength < 0.0f)
 	{
 		if (mCurrentTime > mOnceLength)
@@ -16,7 +16,7 @@ void ComponentKeyframe::onFrameTick(const float elapsedTime)
 			mCurrentTime = 0.0f;
 		}
 	}
-	// 播放固定长度的震动
+	// 播放固定长度的动画
 	else
 	{
 		// 超过时间则停止,暂时不播放最后一帧
@@ -112,6 +112,7 @@ void ComponentKeyframe::resetProperty()
 	mCurrentTime = 0.0f;
 	mPlayedTime = 0.0f;
 	mOnceLength = 1.0f;
+	mInverseOnceLength = 1.0f;
 	mPlayLength = 0.0f;
 	mStopValue = 0.0f;
 	mKeyframeID = 0;

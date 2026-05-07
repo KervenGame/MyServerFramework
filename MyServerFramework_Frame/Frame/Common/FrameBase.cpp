@@ -7,6 +7,7 @@ namespace FrameBase
 	CharacterManager* mCharacterManager;
 	VectorPoolManager* mVectorPoolManager;
 	CommandSystem* mCommandSystem;
+	DelayCallSystem* mDelayCallSystem;
 	RandomSystem* mRandomSystem;
 	FrameConfigSystem* mFrameConfigSystem;
 	ExcelManager* mExcelManager;
@@ -37,7 +38,6 @@ namespace FrameBase
 	CounterThreadPool* mCounterThreadPool;
 	DelayCommandPool* mDelayCommandPool;
 	DTNodePool* mDTNodePool;
-	EventInfoPool* mEventInfoPool;
 	GameComponentPool* mGameComponentPool;
 	LogInfoPool* mLogInfoPool;
 #ifdef _MYSQL
@@ -46,13 +46,14 @@ namespace FrameBase
 #ifdef _MYSQL
 	MySQLDataPool* mMySQLDataPool;
 #endif
+	PacketTCPCSThreadPool* mPacketTCPCSThreadPool;
 	PacketTCPPool* mPacketTCPPool;
-	PacketTCPThreadPool* mPacketTCPThreadPool;
+	PacketTCPSCThreadPool* mPacketTCPSCThreadPool;
+	PacketUDPThreadPool* mPacketUDPThreadPool;
 	PacketWebSocketPool* mPacketWebSocketPool;
 	PacketWebSocketThreadPool* mPacketWebSocketThreadPool;
 	StateParamPool* mStateParamPool;
 	StatePool* mStatePool;
-	TickerPool* mTickerPool;
 	TimePointPool* mTimePointPool;
 	CharacterFactoryManager* mCharacterFactoryManager;
 	CharacterStateFactoryManager* mCharacterStateFactoryManager;
@@ -68,6 +69,7 @@ namespace FrameBase
 		mServerFramework->getSystem(STR(CharacterManager), mCharacterManager);
 		mServerFramework->getSystem(STR(VectorPoolManager), mVectorPoolManager);
 		mServerFramework->getSystem(STR(CommandSystem), mCommandSystem);
+		mServerFramework->getSystem(STR(DelayCallSystem), mDelayCallSystem);
 		mServerFramework->getSystem(STR(RandomSystem), mRandomSystem);
 		mServerFramework->getSystem(STR(FrameConfigSystem), mFrameConfigSystem);
 		mServerFramework->getSystem(STR(ExcelManager), mExcelManager);
@@ -98,7 +100,6 @@ namespace FrameBase
 		mServerFramework->getSystem(STR(CounterThreadPool), mCounterThreadPool);
 		mServerFramework->getSystem(STR(DelayCommandPool), mDelayCommandPool);
 		mServerFramework->getSystem(STR(DTNodePool), mDTNodePool);
-		mServerFramework->getSystem(STR(EventInfoPool), mEventInfoPool);
 		mServerFramework->getSystem(STR(GameComponentPool), mGameComponentPool);
 		mServerFramework->getSystem(STR(LogInfoPool), mLogInfoPool);
 #ifdef _MYSQL
@@ -107,13 +108,14 @@ namespace FrameBase
 #ifdef _MYSQL
 		mServerFramework->getSystem(STR(MySQLDataPool), mMySQLDataPool);
 #endif
+		mServerFramework->getSystem(STR(PacketTCPCSThreadPool), mPacketTCPCSThreadPool);
 		mServerFramework->getSystem(STR(PacketTCPPool), mPacketTCPPool);
-		mServerFramework->getSystem(STR(PacketTCPThreadPool), mPacketTCPThreadPool);
+		mServerFramework->getSystem(STR(PacketTCPSCThreadPool), mPacketTCPSCThreadPool);
+		mServerFramework->getSystem(STR(PacketUDPThreadPool), mPacketUDPThreadPool);
 		mServerFramework->getSystem(STR(PacketWebSocketPool), mPacketWebSocketPool);
 		mServerFramework->getSystem(STR(PacketWebSocketThreadPool), mPacketWebSocketThreadPool);
 		mServerFramework->getSystem(STR(StateParamPool), mStateParamPool);
 		mServerFramework->getSystem(STR(StatePool), mStatePool);
-		mServerFramework->getSystem(STR(TickerPool), mTickerPool);
 		mServerFramework->getSystem(STR(TimePointPool), mTimePointPool);
 		mServerFramework->getSystem(STR(CharacterFactoryManager), mCharacterFactoryManager);
 		mServerFramework->getSystem(STR(CharacterStateFactoryManager), mCharacterStateFactoryManager);
@@ -131,6 +133,7 @@ namespace FrameBase
 		mCharacterManager = nullptr;
 		mVectorPoolManager = nullptr;
 		mCommandSystem = nullptr;
+		mDelayCallSystem = nullptr;
 		mRandomSystem = nullptr;
 		mFrameConfigSystem = nullptr;
 		mExcelManager = nullptr;
@@ -161,7 +164,6 @@ namespace FrameBase
 		mCounterThreadPool = nullptr;
 		mDelayCommandPool = nullptr;
 		mDTNodePool = nullptr;
-		mEventInfoPool = nullptr;
 		mGameComponentPool = nullptr;
 		mLogInfoPool = nullptr;
 #ifdef _MYSQL
@@ -170,13 +172,14 @@ namespace FrameBase
 #ifdef _MYSQL
 		mMySQLDataPool = nullptr;
 #endif
+		mPacketTCPCSThreadPool = nullptr;
 		mPacketTCPPool = nullptr;
-		mPacketTCPThreadPool = nullptr;
+		mPacketTCPSCThreadPool = nullptr;
+		mPacketUDPThreadPool = nullptr;
 		mPacketWebSocketPool = nullptr;
 		mPacketWebSocketThreadPool = nullptr;
 		mStateParamPool = nullptr;
 		mStatePool = nullptr;
-		mTickerPool = nullptr;
 		mTimePointPool = nullptr;
 		mCharacterFactoryManager = nullptr;
 		mCharacterStateFactoryManager = nullptr;

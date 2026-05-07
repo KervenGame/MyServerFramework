@@ -23,7 +23,7 @@ public:
 	{
 		if (!mData->updateBool(value, index))
 		{
-			ERROR("更新缓存数据类型错误");
+			ERROR("更新缓存数据类型错误, table:" + string(mTable->getTableName()) + ", col:" + mTable->getColName(index) + ", 字段想要更新类型为bool,但实际不是bool");
 		}
 		setColumnValid(index);
 	}
@@ -31,7 +31,7 @@ public:
 	{
 		if (!mData->updateInt(value, index))
 		{
-			ERROR("更新缓存数据类型错误");
+			ERROR("更新缓存数据类型错误, table:" + string(mTable->getTableName()) + ", col:" + mTable->getColName(index) + ", 字段想要更新类型为int,但实际不是int");
 		}
 		setColumnValid(index);
 	}
@@ -39,7 +39,7 @@ public:
 	{
 		if (!mData->updateFloat(value, index))
 		{
-			ERROR("更新缓存数据类型错误");
+			ERROR("更新缓存数据类型错误, table:" + string(mTable->getTableName()) + ", col:" + mTable->getColName(index) + ", 字段想要更新类型为float,但实际不是float");
 		}
 		setColumnValid(index);
 	}
@@ -47,7 +47,7 @@ public:
 	{
 		if (!mData->updateLLong(value, index))
 		{
-			ERROR("更新缓存数据类型错误");
+			ERROR("更新缓存数据类型错误, table:" + string(mTable->getTableName()) + ", col:" + mTable->getColName(index) + ", 字段想要更新类型为llong,但实际不是llong");
 		}
 		setColumnValid(index);
 	}
@@ -55,7 +55,7 @@ public:
 	{
 		if (!mData->updateString(value, index))
 		{
-			ERROR("更新缓存数据类型错误");
+			ERROR("更新缓存数据类型错误, table:" + string(mTable->getTableName()) + ", col:" + mTable->getColName(index) + ", 字段想要更新类型为string,但实际不是string");
 		}
 		setColumnValid(index);
 	}

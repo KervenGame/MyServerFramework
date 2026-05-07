@@ -34,7 +34,7 @@ public:
         {
             return;
         }
-        other.mList.clone(mList);
+        other.mList.cloneTo(mList);
         mCounter->increase();
     }
     // 移动构造函数
@@ -73,14 +73,14 @@ public:
     // 指针访问操作符,只允许左值调用,右值不能调用,因为容易产生析构后才返回的问题
     const HashMap<llong, T*>& get() const& { return mList; }
     const HashMap<llong, T*>& get() const&& = delete;
-    bool isValid() const { return mList.size() != 0; }
+    bool isValid() const            { return mList.size() != 0; }
     // 如果已经确认data在外部被销毁了,则可以从当前列表中移除
-    void erase(T* data) { mList.erase(data->mID); }
-    void erase(const Vector<T*>& dataList)
+    void remove(T* data)            { mList.remove(data->mID); }
+    void remove(const Vector<T*>& dataList)
     {
         for (MySQLData* data : dataList)
         {
-            mList.erase(data->mID);
+            mList.remove(data->mID);
         }
     }
     void release()

@@ -50,7 +50,7 @@ public:
 		{
 			Table* data = new Table();
 			data->parse(this);
-			dataList.push_back(data);
+			dataList.add(data);
 		}
 	}
 protected:

@@ -16,7 +16,7 @@ public:
 
 		// 尝试从未使用列表中查找
 		auto* unuseMap = mUnuseMemoryList.getPtr(type);
-		if (unuseMap != nullptr && unuseMap->size() > 0)
+		if (unuseMap != nullptr && !unuseMap->isEmpty())
 		{
 			if (auto* unuseSet = unuseMap->getPtr(count))
 			{
@@ -29,8 +29,8 @@ public:
 		{
 			data = new T[count];
 			// 记录下已经分配的总大小
-			mTypeNameList.insert(type, typeid(T).name());
-			mCreatedSizeList.insertOrGet(type) += count * sizeof(T);
+			mTypeNameList.add(type, typeid(T).name());
+			mCreatedSizeList.addOrGet(type) += count * sizeof(T);
 		}
 
 		// char数组和wchar_t数组需要保证第一个元素为0
@@ -49,14 +49,16 @@ public:
 		return static_cast<T*>(data);
 	}
 	template<typename T>
-	void release(T* data, int elementCount)
+	void release(T*& data, int elementCount)
 	{
 		if (data == nullptr || elementCount == 0)
 		{
+			data = nullptr;
 			return;
 		}
 		// 添加到未使用列表中
-		mUnuseMemoryList.insertOrGet((int)typeid(T).hash_code()).insertOrGet(elementCount).push_back((char*)data);
+		mUnuseMemoryList.addOrGet((int)typeid(T).hash_code()).addOrGet(elementCount).add((char*)data);
+		data = nullptr;
 	}
 	void dump();
 public:

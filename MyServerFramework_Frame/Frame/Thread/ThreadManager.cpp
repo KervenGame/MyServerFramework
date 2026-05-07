@@ -2,7 +2,7 @@
 
 ThreadManager::~ThreadManager()
 {
-	if (mThreadList.size() > 0)
+	if (!mThreadList.isEmpty())
 	{
 		print(("有" + UIToS(mThreadList.size()) + "个线程未正常关闭").c_str());
 	}
@@ -10,10 +10,10 @@ ThreadManager::~ThreadManager()
 	DELETE_MAP(mThreadList);
 }
 
-CustomThread* ThreadManager::createThread(const string& name, CustomThreadCallback callback, void* args, CustomThreadCallback preCmdCallback, CustomThreadCallback endCmdCallback)
+CustomThread* ThreadManager::createThread(const string& name, VoidCallback callback, VoidCallback preCmdCallback, VoidCallback endCmdCallback)
 {
-	CustomThread* thread = new CustomThread(name, callback, args, preCmdCallback, endCmdCallback);
-	mThreadList.insert(thread->getThreadHandle(), thread);
+	CustomThread* thread = new CustomThread(name, callback, preCmdCallback, endCmdCallback);
+	mThreadList.add(thread->getThreadHandle(), thread);
 	return thread;
 }
 
@@ -23,6 +23,6 @@ void ThreadManager::destroyThread(CustomThread*& thread)
 	{
 		return;
 	}
-	mThreadList.erase(thread->getThreadHandle());
+	mThreadList.remove(thread->getThreadHandle());
 	DELETE(thread);
 }

@@ -10,6 +10,7 @@ class CSServerCheckPing : public PacketTCP
 	BASE(CSServerCheckPing, PacketTCP);
 public:
 	int mIndex = 0;
+	static CSServerCheckPing mStaticObject;
 	static string mPacketName;
 public:
 	CSServerCheckPing()
@@ -17,19 +18,32 @@ public:
 		mType = PACKET_TYPE::CSServerCheckPing;
 		mShowInfo = false;
 	}
+	static CSServerCheckPing& get()
+	{
+		mStaticObject.resetProperty();
+		return mStaticObject;
+	}
 	static const string& getStaticPacketName() { return mPacketName; }
 	const string& getPacketName() override { return mPacketName; }
-	bool readFromBuffer(SerializerBitRead* reader) override
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override
 	{
 		bool success = true;
-		success = success && reader->readSigned(mIndex);
+		success = success && reader->readSigned(needReadSign, mIndex);
 		return success;
 	}
-	bool writeToBuffer(SerializerBitWrite* serializer) const override
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override
 	{
 		bool success = true;
-		success = success && serializer->writeSigned(mIndex);
+		success = success && writer->writeSigned(needWriteSign, mIndex);
 		return success;
+	}
+	bool generateHasSignInternal() const override
+	{
+		if (mIndex < 0)
+		{
+			return true;
+		}
+		return false;
 	}
 	void resetProperty() override
 	{

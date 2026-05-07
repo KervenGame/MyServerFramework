@@ -44,7 +44,7 @@ public:
 		{
 			mEndCallback = new Vector<pair<CommandCallback, void*>>();
 		}
-		mEndCallback->emplace_back(cmdCallback, userData);
+		mEndCallback->emplace(cmdCallback, userData);
 	}
 	void addStartCommandCallback(CommandCallback cmdCallback, void* userData)
 	{
@@ -56,7 +56,7 @@ public:
 		{
 			mStartCallback = new Vector<pair<CommandCallback, void*>>();
 		}
-		mStartCallback->emplace_back(cmdCallback, userData);
+		mStartCallback->emplace(cmdCallback, userData);
 	}
 	void runEndCallBack();
 	void runStartCallBack();
@@ -64,7 +64,7 @@ protected:
 	template<typename... TypeList>
 	void debug(MyString<1024>& buffer, TypeList&&... params)
 	{
-		strcat_t(buffer, forward<TypeList>(params)...);
+		buffer.add(Array<sizeof...(params), const char*>{ forward<TypeList>(params)... });
 	}
 protected:
 	Vector<pair<CommandCallback, void*>>* mStartCallback = nullptr;	// 命令开始执行时的回调函数

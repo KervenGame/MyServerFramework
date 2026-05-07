@@ -7,5 +7,5 @@ string SCAttack::mPacketName = STR(SCAttack);
 
 void SCAttack::send(CharacterPlayer* player)
 {
-	sendPacketTCP<This>(player->getClient());
+	sendPacketTCP(&get(), player->getClient());
 }

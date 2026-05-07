@@ -2,7 +2,7 @@
 
 void TickerSystem::quit()
 {
-	mTickerPool->destroyClassList(mTickerList);
+	UN_CLASS(mTickerList);
 }
 
 void TickerSystem::update(const float elapsedTime)
@@ -13,15 +13,15 @@ void TickerSystem::update(const float elapsedTime)
 		cor->update(elapsedTime);
 		if (cor->isFinish())
 		{
-			mTickerList.eraseElement(cor);
-			mTickerPool->destroyClass(cor);
+			mTickerList.remove(cor);
+			UN_CLASS(cor);
 		}
 	}
 }
 
 void TickerSystem::createTicker(BoolFunction callback)
 {
-	Ticker* cor = mTickerPool->newClass();
+	Ticker* cor = CLASS<Ticker>();
 	cor->setCallback(callback);
-	mTickerList.push_back(cor);
+	mTickerList.add(cor);
 }

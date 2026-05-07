@@ -4,7 +4,7 @@ void EventSystem::quit()
 {
 	for (auto& item : mListenerEventMap)
 	{
-		mEventInfoPool->destroyClassList(item.second);
+		UN_CLASS(item.second);
 	}
 	mListenerEventMap.clear();
 	mCharacterEventList.clear();
@@ -20,9 +20,9 @@ void EventSystem::update(float elapsedTime)
 	}
 	Vector<int> removeEvent;
 	Vector<llong> removeCharacterEvent;
-	for (auto& itemChracter : mCharacterEventList)
+	for (auto& itemCharacter : mCharacterEventList)
 	{
-		auto& characterListenerList = itemChracter.second;
+		auto& characterListenerList = itemCharacter.second;
 		if (characterListenerList.isEmpty())
 		{
 			continue;
@@ -32,36 +32,43 @@ void EventSystem::update(float elapsedTime)
 		{
 			if (itemEvent.second.isEmpty())
 			{
-				removeEvent.push_back(itemEvent.first);
+				removeEvent.add(itemEvent.first);
 			}
 		}
-		if (removeEvent.size() > 0)
+		if (!removeEvent.isEmpty())
 		{
 			for (const int eventType : removeEvent)
 			{
-				characterListenerList.erase(eventType);
+				characterListenerList.remove(eventType);
 			}
 			if (characterListenerList.isEmpty())
 			{
-				removeCharacterEvent.push_back(itemChracter.first);
+				removeCharacterEvent.add(itemCharacter.first);
 			}
 		}
 	}
-	if (removeCharacterEvent.size() > 0)
+	if (!removeCharacterEvent.isEmpty())
 	{
 		for (const llong characterGUID : removeCharacterEvent)
 		{
-			mCharacterEventList.erase(characterGUID);
+			mCharacterEventList.remove(characterGUID);
 		}
 	}
 	mNeedCheckEmptyEvent = false;
 }
 
-void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
+void EventSystem::pushEventInternal(GameEvent* param, const Character* character)
 {
+	const llong characterID = character != nullptr ? character->getGUID() : 0;
 	const int eventType = param->mType;
 	param->mCharacterGUID = characterID;
 
+	if (mDispatchDepth >= MAX_DEPTH)
+	{
+		ERROR("事件嵌套太深");
+		return;
+	}
+	++mDispatchDepth;
 	// 如果是玩家局部的事件,则只发送给玩家的事件监听
 	FOR_ONCE
 	{
@@ -76,7 +83,7 @@ void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
 		}
 		if (characterListenerList->isEmpty())
 		{
-			mCharacterEventList.erase(characterID);
+			mCharacterEventList.remove(characterID);
 			break;
 		}
 		auto* listenerList = characterListenerList->getPtr(eventType);
@@ -86,7 +93,7 @@ void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
 		}
 		if (listenerList->isEmpty())
 		{
-			characterListenerList->erase(eventType);
+			characterListenerList->remove(eventType);
 			break;
 		}
 		// 事件处理过程中可能会再次发送事件,所以如果没有正在遍历,则开始正常遍历
@@ -94,12 +101,12 @@ void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
 		// 但是由于在此循环中判断是否存在于列表会非常耗时,就考虑是否已经销毁就可以了
 		if (!listenerList->isForeaching())
 		{
-			SAFE_VECTOR_SCOPE(*listenerList, readList);
-			for (EventInfo* info : readList)
+			// 这里只能使用固定的遍历长度,否则可能会遍历到新加入的事件,导致意外情况
+			FOR(listenerList->size())
 			{
+				EventInfo* info = listenerList->get(i);
 				if (info == nullptr)
 				{
-					ERROR_PROFILE("0事件信息已经被销毁, nullptr");
 					continue;
 				}
 				if (info->isDestroy())
@@ -107,18 +114,17 @@ void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
 					ERROR_PROFILE("0事件信息已经被销毁");
 					continue;
 				}
-				info->mEventProcess->onEventInternal(param, info->mListener);
+				info->mCallback(param, info->mListener);
 			}
 		}
 		// 如果正在遍历过程中,则使用临时列表复制一份
 		else
 		{
-			listenerList->getMainList().clone(mTempEventList);
+			listenerList->getMainList().cloneTo(mTempEventList);
 			for (EventInfo* info : mTempEventList)
 			{
 				if (info == nullptr)
 				{
-					ERROR_PROFILE("1事件信息已经被销毁, nullptr");
 					continue;
 				}
 				if (info->isDestroy())
@@ -126,23 +132,22 @@ void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
 					ERROR_PROFILE("1事件信息已经被销毁");
 					continue;
 				}
-				info->mEventProcess->onEventInternal(param, info->mListener);
+				info->mCallback(param, info->mListener);
 			}
 		}
 	}
 
 	// 全局事件监听
-	if (mGlobalEventList.size() > 0)
+	if (!mGlobalEventList.isEmpty())
 	{
 		auto* globalListenerList = mGlobalEventList.getPtr(eventType);
-		if (globalListenerList != nullptr && globalListenerList->size() > 0)
+		if (globalListenerList != nullptr && !globalListenerList->isEmpty())
 		{
-			SAFE_VECTOR_SCOPE(*globalListenerList, readList);
-			for (EventInfo* info : readList)
+			FOR(globalListenerList->size())
 			{
+				EventInfo* info = globalListenerList->get(i);
 				if (info == nullptr)
 				{
-					ERROR_PROFILE("2事件信息已经被销毁, nullptr");
 					continue;
 				}
 				if (info->isDestroy())
@@ -150,10 +155,11 @@ void EventSystem::pushEventInternal(GameEvent* param, const llong characterID)
 					ERROR_PROFILE("2事件信息已经被销毁");
 					continue;
 				}
-				info->mEventProcess->onEventInternal(param, info->mListener);
+				info->mCallback(param, info->mListener);
 			}
 		}
 	}
+	--mDispatchDepth;
 }
 
 void EventSystem::unlistenEvent(IEventListener* listener)
@@ -182,15 +188,15 @@ void EventSystem::unlistenEvent(IEventListener* listener)
 			{
 				break;
 			}
-			curEventList->eraseElement(info);
+			curEventList->remove(info);
 			if (curEventList->isEmpty())
 			{
 				if (!curEventList->isForeaching())
 				{
-					characterList->erase(info->mType);
+					characterList->remove(info->mType);
 					if (characterList->isEmpty())
 					{
-						mCharacterEventList.erase(info->mCharacterGUID);
+						mCharacterEventList.remove(info->mCharacterGUID);
 					}
 				}
 				else
@@ -202,15 +208,15 @@ void EventSystem::unlistenEvent(IEventListener* listener)
 		// 全局事件监听列表中移除
 		if (auto* globalEventList = mGlobalEventList.getPtr(info->mType))
 		{
-			globalEventList->eraseElement(info);
+			globalEventList->remove(info);
 			if (globalEventList->isEmpty())
 			{
-				mGlobalEventList.erase(info->mType);
+				mGlobalEventList.remove(info->mType);
 			}
 		}
 	}
-	mEventInfoPool->destroyClassList(*eventList);
-	mListenerEventMap.erase(listener);
+	UN_CLASS(*eventList);
+	mListenerEventMap.remove(listener);
 }
 
 void EventSystem::removeCharacterEvent(const llong characterID)
@@ -229,26 +235,37 @@ void EventSystem::removeCharacterEvent(const llong characterID)
 			auto* infoList = mListenerEventMap.getPtr(item->mListener);
 			if (infoList != nullptr)
 			{
-				infoList->eraseElement(item);
+				infoList->remove(item);
 			}
 		}
-		mEventInfoPool->destroyClassList(iter->second);
+		UN_CLASS(iter->second);
 		// 如果没有在遍历这个列表,就可以直接移除
-		if (!iter->second.isForeaching())
-		{
-			iter = characterList->erase(iter);
-		}
-		else
-		{
-			++iter;
-		}
+		characterList->removeOrNext(iter, !iter->second.isForeaching());
 	}
 	if (characterList->isEmpty())
 	{
-		mCharacterEventList.erase(characterID);
+		mCharacterEventList.remove(characterID);
 	}
 	else
 	{
 		mNeedCheckEmptyEvent = true;
+	}
+}
+
+void EventSystem::listenerEventInternal(EventCallback callback, const Character* character, int eventType, IEventListener* listener)
+{
+	EventInfo* info = CLASS<EventInfo>();
+	info->mType = eventType;
+	info->mCharacterGUID = character != nullptr ? character->getGUID() : 0;
+	info->mCallback = callback;
+	info->mListener = listener;
+	mListenerEventMap.addOrGet(listener).add(info);
+	if (character != nullptr)
+	{
+		mCharacterEventList.addOrGet(character->getGUID()).addOrGet(eventType).add(info);
+	}
+	else
+	{
+		mGlobalEventList.addOrGet(eventType).add(info);
 	}
 }

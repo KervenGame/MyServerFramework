@@ -24,8 +24,8 @@ bool SerializerBitRead::readBufferNoCopy(const char*& destBuffer, const int read
 bool SerializerBitRead::readString(string& str)
 {
 	// 先读入字符串长度
-	int readLen = 0;
-	if (!readSigned(readLen))
+	uint readLen = 0;
+	if (!readUnsigned(readLen))
 	{
 		return false;
 	}
@@ -35,8 +35,8 @@ bool SerializerBitRead::readString(string& str)
 
 bool SerializerBitRead::readStringList(Vector<string>& list)
 {
-	int count;
-	if (!readSigned(count))
+	uint count;
+	if (!readUnsigned(count))
 	{
 		return false;
 	}

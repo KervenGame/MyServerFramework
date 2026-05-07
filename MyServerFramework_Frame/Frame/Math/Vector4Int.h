@@ -43,4 +43,8 @@ public:
 		return *this;
 	}
 	Vector4Int operator-() const { return { -x, -y, -z, -w }; }
+	Vector4Int operator*(const int that) const { return { x * that, y * that, z * that, w * that }; }
+	bool operator==(const Vector4Int& that) const { return x == that.x && y == that.y && z == that.z && w == that.w; }
+	bool operator!=(const Vector4Int& that) const { return x != that.x || y != that.y || z != that.z || w != that.w; }
+	bool operator<(const Vector4Int& that) const { return (x + y + z + w) < (that.x + that.y + that.z + that.w); }
 };

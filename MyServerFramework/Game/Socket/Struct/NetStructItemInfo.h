@@ -13,7 +13,19 @@ public:
 	NetStructItemInfo() = default;
 	NetStructItemInfo(int itemID, int itemCount);
 	NetStructItemInfo& operator=(const NetStructItemInfo& other);
-	bool readFromBuffer(SerializerBitRead* reader) override;
-	bool writeToBuffer(SerializerBitWrite* serializer) const override;
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override;
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override;
+	bool hasSign() const override
+	{
+		if (mItemID < 0)
+		{
+			return true;
+		}
+		if (mItemCount < 0)
+		{
+			return true;
+		}
+		return false;
+	}
 	void resetProperty() override;
 };

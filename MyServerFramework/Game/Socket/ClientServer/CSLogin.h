@@ -11,6 +11,7 @@ class CSLogin : public PacketTCP
 public:
 	string mAccount;
 	string mPassword;
+	static CSLogin mStaticObject;
 	static string mPacketName;
 public:
 	CSLogin()
@@ -18,21 +19,30 @@ public:
 		mType = PACKET_TYPE::CSLogin;
 		mShowInfo = false;
 	}
+	static CSLogin& get()
+	{
+		mStaticObject.resetProperty();
+		return mStaticObject;
+	}
 	static const string& getStaticPacketName() { return mPacketName; }
 	const string& getPacketName() override { return mPacketName; }
-	bool readFromBuffer(SerializerBitRead* reader) override
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override
 	{
 		bool success = true;
 		success = success && reader->readString(mAccount);
 		success = success && reader->readString(mPassword);
 		return success;
 	}
-	bool writeToBuffer(SerializerBitWrite* serializer) const override
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override
 	{
 		bool success = true;
-		success = success && serializer->writeString(mAccount);
-		success = success && serializer->writeString(mPassword);
+		success = success && writer->writeString(mAccount);
+		success = success && writer->writeString(mPassword);
 		return success;
+	}
+	bool generateHasSignInternal() const override
+	{
+		return false;
 	}
 	void resetProperty() override
 	{

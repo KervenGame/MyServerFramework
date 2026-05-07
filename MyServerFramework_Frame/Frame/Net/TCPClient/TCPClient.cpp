@@ -2,6 +2,8 @@
 
 TCPClient::TCPClient():
 	mSendBuffer(new StreamBuffer(FrameDefine::CLIENT_SEND_BUFFER)),
+	mWillSendBuffer0(new StreamBuffer(FrameDefine::CLIENT_SEND_BUFFER)),
+	mWillSendBuffer1(new StreamBuffer(FrameDefine::CLIENT_SEND_BUFFER)),
 	mRecvBuffer(new StreamBuffer(FrameDefine::CLIENT_RECV_BUFFER)),
 	mSendWriter(new SerializerBitWrite()),
 	mPacketDataBuffer(new SerializerBitWrite())
@@ -11,6 +13,8 @@ TCPClient::~TCPClient()
 {
 	disconnect();
 	DELETE(mSendBuffer);
+	DELETE(mWillSendBuffer0);
+	DELETE(mWillSendBuffer1);
 	DELETE(mRecvBuffer);
 	DELETE(mSendWriter);
 	DELETE(mPacketDataBuffer);
@@ -19,17 +23,20 @@ TCPClient::~TCPClient()
 void TCPClient::disconnect()
 {
 	// 先停止所有子线程
-	mThreadManager->destroyThread(mSendReceiveThread);
-	mSendReceiveThread = nullptr;
-#ifdef WINDOWS
-	WSACleanup();
+#ifndef STRESS_TEST
+	mThreadManager->destroyThread(mSendThread);
+	mThreadManager->destroyThread(mReceiveThread);
 #endif
 	CLOSE_SOCKET(mSocket);
+#ifdef WINDOWS
+	// 需要在CLOSE_SOCKET后面调用
+	WSACleanup();
+#endif
 	mCurServerHeartBeatTime = -1.0f;
 	mSequenceNumber = 0;
 	mLastReceiveSequenceNumber = 0;
 	mExecutePacketList.clear();
-	mSendLock.unlock();
+	mWillSendBuffer1Lock.unlock();
 }
 
 void TCPClient::init(const string& ip, const ushort port)
@@ -70,39 +77,60 @@ void TCPClient::init(const string& ip, const ushort port)
 		return;
 	}
 	mCurServerHeartBeatTime = mHeartBeatTimeOut;
-	mSendReceiveThread = mThreadManager->createThread("ReceiveSendSocket", receiveSendSocket, this);
-	mSendReceiveThread->setTime(100);
+#ifndef STRESS_TEST
+	mSendThread = mThreadManager->createThread("TCPClient_SendSocket", [this] { sendThread(); });
+	mSendThread->setTime(100);
+	mReceiveThread = mThreadManager->createThread("TCPClient_ReceiveSocket", [this] { recvThread(); });
+	mReceiveThread->setTime(100);
+#endif
 }
 
-void TCPClient::receiveSendSocket(CustomThread* thread)
+void TCPClient::sendThread()
 {
-	auto* tcpClient = static_cast<This*>(thread->getArgs());
-	// 接收消息
-	if (!tcpClient->processRecv())
-	{
-		thread->setRunning(false);
-		return;
-	}
+	// 真实情况下还是需要自己select,如果是模拟压力测试,则在外部select
+#ifndef STRESS_TEST
+	bool needSelect = true;
+#else
+	bool needSelect = false;
+#endif
 	// 发送消息
-	if (!tcpClient->processSend())
+	if (!processSend(needSelect))
 	{
-		thread->setRunning(false);
-		return;
+#ifndef STRESS_TEST
+		mSendThread->setRunning(false);
+#endif
 	}
 }
 
-bool TCPClient::processSend()
+void TCPClient::recvThread()
 {
-	THREAD_LOCK(mSendLock);
+	// 真实情况下还是需要自己select,如果是模拟压力测试,则在外部select
+#ifndef STRESS_TEST
+	bool needSelect = true;
+#else
+	bool needSelect = false;
+#endif
+	// 接收消息
+	if (!processRecv(needSelect))
+	{
+#ifndef STRESS_TEST
+		mReceiveThread->setRunning(false);
+#endif
+	}
+}
+
+bool TCPClient::processSend(bool needSelect)
+{
+	writeToSendBuffer();
 	if (mSendBuffer->getDataLength() == 0)
 	{
 		return true;
 	}
-	try
+	// select查看后立即返回
+	thread_local static timeval tv{ 0, 0 };
+	thread_local static fd_set fdwrite;
+	if (needSelect)
 	{
-		// select查看后立即返回
-		thread_local static timeval tv{ 0, 0 };
-		thread_local static fd_set fdwrite;
 		FD_ZERO(&fdwrite);
 		FD_SET(mSocket, &fdwrite);
 		// select第一个参数在windows中可以为0,但是在其他系统中需要设置
@@ -115,34 +143,33 @@ bool TCPClient::processSend()
 		{
 			return true;
 		}
-		// 因为send可能无法一次将所有数据都发送出去,所以需要一直检测是否发送完
-		while (mSendBuffer->getDataLength() > 0)
-		{
-			const int thisSendCount = send(mSocket, mSendBuffer->getData(), mSendBuffer->getDataLength(), 0);
-			// 检查是否send有错误
-			if (thisSendCount > 0)
-			{
-				mSendBuffer->removeDataFromFront(thisSendCount);
-			}
-			else
-			{
-				checkSendRecvError(thisSendCount);
-				return false;
-			}
-		}
 	}
-	catch (const exception& e)
+	// 因为send可能无法一次将所有数据都发送出去,所以需要一直检测是否发送完
+	while (mSendBuffer->getDataLength() > 0)
 	{
-		LOG("exception : " + string(e.what()));
+		const int thisSendCount = send(mSocket, mSendBuffer->getData(), mSendBuffer->getContiguousDataLength(), 0);
+		// 检查是否send有错误
+		if (thisSendCount > 0)
+		{
+#ifdef STRESS_TEST
+			mTCPServerSystem->mClientSendBytes += thisSendCount;
+#endif
+			mSendBuffer->removeDataFromFront(thisSendCount);
+		}
+		else
+		{
+			checkSendRecvError(thisSendCount);
+			return false;
+		}
 	}
 	return true;
 }
 
-bool TCPClient::processRecv()
+bool TCPClient::processRecv(bool needSelect)
 {
-	try
+	// select查看后立即返回
+	if (needSelect)
 	{
-		// select查看后立即返回
 		thread_local static timeval tv{ 0, 0 };
 		thread_local static fd_set fdread;
 		FD_ZERO(&fdread);
@@ -156,45 +183,44 @@ bool TCPClient::processRecv()
 		{
 			return true;
 		}
-		// 使用thread_local确保每个线程都有自己的静态变量,否则可能会出现冲突
-		thread_local static char recvBuffer[FrameDefine::CLIENT_RECV_BUFFER];
-		const int nRecv = recv(mSocket, recvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0);
-		if (nRecv <= 0)
-		{
-			checkSendRecvError(nRecv);
-			return false;
-		}
-		mRecvBuffer->addDataToBack(recvBuffer, nRecv);
-
-		MyString<256> reason;
-		// 解析接收到的数据
-		mTempPacketList.clear();
-		for (;;)
-		{
-			if (mRecvBuffer->getDataLength() == 0)
-			{
-				break;
-			}
-			PacketTCP* packet = nullptr;
-			int bitIndex = 0;
-			const PARSE_RESULT parseResult = packetRead(bitIndex, packet, reason);
-			// 未接收完全或者解析失败,继续等待接收
-			if (parseResult != PARSE_RESULT::SUCCESS)
-			{
-				break;
-			}
-			mTempPacketList.push_back(packet);
-			// 将已经解析的数据移除
-			mRecvBuffer->removeDataFromFront(bitCountToByteCount(bitIndex));
-			++mParsedCount;
-		}
-		// 将解析后的消息列表同步到列表中
-		mExecutePacketList.add(mTempPacketList);
 	}
-	catch (const exception& e)
+	// 使用thread_local确保每个线程都有自己的静态变量,否则可能会出现冲突
+	thread_local static char recvBuffer[FrameDefine::CLIENT_RECV_BUFFER];
+	const int nRecv = recv(mSocket, recvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0);
+	if (nRecv <= 0)
 	{
-		LOG("exception : " + string(e.what()));
+		checkSendRecvError(nRecv);
+		return false;
 	}
+#ifdef STRESS_TEST
+	mTCPServerSystem->mClientRecvBytes += nRecv;
+#endif
+	mRecvBuffer->addDataToBack(recvBuffer, nRecv);
+
+	MyString<256> reason;
+	// 解析接收到的数据
+	mTempPacketList.clear();
+	for (;;)
+	{
+		if (mRecvBuffer->getDataLength() == 0)
+		{
+			break;
+		}
+		PacketTCP* packet = nullptr;
+		int bitIndex = 0;
+		const PARSE_RESULT parseResult = packetRead(bitIndex, packet, reason);
+		// 未接收完全或者解析失败,继续等待接收
+		if (parseResult != PARSE_RESULT::SUCCESS)
+		{
+			break;
+		}
+		mTempPacketList.add(packet);
+		// 将已经解析的数据移除
+		mRecvBuffer->removeDataFromFront(bitCountToByteCount(bitIndex));
+		++mParsedCount;
+	}
+	// 将解析后的消息列表同步到列表中
+	mExecutePacketList.add(mTempPacketList);
 	return true;
 }
 
@@ -234,17 +260,19 @@ void TCPClient::checkSendRecvError(const int successLength)
 PARSE_RESULT TCPClient::packetRead(int& bitIndex, PacketTCP*& packet, MyString<256>& reason)
 {
 	packet = nullptr;
-	int bodySize = 0;
+	uint bodySize = 0;
 	ushort bodySizeCRC = 0;
 	ushort packetType = 0;
-	int sequenceNumber = 0;
+	uint sequenceNumber = 0;
 	const char* bodyBuffer = nullptr;
 	ushort readCrc = 0;
+	bool hasSign = false;
 	bool useFlag = false;
 	ullong fieldFlag = FrameDefine::FULL_FIELD_FLAG;
+	mRecvBuffer->linearize();
 	SerializerBitRead reader(mRecvBuffer->getData(), mRecvBuffer->getDataLength());
 	reader.setBitIndex(bitIndex);
-	if (!reader.readSigned(bodySize))
+	if (!reader.readUnsigned(bodySize))
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
@@ -260,7 +288,11 @@ PARSE_RESULT TCPClient::packetRead(int& bitIndex, PacketTCP*& packet, MyString<2
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
-	if (!reader.readSigned(sequenceNumber))
+	if (!reader.readUnsigned(sequenceNumber))
+	{
+		return PARSE_RESULT::NOT_ENOUGH;
+	}
+	if (!reader.readBool(hasSign))
 	{
 		return PARSE_RESULT::NOT_ENOUGH;
 	}
@@ -286,34 +318,33 @@ PARSE_RESULT TCPClient::packetRead(int& bitIndex, PacketTCP*& packet, MyString<2
 	}
 
 	// 解密包体数据
-	if (bodyBuffer != nullptr)
-	{
-		// bodyBuffer指向的是mRecvBuffer中的buffer,此buffer允许修改,所以此处强转为char*
-		TCPServerSystem::decrypt((char*)bodyBuffer, bodySize, FrameDefine::ENCRYPT_KEY, FrameDefine::ENCRYPT_KEY_LENGTH, (byte)((int)packetType + bodySize + (sequenceNumber ^ 123 ^ (int)packetType)));
-	}
+	// bodyBuffer指向的是mRecvBuffer中的buffer,此buffer允许修改,所以此处强转为char*
+	TCPServerSystem::decrypt((char*)bodyBuffer, bodySize, (byte)((int)packetType + bodySize + (sequenceNumber ^ 123 ^ (int)packetType)));
 
 	// 如果是消息解析数不足,并且收到无效消息时,不会报错
 	if (mParsedCount < FrameDefine::MIN_PARSE_COUNT && mPacketTCPFactoryManager->getFactory(packetType) == nullptr)
 	{
-		reason.setString("无效客户端, 消息类型错误! 消息类型ID:" + IToS((int)packetType));
+		reason.set("无效客户端, 消息类型错误! 消息类型ID:" + IToS((int)packetType));
 		return PARSE_RESULT::INVALID_PACKET_TYPE;
 	}
 	// 创建消息对象,并解析包体数据
-	packet = mPacketTCPThreadPool->newClass(packetType);
+	packet = mPacketTCPCSThreadPool->newClass(packetType);
 	if (packet == nullptr)
 	{
-		reason.setString("消息解析错误! 消息类型ID:" + IToS((int)packetType));
+		reason.set("消息解析错误! 消息类型ID:" + IToS((int)packetType));
 		return PARSE_RESULT::PACKET_PARSE_FAILED;
 	}
 	packet->setFieldFlag(fieldFlag);
 	if (bodyBuffer != nullptr)
 	{
 		SerializerBitRead reader(bodyBuffer, bodySize);
-		if (!packet->readFromBuffer(&reader))
+		if (!packet->readFromBuffer(&reader, hasSign))
 		{
 			// 解析错误
-			mPacketTCPThreadPool->destroyClass(packet);
-			reason.setString("消息解析错误! 消息类型ID:" + IToS((int)packetType));
+			// 延迟到主线程销毁消息包
+			delayCall([packet]() { auto* temp = packet; mPacketTCPCSThreadPool->destroyClass(temp); });
+			packet = nullptr;
+			reason.set("消息解析错误! 消息类型ID:" + IToS((int)packetType));
 			return PARSE_RESULT::PACKET_PARSE_FAILED;
 		}
 	}
@@ -321,41 +352,65 @@ PARSE_RESULT TCPClient::packetRead(int& bitIndex, PacketTCP*& packet, MyString<2
 	// CRC校验
 	if (crcCode != readCrc)
 	{
-		mPacketTCPThreadPool->destroyClass(packet);
+		// 延迟到主线程销毁消息包
+		delayCall([packet]() { auto* temp = packet; mPacketTCPCSThreadPool->destroyClass(temp); });
 		packet = nullptr;
-		reason.setString("crc check error");
+		reason.set("crc check error");
 		return PARSE_RESULT::CRC_ERROR;
 	}
 
 	// 校验序列号是否正确
 	packet->setSequenceNumber(sequenceNumber);
-	if (sequenceNumber != mLastReceiveSequenceNumber + 1 && mLastReceiveSequenceNumber != 0x7FFFFFFF)
+	if (sequenceNumber != mLastReceiveSequenceNumber + 1 && mLastReceiveSequenceNumber != 0xFFFFFFFF)
 	{
 		string info = "丢包:" + IToS(sequenceNumber - mLastReceiveSequenceNumber - 1) + 
 							", 已接收包数量:" + UIToS(mParsedCount) + ", 当前包序列号:" + IToS(sequenceNumber);
 		LOG(info);
-		mPacketTCPThreadPool->destroyClass(packet);
+		// 延迟到主线程销毁消息包
+		delayCall([packet]() { auto* temp = packet; mPacketTCPCSThreadPool->destroyClass(temp); });
 		packet = nullptr;
-		reason.setString("sequence number check error! lastNumber:" + IToS(mLastReceiveSequenceNumber) + 
-						", receiveNumber:" + IToS(sequenceNumber));
+		reason.set("sequence number check error! lastNumber:" + IToS(mLastReceiveSequenceNumber) +
+					", receiveNumber:" + IToS(sequenceNumber));
 		return PARSE_RESULT::SEQUENCE_NUMBER_ERROR;
 	}
 	mLastReceiveSequenceNumber = sequenceNumber;
 	bitIndex = reader.getBitIndex();
+#ifdef STRESS_TEST
+	++mTCPServerSystem->mClientRecvPacket;
+#endif
 	return PARSE_RESULT::SUCCESS;
 }
 
 void TCPClient::update(const float elapsedTime)
 {
+	// 从mWillSendBuffer0中转到mWillSendBuffer1
+	if (mWillSendBuffer0->getDataLength() > 0)
+	{
+		{
+			THREAD_LOCK(mWillSendBuffer1Lock);
+			mWillSendBuffer1->mergeFrom(mWillSendBuffer0);
+		}
+		mWillSendBuffer0->clear();
+	}
+	
 	{
 		DoubleBufferReadScope<PacketTCP*> readScope(mExecutePacketList);
 		// 执行读缓冲区中的所有消息包
 		if (readScope.mReadList != nullptr)
 		{
+			mWillDestroyPackets.clear();
 			for (PacketTCP* packetReply : *readScope.mReadList)
 			{
 				packetReply->execute();
-				mPacketTCPThreadPool->destroyClass(packetReply);
+				if (!mWillDestroyPackets.add(packetReply))
+				{
+					mPacketTCPCSThreadPool->destroyClassList(mWillDestroyPackets);
+					mWillDestroyPackets.add(packetReply);
+				}
+			}
+			if (!mWillDestroyPackets.isEmpty())
+			{
+				mPacketTCPCSThreadPool->destroyClassList(mWillDestroyPackets);
 			}
 		}
 	}
@@ -367,24 +422,36 @@ void TCPClient::update(const float elapsedTime)
 	}
 }
 
+void TCPClient::writeToSendBuffer()
+{
+	// 从mWillSendBuffer1中转到mSendBuffer
+	if (mWillSendBuffer1->getDataLength() > 0)
+	{
+		THREAD_LOCK(mWillSendBuffer1Lock);
+		mSendBuffer->mergeFrom(mWillSendBuffer1);
+		mWillSendBuffer1->clear();
+	}
+}
+
 void TCPClient::sendPacket(PacketTCP* packet)
 {
 	checkMainThread();
 	mPacketDataBuffer->clear();
-	packet->writeToBuffer(mPacketDataBuffer);
-	const int bodySize = mPacketDataBuffer->getByteCount();
+	packet->writeToBuffer(mPacketDataBuffer, packet->hasSign());
+	const uint bodySize = mPacketDataBuffer->getByteCount();
 	const ushort packetType = packet->getType();
 	const ullong fieldFlag = packet->getFieldFlag();
-	const int sequence = ++mSequenceNumber;
+	const uint sequence = ++mSequenceNumber;
 	// 当前程序为客户端时,一个消息只会被发送一次,所以不需要拷贝到另外一个缓冲区,直接加密即可
-	TCPServerSystem::encrypt((char*)mPacketDataBuffer->getBuffer(), bodySize, FrameDefine::ENCRYPT_KEY, FrameDefine::ENCRYPT_KEY_LENGTH, (byte)(packetType + bodySize + (sequence ^ 123 ^ packetType)));
+	TCPServerSystem::encrypt((char*)mPacketDataBuffer->getBuffer(), bodySize, (byte)(packetType + bodySize + (sequence ^ 123 ^ packetType)));
 
 	mSendWriter->clear();
-	mSendWriter->writeSigned(bodySize);
+	mSendWriter->writeUnsigned(bodySize);
 	// 为包体长度添加一个校验值,避免长度被意外修改,导致包体读取错误
 	mSendWriter->writeUnsigned(generateCRC16(bodySize));
 	mSendWriter->writeUnsigned(packetType);
-	mSendWriter->writeSigned(sequence);
+	mSendWriter->writeUnsigned(sequence);
+	mSendWriter->writeBool(packet->hasSign());
 	mSendWriter->writeBool(fieldFlag != FrameDefine::FULL_FIELD_FLAG);
 	if (fieldFlag != FrameDefine::FULL_FIELD_FLAG)
 	{
@@ -396,9 +463,9 @@ void TCPClient::sendPacket(PacketTCP* packet)
 	// 添加CRC校验码,要连包头一起校验
 	mSendWriter->writeUnsigned(generateCRC16(mSendWriter->getBuffer(), mSendWriter->getByteCount()));
 
-	// 放入到缓存列表中,因为要保证发送消息的顺序,所以只能都先放到二级缓冲区
-	{
-		THREAD_LOCK(mSendLock);
-		mSendBuffer->addDataToBack(mSendWriter->getBuffer(), mSendWriter->getByteCount());
-	}
+	// 放入到缓存列表中,因为要减少加锁的次数,所以不会直接放入mSendBuffer中
+	mWillSendBuffer0->addDataToBack(mSendWriter->getBuffer(), mSendWriter->getByteCount());
+#ifdef STRESS_TEST
+	++mTCPServerSystem->mClientSendPacket;
+#endif
 }

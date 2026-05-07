@@ -9,10 +9,6 @@ protected:
 	PacketTCP* create(const ushort type) override
 	{
 		auto* factory = mPacketTCPFactoryManager->getFactory(type);
-		if (factory == nullptr)
-		{
-			return nullptr;
-		}
-		return factory->create();
+		return factory != nullptr ? factory->create() : nullptr;
 	}
 };

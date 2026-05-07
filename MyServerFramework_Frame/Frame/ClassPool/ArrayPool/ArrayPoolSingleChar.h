@@ -13,7 +13,7 @@ public:
 		char* data = nullptr;
 
 		// 尝试从未使用列表中查找
-		if (mUnuseMemoryList.size() > 0)
+		if (!mUnuseMemoryList.isEmpty())
 		{
 			if (auto* unuseVec = mUnuseMemoryList.getPtr(count))
 			{
@@ -38,7 +38,7 @@ public:
 			memset(data, 0, count * sizeof(char));
 		}
 #ifdef WINDOWS
-		mInUsedMemoryList.insertOrGet(count).insert(data);
+		mInUsedMemoryList.addOrGet(count).add(data);
 #endif
 		return data;
 	}
@@ -56,13 +56,13 @@ public:
 			ERROR("回收了错误的数组");
 			return;
 		}
-		if (!listPtr->erase(data))
+		if (!listPtr->remove(data))
 		{
 			ERROR("回收了错误的数组");
 			return;
 		}
 #endif
-		mUnuseMemoryList.insertOrGet(size).push_back(data);
+		mUnuseMemoryList.addOrGet(size).add(data);
 	}
 	void dump();
 public:

@@ -1,6 +1,7 @@
 ﻿#include "GameHeader.h"
 
 // auto generate start
+CSAttack CSAttack::mStaticObject;
 string CSAttack::mPacketName = STR(CSAttack);
 // auto generate end
 

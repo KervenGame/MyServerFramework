@@ -1,12 +1,14 @@
 ﻿#pragma once
 
+//#define MYSQL_TEST
+//#define STRESS_TEST
 //#define VIRTUAL_CLIENT_TEST
 
-// 最大并发连接数为128,需要在winsock.h之前进行定义
+// 最大并发连接数为2048,需要在winsock.h之前进行定义
 #ifdef FD_SETSIZE
 #undef FD_SETSIZE
 #endif
-#define FD_SETSIZE 128
+#define FD_SETSIZE 2048
 
 // 由于下面定义的部分宏容易在系统头文件中被定义,从而造成编译无法通关,所以先包含系统头文件,然后再定义自己的宏
 #ifdef WINDOWS
@@ -58,21 +60,26 @@
 #ifdef LINUX
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/syscall.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/sysinfo.h>
 #include <sys/un.h>
 #include <sys/time.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+#include <sys/prctl.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <errno.h>
 #include <netdb.h>
 #include <stdarg.h>
-#include <signal.h>
 #include <dirent.h>
 #include <pthread.h>
 #include <locale.h>
 #include <execinfo.h>
+#include <dlfcn.h>
+#include <backtrace.h>
 // linux上包含的libevent的头文件并不是项目中的文件,而是linux系统中的库文件
 #ifdef _LIBEVENT
 #include "event2/event.h"
@@ -111,6 +118,11 @@
 #include <fstream>
 #include <array>
 #include <sstream>
+#include <signal.h>
+#include <stdint.h>
+#include <cstdio>
+#include <cassert>
+#include <numeric>
 // 部分平台未安装mysql,所以需要使用宏来判断是否需要编译mysql相关代码
 #ifdef _MYSQL
 #include <mysql.h>
@@ -144,6 +156,8 @@
 #undef min
 #undef max
 
+#include "MemoryOperation.h"
+
 //-----------------------------------------------------------------------------------------------------------------------------------------------
 // 宏定义
 #ifdef WINDOWS
@@ -172,7 +186,7 @@ if (socket != INVALID_SOCKET)		\
 // 获取不同平台下的字面常量字符串的UTF8编码字符串,只能处理字面常量,也就是在代码中写死的字符串
 // windows下需要由GB2312转换为UTF8,而linux则直接就是UTF8的
 // 将一个字面常量字符串转换为UTF8后存储为变量
-#define UNIFIED_UTF8(var, size, constantString)		MyString<size> var; ANSIToUTF8(constantString, var.toBuffer(), size, false)
+#define UNIFIED_UTF8(var, size, constantString)		MyCharArray<size> var; ANSIToUTF8(constantString, var.data(), size, false)
 #define UNIFIED_UTF8_STRING(var, constantString)	string var = ANSIToUTF8(constantString, false)
 #elif defined LINUX
 #define MY_THREAD							pthread_t
@@ -207,7 +221,7 @@ if (socket != INVALID_SOCKET)		\
 #define MEMCPY(dest, bufferSize, src, count) memcpy((void*)(dest), (void*)(src), (count))
 #define MEMMOV(dest, bufferSize, src, count) memmove((void*)(dest), (void*)(src), (count))
 // 将一个字面常量字符串转换为UTF8后存储为变量
-#define UNIFIED_UTF8(var, size, constantString)		MyString<size> var;	var.setString(constantString)
+#define UNIFIED_UTF8(var, size, constantString)		MyString<size> var;	var.set(constantString)
 #define UNIFIED_UTF8_STRING(var, constantString)	string var = constantString
 #endif
 
@@ -229,7 +243,6 @@ if (socket != INVALID_SOCKET)		\
 #else
 #define FUNCTION_NAME __FUNCTION__
 #endif
-
 
 //--------------------------------------------------------------------------------------------------------------------------------------------
 // 基础数据类型转字符串
@@ -347,10 +360,10 @@ GameLogWrap::logInfo(UNIQUE_IDENTIFIER(str), 0, true, true)
 #define FOR_VECTOR_INVERSE(stl) for(int i = (stl).size() - 1; i >= 0; --i)
 
 // 简单的for循环
-#define FOR(count)			const int UNIQUE_IDENTIFIER(Count) = (int)count; for (int i = 0; i < UNIQUE_IDENTIFIER(Count); ++i)
+#define FOR(count)				const int UNIQUE_IDENTIFIER(Count) = (int)count; for (int i = 0; i < UNIQUE_IDENTIFIER(Count); ++i)
 #define FOR_J(count)			const int UNIQUE_IDENTIFIER(Count) = (int)count; for (int j = 0; j < UNIQUE_IDENTIFIER(Count); ++j)
 #define FOR_K(count)			const int UNIQUE_IDENTIFIER(Count) = (int)count; for (int k = 0; k < UNIQUE_IDENTIFIER(Count); ++k)
-#define FOR_INVERSE_I(count)	for (int i = (int)count - 1; i >= 0; --i)
+#define FOR_INVERSE(count)		for (int i = (int)count - 1; i >= 0; --i)
 #define FOR_ONCE				for (int UNIQUE_IDENTIFIER(temp) = 0; UNIQUE_IDENTIFIER(temp) < 1; ++UNIQUE_IDENTIFIER(temp))
 
 // 将将当前类重命名为This,类的基类重命名为base,方便使用
@@ -392,27 +405,17 @@ for (auto& item : list)		\
 list.clear(true)
 
 // 在update中执行,每隔interval秒执行一次逻辑,由于使用了静态变量,只适合用于单例
+// TICK_LOOP是启动后interval时间后才会执行
 #define TICK_LOOP(elapsedTime, interval)									\
 		static float UNIQUE_IDENTIFIER(timer) = 0.0f;						\
 		if (tickTimerLoop(UNIQUE_IDENTIFIER(timer), elapsedTime, interval))
 
-// 声明事件处理类
-#define EVENT_PROCESS_DECLARE(listenerType, eventType)									\
-template<>																				\
-class EventProcess<eventType, listenerType> : public EventProcessBase					\
-{																						\
-public:																					\
-	static EventProcess<eventType, listenerType>* mProcess;								\
-	void onEventInternal(GameEvent* event, IEventListener* listener) override			\
-	{																					\
-		onEvent(static_cast<eventType*>(event), static_cast<listenerType*>(listener));	\
-	}																					\
-	void onEvent(eventType* event, listenerType* listener);								\
-};
-// 定义事件处理类
-#define EVENT_PROCESS_IMPL(listenerType, eventType)\
-EventProcess<eventType, listenerType>* EventProcess<eventType, listenerType>::mProcess = new EventProcess<eventType, listenerType>();\
-void EventProcess<eventType, listenerType>::onEvent(eventType* event, listenerType* listener)
-// 使用示例
-// 头文件中,类外添加EVENT_PROCESS_DECLARE(ClassName, EventWillHitOther);
-// 源文件中,代码添加EVENT_PROCESS_IMPL(ClassName, EventWillHitOther){}
+// TICK_LOOP_1是启动后立即执行
+#define TICK_LOOP_1(elapsedTime, interval)									\
+		static float UNIQUE_IDENTIFIER(timer) = interval;					\
+		if (tickTimerLoop(UNIQUE_IDENTIFIER(timer), elapsedTime, interval))
+
+// 在需要定义一个类的ClassPool时,就可以在类文件的最后添加CLASS_POOL(类名)
+#define CLASS_POOL(classType)												\
+class classType##Pool : public ClassPool<classType> {};						\
+template<>struct PoolOf<classType> { using type = classType##Pool; };

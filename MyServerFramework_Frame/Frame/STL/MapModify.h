@@ -7,9 +7,10 @@ struct MapModify
 	Key mKey;
 	Value mValue;
 	bool mAdd;
+	// erase 操作不需要 mValue，用默认构造避免 (Value)(0) 对非基础类型（如 string）崩溃
 	explicit MapModify(const Key& key):
 		mKey(key),
-		mValue((Value)(0)),
+		mValue(),
 		mAdd(false)
 	{}
 	MapModify(const Key& key, const Value& value):

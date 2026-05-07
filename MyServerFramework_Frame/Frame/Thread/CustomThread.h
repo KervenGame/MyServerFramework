@@ -8,12 +8,13 @@ class MICRO_LEGEND_FRAME_API CustomThread
 {
 	THIS(CustomThread);
 public:
-	CustomThread(const string& name, CustomThreadCallback callback, void* args, CustomThreadCallback preCmdCallback = nullptr, CustomThreadCallback endCmdCallback = nullptr);
+	CustomThread(const string& name, VoidCallback callback, VoidCallback preCmdCallback = nullptr, VoidCallback endCmdCallback = nullptr);
 	virtual ~CustomThread() { destroy(); }
 	void destroy();
 	void setTime(int frameTimeMS, int forceSleep = 5) const;
 	void addCmd(const Vector<DelayCommand*>& cmdInfoList)	{ mCmdBuffer.add(cmdInfoList); }
 	void addCmd(DelayCommand* cmdInfo)						{ mCmdBuffer.add(cmdInfo); }
+	void addCall(VoidCallback call)							{ mCallBuffer.add(call); }
 	void setBackground(const bool background)				{ mIsBackground = background; }
 	void setShowFPS(const bool showFPS)						{ mShowFPS = showFPS; }
 	void setPrintFPS(const bool print)						{ mPrintFPS = print; }
@@ -21,7 +22,6 @@ public:
 	void setCmdDebug(const bool cmdDebug)					{ mCmdDebug = cmdDebug; }
 	MY_THREAD getThreadHandle() const						{ return mThread; }
 	float getFrameTime() const								{ return mFrameTime; }
-	void* getArgs() const									{ return mArgs; }
 	int getThisThreadID() const								{ return mThreadID; }
 protected:
 	THREAD_CALLBACK_DECLEAR(run)
@@ -35,10 +35,10 @@ protected:
 	string mName;									// 线程名
 	HashMap<string, int> mCmdTypeList;				// 用于记录每种命令有多少个
 	DoubleBuffer<DelayCommand*> mCmdBuffer;			// 命令缓冲区
-	CustomThreadCallback mCallback = nullptr;		// 线程逻辑函数回调
-	void* mArgs = nullptr;							// 线程启动参数
-	CustomThreadCallback mPreCmdCallback = nullptr;	// 所有此线程中命令执行前的回调
-	CustomThreadCallback mEndCmdCallback = nullptr;	// 所有此线程中命令执行后的回调
+	DoubleBuffer<VoidCallback> mCallBuffer;			// 延迟调用的缓冲区,其实也就是简化版的命令,效率比使用命令要高一些
+	VoidCallback mCallback = nullptr;				// 线程逻辑函数回调
+	VoidCallback mPreCmdCallback = nullptr;			// 所有此线程中命令执行前的回调
+	VoidCallback mEndCmdCallback = nullptr;			// 所有此线程中命令执行后的回调
 	TimeLock* mTimeLock = nullptr;					// 线程锁帧
 	MY_THREAD mThread;								// 为了兼容windows和linux,句柄不写为原子类型
 	int mCurFrameCount = 0;							// 当前记录的帧数,用于计算帧率

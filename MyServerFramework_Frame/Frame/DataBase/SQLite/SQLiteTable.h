@@ -23,7 +23,7 @@ public:
 		{
 			return mDataList[id];
 		}
-		return mDataMap.tryGet(id);
+		return mDataMap.get(id);
 	}
 	const HashMap<int, T*>& queryAll()
 	{
@@ -37,7 +37,7 @@ public:
 			for(T*& value : list)
 			{
 				// 没有查询过的数据才插入列表,已经查询过的则不再需要,直接释放
-				if (!mDataMap.insert(value->mID, value))
+				if (!mDataMap.add(value->mID, value))
 				{
 					DELETE(value);
 					continue;
@@ -122,7 +122,7 @@ protected:
 	int doQueryCount()
 	{
 		MyString<256> queryStr;
-		strcat_t(queryStr, "SELECT count(ID) FROM ", mTableName, " WHERE ID > 0");
+		queryStr.add("SELECT count(ID) FROM ", mTableName, " WHERE ID > 0");
 		SelectCount selectCount;
 		SQLiteDataReader(mSQLite3, queryStr.str()).parseReader(selectCount);
 		return selectCount.mRowCount;
@@ -132,11 +132,11 @@ protected:
 		MyString<256> queryStr;
 		if (conditionString != nullptr)
 		{
-			strcat_t(queryStr, "SELECT * FROM ", mTableName, " WHERE ", conditionString);
+			queryStr.add("SELECT * FROM ", mTableName, " WHERE ", conditionString);
 		}
 		else
 		{
-			strcat_t(queryStr, "SELECT * FROM ", mTableName);
+			queryStr.add("SELECT * FROM ", mTableName);
 		}
 		SQLiteDataReader(mSQLite3, queryStr.str()).parseReader(dataList);
 	}
@@ -145,11 +145,11 @@ protected:
 		MyString<256> queryStr;
 		if (conditionString != nullptr)
 		{
-			strcat_t(queryStr, "SELECT * FROM ", mTableName, " WHERE ", conditionString, " LIMIT 1");
+			queryStr.add("SELECT * FROM ", mTableName, " WHERE ", conditionString, " LIMIT 1");
 		}
 		else
 		{
-			strcat_t(queryStr, "SELECT * FROM ", mTableName, " LIMIT 1");
+			queryStr.add("SELECT * FROM ", mTableName, " LIMIT 1");
 		}
 		return SQLiteDataReader(mSQLite3, queryStr.str()).parseReader(data);
 	}

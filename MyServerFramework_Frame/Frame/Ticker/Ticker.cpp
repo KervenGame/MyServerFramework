@@ -2,7 +2,7 @@
 
 void Ticker::update(const float elapsedTime)
 {
-	if (mCallback != nullptr)
+	if (mCallback != nullptr && !mFinish)
 	{
 		mFinish = !mCallback();
 	}

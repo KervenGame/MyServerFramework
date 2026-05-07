@@ -4,12 +4,13 @@
 #include "SerializableData.h"
 
 // 用于生成二进制文件的
+// 因为使用了ArrayPool,所以只能在主线程调用
 class MICRO_LEGEND_FRAME_API SerializerWrite
 {
 public:
 	void initCapacity(int size);
 	virtual ~SerializerWrite();
-	template<typename T, typename TypeCheck = typename IsPodType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodType<T>::mValue>>
 	bool write(const T value)
 	{
 		writeCheck(sizeof(T));
@@ -30,6 +31,11 @@ public:
 		writeCheck(sizeof(value));
 		return BinaryUtility::writeVector3(mBuffer, mBufferSize, mIndex, value);
 	}
+	bool writeVector3(const Vector3Int& value)
+	{
+		writeCheck(sizeof(value));
+		return BinaryUtility::writeVector3Int(mBuffer, mBufferSize, mIndex, value);
+	}
 	bool writeVector4(const Vector4& value)
 	{
 		writeCheck(sizeof(value));
@@ -41,7 +47,7 @@ public:
 	{
 		return value.writeToBuffer(this);
 	}
-	template<typename T, typename TypeCheck = typename IsPodType<T>::mType>
+	template<typename T, typename TypeCheck = enable_if_t<IsPodType<T>::mValue>>
 	bool writeList(const Vector<T>& list)
 	{
 		const int count = list.size();

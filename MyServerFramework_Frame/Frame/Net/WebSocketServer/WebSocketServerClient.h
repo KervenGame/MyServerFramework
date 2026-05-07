@@ -39,7 +39,6 @@ public:
 	const string& getDeadReason() const							{ return mDeadReason;}
 	const Vector<pair<char*, Vector2Int>>& getSendBuffer() const{ return mSendBuffer; }
 	int getRecvDataCount()	const								{ return mRecvBuffer->getDataLength(); }
-	const char* getRecvData() const								{ return mRecvBuffer->getData(); }
 	bool getIsLogin() const										{ return mAccountGUID != 0; }
 	const string& getIP() const									{ return mIP; }
 	const sockaddr_in& getUDPAddress() const					{ return mUDPAddress; }
@@ -58,6 +57,7 @@ protected:
 	// 返回值表示最终生成的数据长度
 	static int generateSend(const char* message, int length, char* destBuffer, int destBufferSize);
 protected:
+	ArrayList<512, PacketWebSocket*> mWillDestroyList;		// 用于缓存
 	DoubleBuffer<PacketWebSocket*> mExecutePacketList;		// 客户端收到消息的列表
 	Vector<llong> mLastPingList;							// 最近10次的ping
 	string mIP;												// 客户端的IP地址
@@ -73,8 +73,8 @@ protected:
 	MY_SOCKET mSocket = 0;									// 客户端套接字
 	llong mPlayerGUID = 0;									// 客户端的角色唯一ID,未登录角色时为无效ID
 	llong mAccountGUID = 0;									// 客户端的账号唯一ID,未登录账号时为无效ID
-	int mSequenceNumber = 0;								// 消息包的序列号
-	int mLastReceiveNumber = 0;								// 上一次接收到的消息序列号
+	uint mSequenceNumber = 0;								// 消息包的序列号
+	uint mLastReceiveNumber = 0;							// 上一次接收到的消息序列号
 	int mServerPingIndex = 0;								// 当前正在等待客户端回复的主动ping消息的序号
 	float mServerPingWaitTime = -1.0f;						// 服务器主动发送的ping消息已经等待的时间,小于0表示没有正在等待,用于主动检测客户端的延迟情况,如果延迟较大,则会忽略某些攻击等关键消息
 	float mCurServerPingTime = mServerPingTime;				// 服务器主动发送ping消息的计时器

@@ -12,17 +12,17 @@ NetStructItemInfo& NetStructItemInfo::operator=(const NetStructItemInfo& other)
 	return *this;
 }
 
-bool NetStructItemInfo::readFromBuffer(SerializerBitRead* reader)
+bool NetStructItemInfo::readFromBuffer(SerializerBitRead* reader, const bool needReadSign)
 {
 	bool success = true;
-	success = success && reader->readSigned(mItemID, mItemCount);
+	success = success && reader->readSigned(needReadSign, mItemID, mItemCount);
 	return success;
 }
 
-bool NetStructItemInfo::writeToBuffer(SerializerBitWrite* serializer) const
+bool NetStructItemInfo::writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const
 {
 	bool success = true;
-	success = success && serializer->writeSigned(mItemID, mItemCount);
+	success = success && writer->writeSigned(needWriteSign, mItemID, mItemCount);
 	return success;
 }
 

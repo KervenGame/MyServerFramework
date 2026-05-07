@@ -157,7 +157,7 @@ public:
 		HashMap<llong, T*> dataMap;
 		for (MySQLData* data : queryAll(createTempData))
 		{
-			dataMap.insert(data->mID, static_cast<T*>(data));
+			dataMap.add(data->mID, static_cast<T*>(data));
 		}
 		return MySQLDataHashMapScopeT<T>(move(dataMap));
 	}
@@ -182,7 +182,7 @@ public:
 		HashMap<llong, T*> dataMap;
 		for (MySQLData* data : queryListByIDList(idList))
 		{
-			dataMap.insert(data->mID, static_cast<T*>(data));
+			dataMap.add(data->mID, static_cast<T*>(data));
 		}
 		return MySQLDataHashMapScopeT<T>(move(dataMap));
 	}
@@ -195,7 +195,7 @@ public:
 		HashMap<llong, T*> dataMap;
 		for (MySQLData* data : queryListByIDList(move(idList)))
 		{
-			dataMap.insert(data->mID, static_cast<T*>(data));
+			dataMap.add(data->mID, static_cast<T*>(data));
 		}
 		return MySQLDataHashMapScopeT<T>(move(dataMap));
 	}

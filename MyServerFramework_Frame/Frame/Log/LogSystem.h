@@ -13,7 +13,7 @@ public:
 	void quit() override;
 	static void log(LogInfo* info);
 protected:
-	static void writeLogThread(CustomThread* thread);
+	void writeLogThread();
 	void writeLogFile();
 	void writeErrorFile();
 public:

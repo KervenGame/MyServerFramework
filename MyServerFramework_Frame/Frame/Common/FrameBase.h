@@ -12,6 +12,7 @@ namespace FrameBase
 	MICRO_LEGEND_FRAME_API extern CharacterManager* mCharacterManager;
 	MICRO_LEGEND_FRAME_API extern VectorPoolManager* mVectorPoolManager;
 	MICRO_LEGEND_FRAME_API extern CommandSystem* mCommandSystem;
+	MICRO_LEGEND_FRAME_API extern DelayCallSystem* mDelayCallSystem;
 	MICRO_LEGEND_FRAME_API extern RandomSystem* mRandomSystem;
 	MICRO_LEGEND_FRAME_API extern FrameConfigSystem* mFrameConfigSystem;
 	MICRO_LEGEND_FRAME_API extern ExcelManager* mExcelManager;
@@ -42,7 +43,6 @@ namespace FrameBase
 	MICRO_LEGEND_FRAME_API extern CounterThreadPool* mCounterThreadPool;
 	MICRO_LEGEND_FRAME_API extern DelayCommandPool* mDelayCommandPool;
 	MICRO_LEGEND_FRAME_API extern DTNodePool* mDTNodePool;
-	MICRO_LEGEND_FRAME_API extern EventInfoPool* mEventInfoPool;
 	MICRO_LEGEND_FRAME_API extern GameComponentPool* mGameComponentPool;
 	MICRO_LEGEND_FRAME_API extern LogInfoPool* mLogInfoPool;
 #ifdef _MYSQL
@@ -51,13 +51,14 @@ namespace FrameBase
 #ifdef _MYSQL
 	MICRO_LEGEND_FRAME_API extern MySQLDataPool* mMySQLDataPool;
 #endif
+	MICRO_LEGEND_FRAME_API extern PacketTCPCSThreadPool* mPacketTCPCSThreadPool;
 	MICRO_LEGEND_FRAME_API extern PacketTCPPool* mPacketTCPPool;
-	MICRO_LEGEND_FRAME_API extern PacketTCPThreadPool* mPacketTCPThreadPool;
+	MICRO_LEGEND_FRAME_API extern PacketTCPSCThreadPool* mPacketTCPSCThreadPool;
+	MICRO_LEGEND_FRAME_API extern PacketUDPThreadPool* mPacketUDPThreadPool;
 	MICRO_LEGEND_FRAME_API extern PacketWebSocketPool* mPacketWebSocketPool;
 	MICRO_LEGEND_FRAME_API extern PacketWebSocketThreadPool* mPacketWebSocketThreadPool;
 	MICRO_LEGEND_FRAME_API extern StateParamPool* mStateParamPool;
 	MICRO_LEGEND_FRAME_API extern StatePool* mStatePool;
-	MICRO_LEGEND_FRAME_API extern TickerPool* mTickerPool;
 	MICRO_LEGEND_FRAME_API extern TimePointPool* mTimePointPool;
 	MICRO_LEGEND_FRAME_API extern CharacterFactoryManager* mCharacterFactoryManager;
 	MICRO_LEGEND_FRAME_API extern CharacterStateFactoryManager* mCharacterStateFactoryManager;

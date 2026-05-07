@@ -57,4 +57,6 @@ public:
 		return *this;
 	}
 	Vector3 operator-() const { return { -x, -y, -z }; }
+	bool operator==(const Vector3& that) const { return x == that.x && y == that.y && z == that.z; }
+	bool operator!=(const Vector3& that) const { return !(*this == that); }
 };

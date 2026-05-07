@@ -12,8 +12,8 @@ SerializerBitWrite::~SerializerBitWrite()
 
 bool SerializerBitWrite::writeStringList(const Vector<string>& list)
 {
-	const int count = list.size();
-	if (!writeSigned(count))
+	const uint count = (uint)list.size();
+	if (!writeUnsigned(count))
 	{
 		return false;
 	}

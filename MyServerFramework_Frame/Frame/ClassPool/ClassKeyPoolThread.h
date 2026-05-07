@@ -36,14 +36,14 @@ public:
 		THREAD_LOCK(mRemainTimeLock);
 		for (ClassType* obj : classList)
 		{
-			mClassRemainTimeList.insert(obj, DEFAULT_LIFE_TIME);
+			mClassRemainTimeList.add(obj, DEFAULT_LIFE_TIME);
 		}
 #endif
 	}
 	void newClassList(const KeyType key, Vector<ClassType*>& classList, const int dataCount)
 	{
 		classList.clearAndReserve(dataCount);
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			// 不要将LOG也一起锁住,LOG也会从对象池创建对象,会造成死锁
 			THREAD_LOCK(mLock);
@@ -57,7 +57,7 @@ public:
 					{
 						break;
 					}
-					classList.push_back(obj);
+					classList.add(obj);
 				}
 			}
 		}
@@ -79,10 +79,10 @@ public:
 					obj->resetProperty();
 					tempValidObj = obj;
 				}
-				classList.push_back(obj);
+				classList.add(obj);
 			}
 			THREAD_LOCK(mTotalCountLock);
-			mTotalCount.insertOrGet(key, make_pair(typeid(*tempValidObj).name(), 0)).second += createCount;
+			mTotalCount.addOrGet(key, make_pair(typeid(*tempValidObj).name(), 0)).second += createCount;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0 && tempValidObj != nullptr)
 			{
 				LOG(string(typeid(*tempValidObj).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -103,14 +103,14 @@ public:
 		ClassType* obj = newClass(key);
 #ifdef WINDOWS
 		THREAD_LOCK(mRemainTimeLock);
-		mClassRemainTimeList.insert(obj, DEFAULT_LIFE_TIME);
+		mClassRemainTimeList.add(obj, DEFAULT_LIFE_TIME);
 #endif
 		return obj;
 	}
 	ClassType* newClass(const KeyType key)
 	{
 		ClassType* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			THREAD_LOCK(mLock);
 			// 首先从未使用的列表中获取,获取不到再重新创建一个
@@ -130,7 +130,7 @@ public:
 			}
 			obj->resetProperty();
 			THREAD_LOCK(mTotalCountLock);
-			++mTotalCount.insertOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
+			++mTotalCount.addOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0)
 			{
 				LOG(string(typeid(*obj).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -150,7 +150,7 @@ public:
 		T* obj = newClass<T>(key);
 #ifdef WINDOWS
 		THREAD_LOCK(mRemainTimeLock);
-		mClassRemainTimeList.insert(obj, DEFAULT_LIFE_TIME);
+		mClassRemainTimeList.add(obj, DEFAULT_LIFE_TIME);
 #endif
 		return obj;
 	}
@@ -158,7 +158,7 @@ public:
 	T* newClass(const KeyType key)	
 	{
 		T* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			THREAD_LOCK(mLock);
 			// 首先从未使用的列表中获取,获取不到再重新创建一个
@@ -173,7 +173,7 @@ public:
 			obj = new T();
 			obj->resetProperty();
 			THREAD_LOCK(mTotalCountLock);
-			++mTotalCount.insertOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
+			++mTotalCount.addOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0)
 			{
 				LOG(string(typeid(*obj).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -193,7 +193,7 @@ public:
 		THREAD_LOCK(mRemainTimeLock);
 		for (T* obj : classList)
 		{
-			mClassRemainTimeList.insert(obj, DEFAULT_LIFE_TIME);
+			mClassRemainTimeList.add(obj, DEFAULT_LIFE_TIME);
 		}
 #endif
 	}
@@ -201,7 +201,7 @@ public:
 	void newClassList(const KeyType key, Vector<ClassType*>& classList, const int dataCount)
 	{
 		classList.clearAndReserve(dataCount);
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			THREAD_LOCK(mLock);
 			if (auto* objVector = mUnusedList.getPtr(key))
@@ -214,7 +214,7 @@ public:
 					{
 						break;
 					}
-					classList.push_back(obj);
+					classList.add(obj);
 				}
 			}
 		}
@@ -227,10 +227,10 @@ public:
 			{
 				T* obj = new T();
 				obj->resetProperty();
-				classList.push_back(obj);
+				classList.add(obj);
 			}
 			THREAD_LOCK(mTotalCountLock);
-			mTotalCount.insertOrGet(key, make_pair(typeid(*classList[0]).name(), 0)).second += needCreateCount;
+			mTotalCount.addOrGet(key, make_pair(typeid(*classList[0]).name(), 0)).second += needCreateCount;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0)
 			{
 				LOG(string(typeid(*classList[0]).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -263,12 +263,12 @@ public:
 		{
 			THREAD_LOCK(mLock);
 			// 添加到未使用列表中
-			mUnusedList.insertOrGet(key).push_back(obj);
+			mUnusedList.addOrGet(key).add(obj);
 		}
 #ifdef WINDOWS
 		{
 			THREAD_LOCK(mRemainTimeLock);
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 		}
 #endif
 		obj = nullptr;
@@ -280,7 +280,7 @@ public:
 			const int itemCount = item.second.second;
 			if (itemCount > 1000)
 			{
-				const int unuseCount = mUnusedList.tryGet(item.first).size();
+				const int unuseCount = mUnusedList.get(item.first).size();
 				LOG("ClassKeyPoolThread: " + item.second.first + "的数量:" + IToS(itemCount) + ",总大小:" + LLToS(itemCount * sizeof(ClassType) / 1024) + "KB" + ", 未使用数量:" + IToS(unuseCount));
 			}
 		}

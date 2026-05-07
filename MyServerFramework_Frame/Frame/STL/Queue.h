@@ -7,18 +7,7 @@ using std::queue;
 template<typename T>
 class Queue
 {
-	typedef typename queue<T>::iterator iterator;
-	typedef typename queue<T>::reverse_iterator reverse_iterator;
-	typedef typename queue<T>::const_iterator const_iterator;
 public:
-	iterator begin() { return mQueue.begin(); }
-	iterator end() { return mQueue.end(); }
-	const_iterator begin() const { return mQueue.begin(); }
-	const_iterator end()  const { return mQueue.end(); }
-	reverse_iterator rbegin() const { return mQueue.rbegin(); }
-	reverse_iterator rend() const { return mQueue.rend(); }
-	const_iterator cbegin() const { return mQueue.cbegin(); }
-	const_iterator cend() const { return mQueue.cend(); }
 	void addRange(const Vector<T*>& list)
 	{
 		for (T* item : list)
@@ -41,7 +30,7 @@ public:
 	void popOnly() { mQueue.pop(); }
 	int size() const { return (int)mQueue.size(); }
 	bool isEmpty() const { return (int)mQueue.size() == 0; }
-	void clear() { mQueue.clear(); }
+	void clear() { while (!mQueue.empty()) { mQueue.pop(); } }
 public:
 	queue<T> mQueue;
 };

@@ -20,12 +20,52 @@ inline uint64_t readTSC()
 }
 #endif
 
+// 需要搭配PROFILE宏来使用
 class MICRO_LEGEND_FRAME_API Profiler
 {
 public:
     static constexpr int MAX_POINTS = 8192;
     static ProfilerData mData[MAX_POINTS];
+    static double mTickToNS;
+    static double mTickToMS;
+    static ullong mTickPerMS;
+    static ullong mTickPerNS;
 public:
+    static void initTicks()
+    {
+        const auto t1 = readTSC();
+        sleep_for(milliseconds(100));
+        const auto t2 = readTSC();
+        mTickPerMS = (t2 - t1) / 100;
+        mTickToNS = 1e8 / (t2 - t1);
+        mTickToMS = 1e2 / (t2 - t1);
+    }
+    static double getTickToNS()
+    {
+        if (mTickToNS > 0.0)
+        {
+            return mTickToNS;
+        }
+        initTicks();
+        return mTickToNS;
+    }
+    static double getTickToMS()
+    {
+        if (mTickToMS > 0.0)
+        {
+            return mTickToMS;
+        }
+        initTicks();
+        return mTickToMS;
+    }
+    static double ticksToMS(ullong ticks)
+    {
+        return ticks * getTickToMS();
+    }
+    static double ticksToMS(ullong ticks, double tickToMS)
+    {
+        return ticks * tickToMS;
+    }
     static inline ProfilerData& get(int id, const char* file, const char* func)
     {
         ProfilerData& data = mData[id];
@@ -39,7 +79,7 @@ public:
     }
     static void resetFrame() 
     {
-        for (int i = 0; i < MAX_POINTS; ++i) 
+        FOR(MAX_POINTS)
         {
             ProfilerData& data = mData[i];
             data.mTotalTicks = 0;
@@ -48,11 +88,11 @@ public:
             data.mFunction = nullptr;
         }
     }
-    static void dump(double tickToNS)
+    static void dump()
     {
 #ifdef WINDOWS
         bool hasData = false;
-        for (int i = 0; i < MAX_POINTS; ++i)
+        FOR(MAX_POINTS)
         {
             ProfilerData& data = mData[i];
             if (data.mCount > 0)
@@ -66,8 +106,9 @@ public:
             return;
         }
 
+        const double tickToMS = getTickToMS();
         LOG("profile start--------------------------------------------------------------------");
-        for (int i = 0; i < MAX_POINTS; ++i)
+        FOR(MAX_POINTS)
         {
             ProfilerData& data = mData[i];
             if (data.mCount > 0)
@@ -77,7 +118,7 @@ public:
                 const int firstBracePos = (int)funcName.find_first_of('(', firstColonPos);
                 funcName = funcName.substr(firstColonPos + 2, firstBracePos - firstColonPos - 2);
                 string preStr = getFileName(data.mFileName) + "." + funcName + ":" + IToS(i);
-                string endStr = " time:" + FToS((float)(data.mTotalTicks * tickToNS / 1e6)) + " ms, count:" + LLToS(data.mCount);
+                string endStr = " time:" + FToS((float)ticksToMS(data.mTotalTicks, tickToMS)) + " ms, count:" + LLToS(data.mCount);
                 appendWithAlign(preStr, endStr, 56);
                 LOG(preStr);
             }

@@ -42,15 +42,15 @@ public:
 #endif
 		return *this;
 	}
-	iterator find(const T& elem) const	{ return mSet.find(elem); }
-	iterator begin()					{ return mSet.begin(); }
-	iterator end()						{ return mSet.end(); }
-	const_iterator begin() const		{ return mSet.begin(); }
-	const_iterator end() const			{ return mSet.end(); }
-	const_iterator cbegin() const		{ return mSet.cbegin(); }
-	const_iterator cend() const			{ return mSet.cend(); }
+	const_iterator find(const T& elem) const	{ return mSet.find(elem); }
+	iterator begin()							{ return mSet.begin(); }
+	iterator end()								{ return mSet.end(); }
+	const_iterator begin() const				{ return mSet.begin(); }
+	const_iterator end() const					{ return mSet.end(); }
+	const_iterator cbegin() const				{ return mSet.cbegin(); }
+	const_iterator cend() const					{ return mSet.cend(); }
 	// 返回第一个元素,并且将该元素移除
-	T pop_front()
+	T popFirst()
 	{
 		auto iter = mSet.begin();
 		const T value = *iter;
@@ -87,13 +87,25 @@ public:
 			mSet.insert(value);
 		}
 	}
-	bool insert(const T& elem)
+	bool addOrRemove(const T& elem, bool isAdd)
+	{
+		if (isAdd)
+		{
+			add(elem);
+		}
+		else
+		{
+			remove(elem);
+		}
+		return isAdd;
+	}
+	bool add(const T& elem)
 	{
 		return mSet.insert(elem).second;
 	}
 	// 因为要兼容T类型的派生类,所以定义了一个新的类型
 	template<typename TElement>
-	void insert(const Set<TElement>& other)
+	void addRange(const Set<TElement>& other)
 	{
 		if (other.isEmpty())
 		{
@@ -106,7 +118,7 @@ public:
 	}
 	// 因为要兼容T类型的派生类,所以定义了一个新的类型
 	template<typename TElement>
-	void insert(const Vector<TElement>& other)
+	void addRange(const Vector<TElement>& other)
 	{
 		if (other.isEmpty())
 		{
@@ -117,11 +129,11 @@ public:
 			mSet.insert(iter);
 		}
 	}
-	void erase(const iterator& iter)
+	void remove(const const_iterator& iter)
 	{
 		mSet.erase(iter);
 	}
-	bool erase(const T& value)
+	bool remove(const T& value)
 	{
 		iterator iter = mSet.find(value);
 		if (iter != mSet.end())
@@ -143,7 +155,7 @@ public:
 	int size() const { return (int)mSet.size(); }
 	bool isEmpty() const { return (int)mSet.size() == 0; }
 	// 添加克隆函数的目的是为了显式调用拷贝,而非自动调用拷贝,可以避免可以使用移动构造而没有使用的情况
-	void clone(Set<T>& target) const
+	void cloneTo(Set<T>& target) const
 	{
 		target.mSet = mSet;
 	}

@@ -44,7 +44,10 @@ protected:
 	// 因为在一条继承链上的所有组件都可能会有自己的FrameTick或者SecondTick,所以只能让每个子类自己注册
 	// 不能将函数指针存到基类,由基类来注册或者注销
 	virtual void registeTick() {}
-	virtual void unregisteTick() {}
+	void unregisteTick();
+	void setFrameTick(FloatCallback callback);
+	void setLateFrameTick(FloatCallback callback);
+	void setSecondTick(VoidCallback callback);
 protected:
 	ComponentOwner* mComponentOwner = nullptr;	// 该组件的拥有者
 	ushort mComponentType = 0;					// 组件类型

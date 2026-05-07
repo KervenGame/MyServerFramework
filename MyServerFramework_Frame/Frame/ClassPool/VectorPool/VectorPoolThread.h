@@ -23,10 +23,10 @@ public:
 		// 首先从未使用的列表中获取,获取不到再重新创建一个
 		{
 			THREAD_LOCK(mUnuseLock);
-			const int unusedCount = mUnusedList.size();
-			if (unusedCount > 0)
+			if (!mUnusedList.isEmpty())
 			{
-				list = mUnusedList.popBack();
+				list = mUnusedList[mUnusedList.size() - 1];
+				mUnusedList.removeLast();
 			}
 		}
 
@@ -50,7 +50,7 @@ public:
 		// 添加到未使用列表中
 		{
 			THREAD_LOCK(mUnuseLock);
-			mUnusedList.push_back(list);
+			mUnusedList.add(list);
 		}
 
 		// 重置所有属性

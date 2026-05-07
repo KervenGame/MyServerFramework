@@ -11,10 +11,11 @@ void UDPServerSystem::quit()
 	// 先停止所有子线程
 	mThreadManager->destroyThread(mSendThread);
 	mThreadManager->destroyThread(mReceiveThread);
+	CLOSE_SOCKET(mSocket);
 #ifdef WINDOWS
+	// 需要在CLOSE_SOCKET后面调用
 	WSACleanup();
 #endif
-	CLOSE_SOCKET(mSocket);
 	DELETE(mClient);
 	DELETE(mPacketDataBuffer);
 	DELETE_ARRAY(mTempRecvBuffer);
@@ -72,22 +73,20 @@ void UDPServerSystem::init()
 		ERROR("设置socket选项失败");
 		return;
 	}
-	mSendThread = mThreadManager->createThread("SendSocketUDP", sendThread, this);
-	mReceiveThread = mThreadManager->createThread("ReceiveSocketUDP", receiveThread, this);
+	mSendThread = mThreadManager->createThread("SendSocketUDP", [this] {sendThread(); });
+	mReceiveThread = mThreadManager->createThread("ReceiveSocketUDP", [this] {receiveThread(); });
 	mSendThread->setTime(16, 0);
 	mReceiveThread->setTime(16, 0);
 }
 
-void UDPServerSystem::sendThread(CustomThread* thread)
+void UDPServerSystem::sendThread()
 {
-	const auto* netManager = static_cast<This*>(thread->getArgs());
 	// 发送消息
-	netManager->mClient->processSend(netManager->mSocket);
+	mClient->processSend(mSocket);
 }
 
-void UDPServerSystem::receiveThread(CustomThread* thread)
+void UDPServerSystem::receiveThread()
 {
-	const auto* netManager = static_cast<This*>(thread->getArgs());
 	// 接收消息
 	sockaddr_in fromAddr;
 #ifdef WINDOWS
@@ -95,10 +94,10 @@ void UDPServerSystem::receiveThread(CustomThread* thread)
 #elif defined LINUX
 	socklen_t fromLen = sizeof(fromAddr);
 #endif
-	const int nRecv = recvfrom(netManager->mSocket, netManager->mTempRecvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0, (sockaddr*)&fromAddr, &fromLen);
+	const int nRecv = recvfrom(mSocket, mTempRecvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0, (sockaddr*)&fromAddr, &fromLen);
 	if (nRecv > 0)
 	{
-		netManager->mClient->recvData(netManager->mTempRecvBuffer, nRecv, fromAddr);
+		mClient->recvData(mTempRecvBuffer, nRecv, fromAddr);
 	}
 }
 
@@ -110,5 +109,5 @@ void UDPServerSystem::writePacket(PacketTCP* packet)
 	// 而如果让外边存储一个缓冲区对象,使用起来又非常麻烦,所以就在UDPServerSystem中存储一个公用的缓冲区
 	// 并且不能是静态的,静态对象的析构不是在主线程执行,会在检测执行线程时报错
 	mPacketDataBuffer->clear();
-	packet->writeToBuffer(mPacketDataBuffer);
+	packet->writeToBuffer(mPacketDataBuffer, packet->hasSign());
 }

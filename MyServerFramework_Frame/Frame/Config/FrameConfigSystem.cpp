@@ -97,28 +97,26 @@ Vector<pair<string, string>> FrameConfigSystem::parseConfig(const string& fileNa
 	Vector<pair<string, string>> valueList;
 	for (const string& lineString : lineList)
 	{
+		tempBuffer.clear();
 		// 首先去掉所有的空格和制表符
-		int curLen = 0;
 		FOR(lineString.length())
 		{
 			if (lineString[i] != ' ' && lineString[i] != '\t' && lineString[i] != '\r' && lineString[i] != '\n')
 			{
-				if (curLen >= tempBuffer.size())
+				if (!tempBuffer.add(lineString[i]))
 				{
 					break;
 				}
-				tempBuffer[curLen++] = lineString[i];
 			}
 		}
-		tempBuffer[curLen] = 0;
 		const string newString(tempBuffer.str());
 		// 如果该行是空的,或者是注释,则不进行处理
-		if (newString.length() > 0 && !startWith(newString, "//"))
+		if (!newString.empty() && !startWith(newString, "//"))
 		{
 			ArrayList<2, string> valueArray;
 			if (splitFull(newString, "=", valueArray))
 			{
-				valueList.emplace_back(valueArray[0], valueArray[1]);
+				valueList.emplace(valueArray[0], valueArray[1]);
 			}
 		}
 	}

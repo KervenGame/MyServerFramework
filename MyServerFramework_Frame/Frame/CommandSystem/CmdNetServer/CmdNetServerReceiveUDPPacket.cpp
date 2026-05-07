@@ -27,7 +27,7 @@ void CmdNetServerReceiveUDPPacket::execute()
 			packetReply->setClient(client);
 			packetReply->execute();
 		}
-		mPacketTCPPool->destroyClassList(list);
+		mPacketUDPThreadPool->destroyClassList(list);
 	}
 	mPacketList.clear();
 }

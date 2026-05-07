@@ -90,7 +90,7 @@ bool MySQLTable::queryExist(const char* condition)
 	}
 	const llong time0 = getRealTimeMS();
 	MyString<512> queryStr;
-	strcat_t(queryStr, "SELECT 1 FROM ", mTableName, " WHERE ", condition, " LIMIT 1");
+	queryStr.add("SELECT 1 FROM ", mTableName, " WHERE ", condition, " LIMIT 1");
 	// 获得查询结果
 	const int count = parseColInt(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();
@@ -103,18 +103,19 @@ bool MySQLTable::queryExist(const char* condition)
 
 Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool createTempData)
 {
+	const llong time0 = readTSC();
 	// 查询条件,如果查询条件较短,则使用栈内存,较长则使用堆内存
 	string heapWhereStr;
 	MyString<1024> stackWhereStr;
 	if (!param.mConditionStack.isEmpty())
 	{
-		strcat_t(stackWhereStr, " WHERE ", param.mConditionStack.str());
+		stackWhereStr.add(" WHERE ", param.mConditionStack.str());
 	}
 	else if (!param.mConditionHeap.empty())
 	{
 		if (param.mConditionHeap.length() < 512)
 		{
-			strcat_t(stackWhereStr, " WHERE ", param.mConditionHeap.c_str());
+			stackWhereStr.add(" WHERE ", param.mConditionHeap.c_str());
 		}
 		else
 		{
@@ -123,14 +124,14 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 			heapWhereStr += param.mConditionHeap;
 		}
 	}
-	else if (param.mIDList != nullptr && param.mIDList->size() > 0)
+	else if (param.mIDList != nullptr && !param.mIDList->isEmpty())
 	{
 		const int idCount = param.mIDList->size();
 		constexpr int MAX_ID_COUNT = 64;
 		if (idCount <= MAX_ID_COUNT)
 		{
 			LLONGS_STR(condition, param.mIDList->data(), MAX_ID_COUNT, idCount);
-			strcat_t(stackWhereStr, " WHERE ID in (", condition.str(), ")");
+			stackWhereStr.add(" WHERE ID in (", condition.str(), ")");
 		}
 		else
 		{
@@ -153,12 +154,12 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 	{
 		LLONG_STR(limitStartStr, param.mLimitStart);
 		LLONG_STR(limitCountStr, param.mLimitCount);
-		strcat_t(limitStr, " LIMIT ", limitStartStr.str(), ",", limitCountStr.str());
+		limitStr.add(" LIMIT ", limitStartStr.str(), ",", limitCountStr.str());
 	}
 	// 如果只查一个ID,则限定只需要一个结果
 	else if (param.mIDList != nullptr && param.mIDList->size() == 1)
 	{
-		limitStr.setString(" LIMIT 1");
+		limitStr.set(" LIMIT 1");
 	}
 
 	// 排序方式
@@ -167,11 +168,11 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 	{ 
 		if (param.mOrder == MYSQL_ORDER::ASC)
 		{
-			strcat_t(orderStr, " ORDER BY ", param.mOrderColumn.c_str(), " ASC");
+			orderStr.add(" ORDER BY ", param.mOrderColumn.c_str(), " ASC");
 		}
 		else if (param.mOrder == MYSQL_ORDER::DESC)
 		{
-			strcat_t(orderStr, " ORDER BY ", param.mOrderColumn.c_str(), " DESC");
+			orderStr.add(" ORDER BY ", param.mOrderColumn.c_str(), " DESC");
 		}
 	}
 
@@ -183,7 +184,7 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 	{
 		// 由于使用了自定义的缓存,为了避免条件删除时由于有要判断的列没有查询而导致未能将缓存中的数据删除,然后导致缓存与数据库不一致
 		// 所以在查询时都是查询全部列的数据
-		strcat_t(stackQueryStr, "SELECT * FROM ", mTableName, stackWhereStr.str(), orderStr.str(), limitStr.str());
+		stackQueryStr.add("SELECT * FROM ", mTableName, stackWhereStr.str(), orderStr.str(), limitStr.str());
 	}
 	// 如果where使用的是堆内存
 	else if (!heapWhereStr.empty())
@@ -198,10 +199,9 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 	// 没有where条件
 	else
 	{
-		strcat_t(stackQueryStr, "SELECT * FROM ", mTableName, orderStr.str(), limitStr.str());
+		stackQueryStr.add("SELECT * FROM ", mTableName, orderStr.str(), limitStr.str());
 	}
 
-	const llong time0 = getRealTimeMS();
 	// 获得查询结果
 	MYSQL_RES* result = nullptr;
 	if (!stackQueryStr.isEmpty())
@@ -212,7 +212,6 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 	{
 		result = executeQuery(heapQueryStr.c_str());
 	}
-	const llong time1 = getRealTimeMS();
 	Vector<MySQLData*> dataList;
 	const bool ret = result != nullptr && result->row_count > 0;
 	if (ret)
@@ -228,9 +227,11 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 		mysqlToResultData(result, dataList);
 	}
 	endQuery(result);
-	if (ret && time1 - time0 >= 10)
+	const llong time1 = readTSC();
+	double timeMS = Profiler::ticksToMS(time1 - time0);
+	if (ret && timeMS > 0)
 	{
-		LOG("查询数据的耗时较长:" + IToS((int)(time1 - time0)) + "毫秒, sql:" + (!stackQueryStr.isEmpty() ? stackQueryStr.str() : heapQueryStr.c_str()));
+		LOG("查询数据的耗时较长:" + FToS((float)timeMS) + "毫秒, sql:" + (!stackQueryStr.isEmpty() ? stackQueryStr.str() : heapQueryStr.c_str()));
 	}
 	return dataList;
 }
@@ -240,7 +241,7 @@ MySQLData* MySQLTable::queryByInt(const int column, const int value)
 	if (MySQLData* cacheData = mCacheTable->getDataByInt(column, value))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -261,7 +262,7 @@ MySQLData* MySQLTable::queryByLLong(const int column, const llong value)
 	if (MySQLData* cacheData = mCacheTable->getDataByLLong(column, value))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -282,7 +283,7 @@ MySQLData* MySQLTable::queryByString(const int column, const string& value)
 	if (MySQLData* cacheData = mCacheTable->getDataByString(column, value))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -303,7 +304,7 @@ MySQLData* MySQLTable::queryByString2And(const int column0, const string& value0
 	if (MySQLData* cacheData = mCacheTable->getDataByString2And(column0, value0, column1, value1))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -327,7 +328,7 @@ MySQLData* MySQLTable::queryByLLong2Or(const int column0, const llong value0, co
 	if (MySQLData* cacheData = mCacheTable->getDataByLLong2Or(column0, value0, column1, value1))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -349,7 +350,7 @@ MySQLData* MySQLTable::queryByLLongIntAnd(const int column0, const llong value0,
 	if (MySQLData* cacheData = mCacheTable->getDataByLLongIntAnd(column0, value0, column1, value1))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -371,7 +372,7 @@ MySQLData* MySQLTable::queryByLLongStringAnd(const int column0, const llong valu
 	if (MySQLData* cacheData = mCacheTable->getDataByLLongStringAnd(column0, value0, column1, value1))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
@@ -395,7 +396,7 @@ Vector<MySQLData*> MySQLTable::queryListByInt(const int column, const int value,
 	param.mLimitCount = maxCount;
 	Vector<MySQLData*> dataList = queryList(param, true);
 	// 更新缓存
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		mCacheTable->addOrUpdateDataList(dataList);
 	}
@@ -409,7 +410,7 @@ Vector<MySQLData*> MySQLTable::queryListByIntGreater(const int column, const int
 	sqlConditionInt(param.mConditionStack, getColName(column), value, ">");
 	Vector<MySQLData*> dataList = queryList(param, true);
 	// 更新缓存
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		mCacheTable->addOrUpdateDataList(dataList);
 	}
@@ -424,7 +425,7 @@ Vector<MySQLData*> MySQLTable::queryListByLLong(const int column, const llong va
 	param.mLimitCount = maxCount;
 	Vector<MySQLData*> dataList = queryList(param, true);
 	// 更新缓存
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		mCacheTable->addOrUpdateDataList(dataList);
 	}
@@ -448,7 +449,7 @@ Vector<MySQLData*> MySQLTable::queryListByLLongList(const int column, const Vect
 		}
 	}
 	Vector<MySQLData*> dataList = queryList(param, true);
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		// 更新缓存
 		mCacheTable->addOrUpdateDataList(dataList);
@@ -465,7 +466,7 @@ Vector<MySQLData*> MySQLTable::queryListByLLong2Or(const int column0, const llon
 	param.mLimitCount = maxCount;
 	Vector<MySQLData*> dataList = queryList(param, true);
 	// 更新缓存
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		mCacheTable->addOrUpdateDataList(dataList);
 	}
@@ -479,7 +480,7 @@ Vector<MySQLData*> MySQLTable::queryListByString(const int column, const string&
 	sqlConditionString(param.mConditionHeap, getColName(column), value);
 	Vector<MySQLData*> dataList = queryList(param, true);
 	// 更新缓存
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		mCacheTable->addOrUpdateDataList(dataList);
 	}
@@ -504,7 +505,7 @@ Vector<MySQLData*> MySQLTable::queryListByStringList(const int column, const Vec
 	}
 
 	Vector<MySQLData*> dataList = queryList(param, true);
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		// 更新缓存
 		mCacheTable->addOrUpdateDataList(dataList);
@@ -520,7 +521,7 @@ Vector<MySQLData*> MySQLTable::queryListByIDRange(const llong minID, const llong
 	sqlConditionLLong(param.mConditionStack, "ID", maxID, "<=");
 	Vector<MySQLData*> dataList = queryList(param, true);
 	// 更新缓存
-	if (dataList.size() > 0)
+	if (!dataList.isEmpty())
 	{
 		mCacheTable->addOrUpdateDataList(dataList);
 	}
@@ -532,16 +533,16 @@ Vector<MySQLData*> MySQLTable::queryListByIDList(const Vector<llong>& idList)
 	Vector<MySQLData*> dataList;
 	Vector<llong> tempIDList;
 	// 显式调用克隆,避免移动构造检查的误提示
-	idList.clone(tempIDList);
+	idList.cloneTo(tempIDList);
 	// 先从缓存中查询
-	for (int i = tempIDList.size() - 1; i >= 0; --i)
+	FOR_VECTOR_INVERSE(tempIDList)
 	{
 		if (MySQLData* cacheData = mCacheTable->getCacheData(tempIDList[i]))
 		{
 			MySQLData* data = createData();
-			cacheData->clone(data);
-			dataList.push_back(data);
-			tempIDList.eraseAt(i);
+			cacheData->cloneTo(data);
+			dataList.add(data);
+			tempIDList.removeAt(i);
 		}
 	}
 	if (tempIDList.isEmpty())
@@ -554,7 +555,7 @@ Vector<MySQLData*> MySQLTable::queryListByIDList(const Vector<llong>& idList)
 	param.mIDList = new Vector<llong>();
 	*param.mIDList = move(tempIDList);
 	Vector<MySQLData*> newList = queryList(param, true);
-	if (newList.size() > 0)
+	if (!newList.isEmpty())
 	{
 		// 更新缓存
 		mCacheTable->addOrUpdateDataList(newList);
@@ -568,14 +569,14 @@ Vector<MySQLData*> MySQLTable::queryListByIDList(Vector<llong>&& idList)
 	Vector<MySQLData*> dataList;
 	Vector<llong> tempIDList = move(idList);
 	// 先从缓存中查询
-	for (int i = tempIDList.size() - 1; i >= 0; --i)
+	FOR_VECTOR_INVERSE(tempIDList)
 	{
 		if (MySQLData* cacheData = mCacheTable->getCacheData(tempIDList[i]))
 		{
 			MySQLData* data = createData();
-			cacheData->clone(data);
-			dataList.push_back(data);
-			tempIDList.eraseAt(i);
+			cacheData->cloneTo(data);
+			dataList.add(data);
+			tempIDList.removeAt(i);
 		}
 	}
 	if (tempIDList.isEmpty())
@@ -588,7 +589,7 @@ Vector<MySQLData*> MySQLTable::queryListByIDList(Vector<llong>&& idList)
 	param.mIDList = new Vector<llong>();
 	*param.mIDList = move(tempIDList);
 	Vector<MySQLData*> newList = queryList(param, true);
-	if (newList.size() > 0)
+	if (!newList.isEmpty())
 	{
 		// 更新缓存
 		mCacheTable->addOrUpdateDataList(newList);
@@ -602,14 +603,14 @@ MySQLData* MySQLTable::queryByID(const llong instanceID)
 	if (MySQLData* cacheData = mCacheTable->getCacheData(instanceID))
 	{
 		MySQLData* data = createData();
-		cacheData->clone(data);
+		cacheData->cloneTo(data);
 		return data;
 	}
 
 	// 缓存未命中
 	QueryParam param;
 	param.mIDList = new Vector<llong>();
-	param.mIDList->push_back(instanceID);
+	param.mIDList->add(instanceID);
 	// 查询失败
 	MySQLData* data = query(param);
 	if (data != nullptr)
@@ -627,13 +628,13 @@ MySQLData* MySQLTable::query(const QueryParam& param)
 	MyString<1024> stackWhereStr;
 	if (!param.mConditionStack.isEmpty())
 	{
-		strcat_t(stackWhereStr, " WHERE ", param.mConditionStack.str());
+		stackWhereStr.add(" WHERE ", param.mConditionStack.str());
 	}
 	else if (!param.mConditionHeap.empty())
 	{
 		if (param.mConditionHeap.length() < 512)
 		{
-			strcat_t(stackWhereStr, " WHERE ", param.mConditionHeap.c_str());
+			stackWhereStr.add(" WHERE ", param.mConditionHeap.c_str());
 		}
 		else
 		{
@@ -642,14 +643,14 @@ MySQLData* MySQLTable::query(const QueryParam& param)
 			heapWhereStr += param.mConditionHeap;
 		}
 	}
-	else if (param.mIDList != nullptr && param.mIDList->size() > 0)
+	else if (param.mIDList != nullptr && !param.mIDList->isEmpty())
 	{
 		const int idCount = param.mIDList->size();
 		constexpr int MAX_ID_COUNT = 64;
 		if (idCount <= MAX_ID_COUNT)
 		{
 			LLONGS_STR(condition, param.mIDList->data(), MAX_ID_COUNT, idCount);
-			strcat_t(stackWhereStr, " WHERE ID in (", condition.str(), ")");
+			stackWhereStr.add(" WHERE ID in (", condition.str(), ")");
 		}
 		else
 		{
@@ -671,7 +672,7 @@ MySQLData* MySQLTable::query(const QueryParam& param)
 	// 如果where用的是栈内存
 	if (!stackWhereStr.isEmpty())
 	{
-		strcat_t(stackQueryStr, "SELECT * FROM ", mTableName, stackWhereStr.str(), " LIMIT 1");
+		stackQueryStr.add("SELECT * FROM ", mTableName, stackWhereStr.str(), " LIMIT 1");
 	}
 	// 如果where使用的是堆内存
 	else if (!heapWhereStr.empty())
@@ -684,7 +685,7 @@ MySQLData* MySQLTable::query(const QueryParam& param)
 	// 没有where条件
 	else
 	{
-		strcat_t(stackQueryStr, "SELECT * FROM ", mTableName, " LIMIT 1");
+		stackQueryStr.add("SELECT * FROM ", mTableName, " LIMIT 1");
 	}
 
 	// 获得查询结果
@@ -704,7 +705,7 @@ llong MySQLTable::queryMaxGUID()
 {
 	// 首先查询表中的最大GUID,用来生成物品的GUID
 	MyString<64> queryStr;
-	strcat_t(queryStr, "SELECT max(ID) FROM ", mTableName);
+	queryStr.add("SELECT max(ID) FROM ", mTableName);
 	// 获得查询结果
 	return clampZero(parseColLLong(QueryScope(this, queryStr.str()).mResult, 0));
 }
@@ -712,7 +713,7 @@ llong MySQLTable::queryMaxGUID()
 void MySQLTable::checkTableStructure() const
 {
 	MyString<64> queryStr;
-	strcat_t(queryStr, "DESCRIBE ", mTableName);
+	queryStr.add("DESCRIBE ", mTableName);
 	// 获得查询结果
 	QueryScope scope(this, queryStr.str());
 
@@ -730,7 +731,7 @@ void MySQLTable::checkTableStructure() const
 		{
 			if (strcmp(mysql_fetch_field(scope.mResult)->name, "Field") == 0)
 			{
-				colsInTable.push_back(sql_row[i]);
+				colsInTable.add(sql_row[i]);
 				break;
 			}
 		}
@@ -749,7 +750,7 @@ void MySQLTable::checkTableStructure() const
 	}
 	for (const string& colName : mColumnNameList)
 	{
-		if (!colsInTable.eraseElement(colName))
+		if (!colsInTable.remove(colName))
 		{
 			ERROR("已注册的表格字段在数据库中找不到:" + colName + ", 表格:" + mTableName);
 		}
@@ -808,7 +809,7 @@ bool MySQLTable::deleteByIDList(const llong* idList, const int idCount) const
 		MyString<512> idListStr;
 		LLsToS(idListStr, idList, idCount);
 		MyString<512> condition;
-		strcat_t(condition, "ID in (", idListStr.str(), ")");
+		condition.add("ID in (", idListStr.str(), ")");
 		return doDelete(condition.str(), false);
 	}
 	else
@@ -1232,7 +1233,7 @@ int MySQLTable::queryInt(const llong id, const int colIndex)
 	MyString<32> condition;
 	sqlConditionLLong(condition, "ID", id);
 	MyString<256> queryStr;
-	strcat_t(queryStr, "SELECT ", getColName(colIndex).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
+	queryStr.add("SELECT ", getColName(colIndex).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
 	const int value = parseColInt(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();
 	if (time1 - time0 >= 5)
@@ -1254,7 +1255,7 @@ float MySQLTable::queryFloat(const llong id, const int col)
 	MyString<32> condition;
 	sqlConditionLLong(condition, "ID", id);
 	MyString<256> queryStr;
-	strcat_t(queryStr, "SELECT ", getColName(col).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
+	queryStr.add("SELECT ", getColName(col).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
 	const float value = parseColFloat(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();
 	if (time1 - time0 >= 5)
@@ -1276,7 +1277,7 @@ llong MySQLTable::queryULLong(const llong id, const int col)
 	MyString<32> condition;
 	sqlConditionLLong(condition, "ID", id);
 	MyString<256> queryStr;
-	strcat_t(queryStr, "SELECT ", getColName(col).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
+	queryStr.add("SELECT ", getColName(col).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
 	const llong value = parseColLLong(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();
 	if (time1 - time0 >= 5)
@@ -1298,7 +1299,7 @@ string MySQLTable::queryString(const llong id, const int col)
 	MyString<32> condition;
 	sqlConditionLLong(condition, "ID", id);
 	MyString<256> queryStr;
-	strcat_t(queryStr, "SELECT ", getColName(col).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
+	queryStr.add("SELECT ", getColName(col).c_str(), " FROM ", mTableName, " WHERE ", condition.str(), " LIMIT 1");
 	const string value = parseColString(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();
 	if (time1 - time0 >= 5)
@@ -1333,7 +1334,7 @@ MySQLData* MySQLTable::mysqlToResultData(MYSQL_RES* result)
 		{
 			ERROR("找不到列名的下标:" + tempStr);
 		}
-		mTemp.insert(colIndex, sql_row[i]);
+		mTemp.add(colIndex, sql_row[i]);
 	}
 	MySQLData* data = createData();
 	data->parseResult(mTemp);
@@ -1364,7 +1365,7 @@ void MySQLTable::mysqlToResultData(MYSQL_RES* result, const Vector<MySQLData*>& 
 			{
 				ERROR("找不到列名的下标:" + tempStr);
 			}
-			mTemp.insert(colIndex, sql_row[i]);
+			mTemp.add(colIndex, sql_row[i]);
 		}
 		dataList[index++]->parseResult(mTemp);
 	}
@@ -1386,11 +1387,11 @@ llong MySQLTable::queryCount(const char* condition)
 	MyString<512> queryStr;
 	if (condition != nullptr && condition[0] != '\0')
 	{
-		strcat_t(queryStr, "SELECT count(*) FROM ", mTableName, " WHERE ", condition);
+		queryStr.add("SELECT count(*) FROM ", mTableName, " WHERE ", condition);
 	}
 	else
 	{
-		strcat_t(queryStr, "SELECT count(*) FROM ", mTableName);
+		queryStr.add("SELECT count(*) FROM ", mTableName);
 	}
 	// 获得查询结果
 	const llong count = parseColLLong(QueryScope(this, queryStr.str()).mResult, 0);
@@ -1407,7 +1408,7 @@ int MySQLTable::queryMaxInt(int column)
 	const llong time0 = getRealTimeMS();
 	const string& colName = getColName(column);
 	MyString<128> queryStr;
-	strcat_t(queryStr, "SELECT max(", colName.c_str(), ") FROM ", mTableName);
+	queryStr.add("SELECT max(", colName.c_str(), ") FROM ", mTableName);
 	// 获得查询结果
 	const int maxValue = parseColInt(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();
@@ -1423,7 +1424,7 @@ llong MySQLTable::queryMaxLLong(int column)
 	const llong time0 = getRealTimeMS();
 	const string& colName = getColName(column);
 	MyString<128> queryStr;
-	strcat_t(queryStr, "SELECT max(", colName.c_str(), ") FROM ", mTableName);
+	queryStr.add("SELECT max(", colName.c_str(), ") FROM ", mTableName);
 	// 获得查询结果
 	const llong maxValue = parseColLLong(QueryScope(this, queryStr.str()).mResult, 0);
 	const llong time1 = getRealTimeMS();

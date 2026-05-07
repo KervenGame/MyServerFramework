@@ -35,9 +35,7 @@ public:
 	virtual void setPosition(const Vector3& pos) = 0;
 	virtual Vector3 getTargetPosition() const = 0;
 protected:
-	void registeTick() override { mComponentOwner->registeFrameTick(this, frameTick_ComponentTrackTarget); }
-	void unregisteTick() override { mComponentOwner->unregisteFrameTick(this, frameTick_ComponentTrackTarget); }
-	static void frameTick_ComponentTrackTarget(GameComponent* component, float elapsedTime) { static_cast<This*>(component)->onFrameTick(elapsedTime); }
+	void registeTick() override { setFrameTick([this](float elapsedTime) {onFrameTick(elapsedTime); }); }
 private:
 	void onFrameTick(float elapsedTime);
 protected:

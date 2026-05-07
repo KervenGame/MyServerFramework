@@ -49,4 +49,6 @@ public:
 		return *this;
 	}
 	Vector2 operator-() const { return { -x, -y }; }
+	bool operator==(const Vector2& that) const { return x == that.x && y == that.y; }
+	bool operator!=(const Vector2& that) const { return !(*this == that); }
 };

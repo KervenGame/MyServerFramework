@@ -16,7 +16,7 @@ public:
 	{
 		T* timePoint = mTimePointPool->newClass<T>();
 		timePoint->init();
-		mTimePointList.push_back(timePoint);
+		mTimePointList.add(timePoint);
 		return timePoint;
 	}
 	void destroyTimePoint(TimePoint* timePoint);

@@ -2,18 +2,18 @@
 
 #include "FrameDefine.h"
 
-// 跟类型,模板元编程相关的工具函数
+// 跟类型,模板元编程相关的工具函数,虽然可能库函数中已经有类似的函数了
 namespace TypeUtility
 {
 	// T0是否与T1的类型一致,T0可以带const,&,volatile,在判断时会忽略这些修饰符
 	template<typename T0, typename T1>
-	static constexpr bool isType() { return is_same<typename decay<T0>::type, T1>(); }
+	static constexpr bool isType() { return is_same<typename decay<T0>::type, T1>::value; }
 	// 判断ChildClass是否是BaseClass的子类
 	template<typename BaseClass, typename ChildClass>
-	static constexpr bool isSubClass() { return IsSubClassOf<BaseClass, ChildClass>::mValue; }
+	static constexpr bool isSubClass() { return IsSubClassOfV<BaseClass, ChildClass>::mValue; }
 	// 判断T是否为基础数据类型
 	template<typename T>
-	static constexpr bool isPODType() { return IsPod<T>::mValue; }
+	static constexpr bool isPODType() { return IsPodType<T>::mValue; }
 	template<typename T>
 	static constexpr bool isSignedInteger() { return IsPodSignedInteger<T>::mValue; }
 	template<typename T>

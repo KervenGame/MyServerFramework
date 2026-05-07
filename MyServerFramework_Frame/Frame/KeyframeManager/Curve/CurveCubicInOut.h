@@ -8,11 +8,12 @@ class MICRO_LEGEND_FRAME_API CurveCubicInOut : public AnimationCurve
 public:
 	float evaluate(float time) const override 
 	{
-		if (time * 0.5f < 1.0f)
+		time *= 2.0f;
+		if (time < 1.0f)
 		{
 			return 0.5f * time * time * time;
 		}
-		time -= 2;
+		time -= 2.0f;
 		return 0.5f * (time * time * time + 2.0f);
 	}
 };

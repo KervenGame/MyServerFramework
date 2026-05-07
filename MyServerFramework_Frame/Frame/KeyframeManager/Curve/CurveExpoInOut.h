@@ -16,14 +16,13 @@ public:
 		{
 			return 1.0f;
 		}
-		if (time < 2.0f)
+		if (time < 0.5f)
 		{
-			return 0.5f * pow(2.0f, 10.0f * (time - 1.0f));
+			return 0.5f * pow(2.0f, 20.0f * time - 10.0f);
 		}
 		else
 		{
-			--time;
-			return 0.5f * (-pow(2.0f, -10.0f * time) + 2.0f);
+			return 0.5f * (2.0f - pow(2.0f, -20.0f * time + 10.0f));
 		}
 	}
 };

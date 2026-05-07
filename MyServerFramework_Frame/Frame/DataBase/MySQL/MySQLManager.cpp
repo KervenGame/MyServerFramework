@@ -22,10 +22,10 @@ void MySQLManager::finalInit()
 		return;
 	}
 	// 创建数据库线程,所有的对数据库的访问都在此线程执行
-	mMySQLWriteThread = mThreadManager->createThread("MySQL", mysqlThread, this, onThreadPreCmd, onThreadEndCmd);
+	mMySQLWriteThread = mThreadManager->createThread("MySQL", [this] {mysqlThread(); }, [this] {onThreadPreCmd(); }, [this] {onThreadEndCmd(); });
 	mMySQLWriteThread->setBackground(false);
 	mMySQLWriteThread->setCmdDebug(true);
-	mMySQLWriteThread->setTime(50);
+	mMySQLWriteThread->setTime(10);
 }
 
 bool MySQLManager::connectDataBase()
@@ -66,7 +66,6 @@ void MySQLManager::quit()
 {
 	// 先销毁线程
 	mThreadManager->destroyThread(mMySQLWriteThread);
-	mMySQLWriteThread = nullptr;
 	DELETE_LIST(mTableList);
 	// 销毁MySQL
 	destroyMySQL();
@@ -82,20 +81,20 @@ void MySQLManager::destroyMySQL()
 	mMySQL = nullptr;
 }
 
-void MySQLManager::onThreadPreCmd(CustomThread* thread)
+void MySQLManager::onThreadPreCmd()
 {
 	mMySQLManager->startTransaction(false);
 }
 
-void MySQLManager::onThreadEndCmd(CustomThread* thread)
+void MySQLManager::onThreadEndCmd()
 {
 	mMySQLManager->commit();
 }
 
-void MySQLManager::mysqlThread(CustomThread* thread)
+void MySQLManager::mysqlThread()
 {
 	// 每10秒钟主动连接一次数据库,防止数据库闲置超时而主动关闭
-	mMySQLManager->mCurTimeCount += thread->getFrameTime();
+	mMySQLManager->mCurTimeCount += mMySQLWriteThread->getFrameTime();
 	if (mMySQLManager->mCurTimeCount >= mTimeOut)
 	{
 		if (mMySQLManager->mMySQL != nullptr)
@@ -117,6 +116,7 @@ void MySQLManager::resetProperty()
 	mMySQLWriteThread = nullptr;
 	mMySQL = nullptr;
 	mCurTimeCount = 0.0f;
+	mInTransaction = false;
 }
 
 void MySQLManager::startTransaction(const bool check) const
@@ -130,13 +130,13 @@ void MySQLManager::startTransaction(const bool check) const
 		ERROR("禁止在mysql线程启动后在外部开启事务");
 		return;
 	}
-	if (mMySQLManager->mInTrasaction)
+	if (mMySQLManager->mInTransaction)
 	{
 		ERROR("已开启事务,无法再次开启");
 		return;
 	}
 	mysql_query(mMySQL, "START TRANSACTION"); 
-	mMySQLManager->mInTrasaction = true;
+	mMySQLManager->mInTransaction = true;
 }
 
 void MySQLManager::commit() const
@@ -145,13 +145,13 @@ void MySQLManager::commit() const
 	{
 		return;
 	}
-	if (!mMySQLManager->mInTrasaction)
+	if (!mMySQLManager->mInTransaction)
 	{
 		ERROR("未开启事务,无法提交事务");
 		return;
 	}
 	mysql_query(mMySQL, "COMMIT");
-	mMySQLManager->mInTrasaction = false;
+	mMySQLManager->mInTransaction = false;
 }
 
 bool MySQLManager::checkReconnect(const char* str) const

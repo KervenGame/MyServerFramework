@@ -10,15 +10,15 @@ public:
 	UDPServerSystem();
 	void init() override;
 	void quit() override;
-	bool isAvailable() const			{ return mSocket != INVALID_SOCKET; }
-	UDPServerClient* getClient() const	{ return mClient; }
-	ushort getPort() const				{ return mPort; }
-	const SerializerBitWrite* getPacketDataBuffer() const { return mPacketDataBuffer; }
+	bool isAvailable() const								{ return mSocket != INVALID_SOCKET; }
+	UDPServerClient* getClient() const						{ return mClient; }
+	ushort getPort() const									{ return mPort; }
+	const SerializerBitWrite* getPacketDataBuffer() const	{ return mPacketDataBuffer; }
 	// 将消息数据写入到缓冲区,在发送消息前调用
 	void writePacket(PacketTCP* packet);
 protected:
-	static void sendThread(CustomThread* thread);
-	static void receiveThread(CustomThread* thread);
+	void sendThread();
+	void receiveThread();
 protected:
 	UDPServerClient* mClient = nullptr;				// 客户端,用于解析数据
 	CustomThread* mSendThread = nullptr;			// 发送线程

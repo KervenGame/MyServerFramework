@@ -17,6 +17,6 @@ public:
 	void moveSendList(Vector<pair<char*, int>>& target) { target = move(mSendList); }
 	void setToken(const llong token)					{ mToken = token; }
 	void setAddress(const sockaddr_in& address)			{ mAddress = address; }
-	void addSendData(char* data, const int length)		{ mSendList.emplace_back(data, length); }
+	void addSendData(char* data, const int length)		{ mSendList.emplace(data, length); }
 	void clear();
 };

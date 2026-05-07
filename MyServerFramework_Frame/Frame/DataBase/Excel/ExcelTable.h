@@ -31,10 +31,22 @@ public:
 		{
 			T* data = new T();
 			data->read(&reader);
-			mDataList.insert(data->mID, data);
+			mDataList.add(data->mID, data);
 		}
 	}
-	T* getData(const int id, const bool showError = true) const { return mDataList.tryGet(id); }
+	T* getData(const int id, const bool showError = true) const 
+	{
+		if (id <= 0)
+		{
+			return nullptr;
+		}
+		T* data = mDataList.get(id); 
+		if (data == nullptr && showError)
+		{
+			ERROR("找不到数据, table:" + mTableName + ", ID:" + IToS(id));
+		}
+		return data;
+	}
 	bool hasData(const int id) const { return mDataList.contains(id); }
 	const HashMap<int, T*>& getAllData() const { return mDataList; }
 	void checkEnumResult(bool result, const char* varName, int dataID)
@@ -87,7 +99,7 @@ protected:
 	{
 		const string key = generateMD5("ASLD" + mTableName, true) + "23y35y983";
 		int keyIndex = 0;
-		for (int i = 0; i < bufferSize; ++i)
+		FOR(bufferSize)
 		{
 			fileBuffer[i] = (byte)((fileBuffer[i] ^ (byte)key[keyIndex]) + ((i << 1) & 0xFF));
 			if (++keyIndex >= (int)key.length())

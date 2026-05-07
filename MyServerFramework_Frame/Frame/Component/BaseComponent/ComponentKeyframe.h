@@ -62,9 +62,7 @@ protected:
 	static void setCallback(KeyFrameCallback callback, void* userData, KeyFrameCallback& curCallback, void*& curUserData, ComponentKeyframe* component);
 	virtual void applyTrembling(float value) { }
 protected:
-	void registeTick() override { mComponentOwner->registeFrameTick(this, frameTick_ComponentKeyframe); }
-	void unregisteTick() override { mComponentOwner->unregisteFrameTick(this, frameTick_ComponentKeyframe); }
-	static void frameTick_ComponentKeyframe(GameComponent* component, float elapsedTime) { static_cast<This*>(component)->onFrameTick(elapsedTime); }
+	void registeTick() override { setFrameTick([this](float elapsedTime) {onFrameTick(elapsedTime); }); }
 private:
 	void onFrameTick(float elapsedTime);
 protected:

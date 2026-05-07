@@ -15,7 +15,7 @@ public:
 		mReading(false)
 	{}
 	// 尝试检查一下有没有数据可以读,由于没有加锁,所以不保证结果一定正确
-	bool tryCheckDataToRead() const { return mBufferList[mWriteIndex].size() > 0; }
+	bool tryCheckDataToRead() const { return !mBufferList[mWriteIndex].isEmpty(); }
 	// 切换缓冲区,获得可读列表,在遍历可读列表期间,不能再次调用get,否则会出现不可预知的错误,并且该函数不能在多个线程中调用
 	// 可读列表不再访问时需要调用endRead
 	// 仅BufferVectorReadScope可调用
@@ -49,11 +49,15 @@ public:
 			ERROR("不能在不同线程中获得可读列表,当前操作线程:" + UIToS(curThreadID) + ",首次操作线程:" + UIToS(mReadThreadID));
 			return nullptr;
 		}
-		MathUtility::swap(mReadIndex, mWriteIndex);
+		swap_(mReadIndex, mWriteIndex);
 		return &(mBufferList[mReadIndex]);
 	}
 	// 仅BufferVectorReadScope可调用
-	void endRead() { mReading = false; }
+	void endRead() 
+	{
+		mBufferList[mReadIndex].clear();
+		mReading = false; 
+	}
 	// 适用于基础数据类型
 	void add(const Vector<T>& value)
 	{
@@ -107,7 +111,7 @@ public:
 		Vector<T>& writeList = mBufferList[mWriteIndex];
 		if (mWriteListLimit == 0 || writeList.size() < mWriteListLimit)
 		{
-			writeList.push_back(value);
+			writeList.add(value);
 		}
 	}
 	void setWriteListLimit(const int limit) { mWriteListLimit = limit; }

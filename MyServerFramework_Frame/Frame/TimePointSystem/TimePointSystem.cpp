@@ -32,7 +32,7 @@ void TimePointSystem::lateUpdate(const float elapsedTime)
 void TimePointSystem::destroyTimePoint(TimePoint* timePoint)
 {
 	// 不在列表中,则可能是已经被销毁了
-	if (!mTimePointList.eraseElement(timePoint))
+	if (!mTimePointList.remove(timePoint))
 	{
 		timePoint = nullptr;
 		return;

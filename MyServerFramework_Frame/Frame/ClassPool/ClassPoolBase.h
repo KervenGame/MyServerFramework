@@ -14,9 +14,6 @@ public:
 protected:
 	virtual void onHour() { dump(); }
 	virtual void onSecond(){}
-private:
-	static void onHourInternal(void* userData);
-	static void onSecondInternal(void* userData);
 protected:
 	const float DEFAULT_LIFE_TIME = 5.0f;					// 临时对象的默认生命时长为5秒
 };

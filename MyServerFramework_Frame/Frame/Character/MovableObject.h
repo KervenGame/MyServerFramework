@@ -20,7 +20,7 @@ public:
 		{
 			mDestroyCallbackList = new Vector<pair<OnObjectDestroy, void*>>();
 		}
-		mDestroyCallbackList->emplace_back(callback, userData);
+		mDestroyCallbackList->emplace(callback, userData);
 	}
 	void removeDestroyCallback(const OnObjectDestroy callback, const void* userData);
 	const Vector3& getPosition() const		{ return mPosition; }

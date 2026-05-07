@@ -26,7 +26,7 @@ public:
 	{
 		mForeaching = false;
 		// 在结束遍历时同步一次
-		if (mModifyList.size() > 0)
+		if (!mModifyList.isEmpty())
 		{
 			sync();
 		}
@@ -40,43 +40,59 @@ public:
 	Value* getPtr(const Key& key)										{ return mMainList.getPtr(key); }
 	const Value* getPtrConst(const Key& key) const						{ return mMainList.getPtrConst(key); }
 	// 获取值,如果获取失败,则返回设置的defaultValue,适用于value是指针类型或者整数类型的列表
-	const Value& tryGet(const Key& key, const Value& defaultValue) const{ return mMainList.tryGet(key, defaultValue); }
-	const Value& tryGet(const Key& key) const							{ return mMainList.tryGet(key); }
+	const Value& get(const Key& key, const Value& defaultValue) const	{ return mMainList.get(key, defaultValue); }
+	const Value& get(const Key& key) const								{ return mMainList.get(key); }
 	bool contains(const Key& key) const									{ return mMainList.contains(key); }
 	int size() const													{ return mMainList.size(); }
 	bool isEmpty() const												{ return mMainList.isEmpty(); }
-	bool insert(const Key& key, const Value& value)
+	bool addIf(const Key& key, const Value& value, bool condition)
 	{
-		if (!mMainList.insert(key, value))
+		if (condition)
+		{
+			return add(key, value);
+		}
+		return false;
+	}
+	bool add(const Key& key, const Value& value)
+	{
+		if (!mMainList.add(key, value))
 		{
 			return false;
 		}
 		// 只有当正在遍历中对列表进行修改时,才会记录修改操作
 		if (mForeaching)
 		{
-			mModifyList.emplace_back(key, value);
+			mModifyList.emplace(key, value);
 		}
 		// 没有在遍历,则对mUpdateList做与mMainList相同的操作
 		else
 		{
-			mUpdateList.insert(key, value);
+			mUpdateList.add(key, value);
 		}
 		return true;
 	}
-	bool erase(const Key& key)
+	bool removeIf(const Key& key, bool condition)
 	{
-		if (!mMainList.erase(key))
+		if (condition)
+		{
+			remove(key);
+		}
+		return false;
+	}
+	bool remove(const Key& key)
+	{
+		if (!mMainList.remove(key))
 		{
 			return false;
 		}
 		// 只有当正在遍历中对列表进行修改时,才会记录修改操作
 		if (mForeaching)
 		{
-			mModifyList.emplace_back(key);
+			mModifyList.emplace(key);
 		}
 		else
 		{
-			mUpdateList.erase(key);
+			mUpdateList.remove(key);
 		}
 		return true;
 	}
@@ -110,20 +126,13 @@ protected:
 				FOR(modifyCount)
 				{
 					auto& modifyValue = mModifyList[i];
-					if (modifyValue.mAdd)
-					{
-						mUpdateList.insert(modifyValue.mKey, modifyValue.mValue);
-					}
-					else
-					{
-						mUpdateList.erase(modifyValue.mKey);
-					}
+					mUpdateList.addOrRemove(modifyValue.mKey, modifyValue.mValue, modifyValue.mAdd);
 				}
 			}
 			// 更新操作较多,则直接复制列表
 			else
 			{
-				mMainList.clone(mUpdateList);
+				mMainList.cloneTo(mUpdateList);
 			}
 		}
 		mModifyList.clear();

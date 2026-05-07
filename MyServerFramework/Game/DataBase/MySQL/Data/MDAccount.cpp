@@ -1,4 +1,5 @@
-﻿#include "GameHeader.h"
+﻿// auto generate start
+#include "GameHeader.h"
 
 const string MDAccount::Name_ID = "ID";
 const string MDAccount::Name_Account = "Account";
@@ -15,10 +16,10 @@ void MDAccount::fillColName(MySQLTable* table)
 
 void MDAccount::parseResult(const HashMap<int, char*>& resultRow)
 {
-	parseLLong(mID, resultRow.tryGet((int)ID));
-	parseString(mAccount, resultRow.tryGet((int)Account));
-	parseString(mPassword, resultRow.tryGet((int)Password));
-	parseLLong(mCharacterGUID, resultRow.tryGet((int)CharacterGUID));
+	parseLLong(mID, resultRow.get((int)ID));
+	parseString(mAccount, resultRow.get((int)Account));
+	parseString(mPassword, resultRow.get((int)Password));
+	parseLLong(mCharacterGUID, resultRow.get((int)CharacterGUID));
 }
 
 void MDAccount::paramList(string& params) const
@@ -51,9 +52,9 @@ void MDAccount::generateUpdate(string& params, const ullong flag) const
 	}
 }
 
-void MDAccount::clone(MySQLData* target) const
+void MDAccount::cloneTo(MySQLData* target) const
 {
-	base::clone(target);
+	base::cloneTo(target);
 	auto* targetData = static_cast<This*>(target);
 	targetData->mAccount = mAccount;
 	targetData->mPassword = mPassword;
@@ -284,3 +285,4 @@ const string& MDAccount::getString(const int index)
 	}
 	return FrameDefine::EMPTY;
 }
+// auto generate end

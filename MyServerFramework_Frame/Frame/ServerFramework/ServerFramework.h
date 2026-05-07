@@ -12,7 +12,7 @@ class MICRO_LEGEND_FRAME_API ServerFramework : public Singleton<ServerFramework>
 	BASE(ServerFramework, Singleton<ServerFramework>);
 public:
 	ServerFramework();
-	virtual ~ServerFramework() = default;
+	virtual ~ServerFramework() { destroy(); }
 	virtual void init();
 	void destroy();
 	virtual void update(float elapsedTime);
@@ -32,39 +32,39 @@ public:
 	template<typename T, typename TypeCheck = typename IsSubClassOf<FrameComponent, T>::mType>
 	T* getSystem(const string& name) const
 	{
-		return static_cast<T*>(mFrameComponentMap.tryGet(name));
+		return static_cast<T*>(mFrameComponentMap.get(name));
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<FrameComponent, T>::mType>
 	void getSystem(const string& name, T*& component) const
 	{
-		component = static_cast<T*>(mFrameComponentMap.tryGet(name));
+		component = static_cast<T*>(mFrameComponentMap.get(name));
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<FrameComponent, T>::mType>
 	void registeSystem(const char* name)
 	{
 		T* component = new T();
 		component->setName(name);
-		mFrameComponentVector.push_back(component);
-		mFrameComponentMap.insert(name, component);
+		mFrameComponentVector.add(component);
+		mFrameComponentMap.add(name, component);
 		if (component->isClassPool())
 		{
-			mPoolSystemList.push_back(component);
+			mPoolSystemList.add(component);
 		}
 		else if (component->isFactory())
 		{
-			mFactorySystemList.push_back(component);
+			mFactorySystemList.add(component);
 		}
 	}
-	void registeSecond(void* userData, VoidPtrCallback callback)	{ mSecondCallback.insert(userData, callback); }
-	void unregisteSecond(void* userData)							{ mSecondCallback.erase(userData); }
-	void registeMinute(void* userData, VoidPtrCallback callback)	{ mMinuteCallback.insert(userData, callback); }
-	void unregisteMinute(void* userData)							{ mMinuteCallback.erase(userData); }
-	void registeHour(void* userData, VoidPtrCallback callback)		{ mHourCallback.insert(userData, callback); }
-	void unregisteHour(void* userData)								{ mHourCallback.erase(userData); }
-	void registeDay(void* userData, VoidPtrCallback callback)		{ mDayCallback.insert(userData, callback); }
-	void unregisteDay(void* userData)								{ mDayCallback.erase(userData); }
-	void registeWeek(void* userData, VoidPtrCallback callback)		{ mWeekCallback.insert(userData, callback); }
-	void unregisteWeek(void* userData)								{ mWeekCallback.erase(userData); }
+	void registeSecond(void* obj, VoidCallback callback)	{ mSecondCallback.add(obj, callback); }
+	void unregisteSecond(void* obj)							{ mSecondCallback.remove(obj); }
+	void registeMinute(void* obj, VoidCallback callback)	{ mMinuteCallback.add(obj, callback); }
+	void unregisteMinute(void* obj)							{ mMinuteCallback.remove(obj); }
+	void registeHour(void* obj, VoidCallback callback)		{ mHourCallback.add(obj, callback); }
+	void unregisteHour(void* obj)							{ mHourCallback.remove(obj); }
+	void registeDay(void* obj, VoidCallback callback)		{ mDayCallback.add(obj, callback); }
+	void unregisteDay(void* obj)							{ mDayCallback.remove(obj); }
+	void registeWeek(void* obj, VoidCallback callback)		{ mWeekCallback.add(obj, callback); }
+	void unregisteWeek(void* obj)							{ mWeekCallback.remove(obj); }
 protected:
 	virtual void registeComponent();
 	virtual void constructDone();
@@ -73,11 +73,11 @@ protected:
 protected:
 	Vector<FrameComponent*> mFrameComponentVector;
 	HashMap<string, FrameComponent*> mFrameComponentMap;
-	HashMap<void*, VoidPtrCallback> mSecondCallback;
-	HashMap<void*, VoidPtrCallback> mMinuteCallback;
-	HashMap<void*, VoidPtrCallback> mHourCallback;
-	HashMap<void*, VoidPtrCallback> mDayCallback;
-	HashMap<void*, VoidPtrCallback> mWeekCallback;
+	HashMap<void*, VoidCallback> mSecondCallback;
+	HashMap<void*, VoidCallback> mMinuteCallback;
+	HashMap<void*, VoidCallback> mHourCallback;
+	HashMap<void*, VoidCallback> mDayCallback;
+	HashMap<void*, VoidCallback> mWeekCallback;
 	Vector<FrameComponent*> mPoolSystemList;
 	Vector<FrameComponent*> mFactorySystemList;
 #ifdef LINUX
@@ -91,5 +91,4 @@ protected:
 	int mLastDayOfWeek = 0;
 	llong mAllFrameMS = 0;			// 用于计算每帧的平均耗时
 	llong mAllFrameCount = 0;		// 用于计算每帧的平均耗时
-	double mTickToNS = 0.0;
 };

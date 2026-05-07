@@ -22,10 +22,6 @@ public:
 	}
 	~DoubleBufferReadScope()
 	{
-		if (mReadList != nullptr)
-		{
-			mReadList->clear();
-		}
 		if (mBuffer != nullptr)
 		{
 			mBuffer->endRead();

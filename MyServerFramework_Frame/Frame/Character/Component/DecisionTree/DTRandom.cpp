@@ -46,7 +46,7 @@ TASK_STATE DTRandom::startExecute(DTNode* startChild)
 		mState = TASK_STATE::FAILED;
 		return mState;
 	}
-	mCurChildIndex = mChildList->findFirstIndex(startChild);
+	mCurChildIndex = mChildList->findIndex(startChild);
 	startChild->start();
 	if (mCurChildIndex < 0)
 	{
@@ -64,7 +64,7 @@ void DTRandom::notifyChildStart(DTNode* child)
 		mState = TASK_STATE::FAILED;
 		return;
 	}
-	mCurChildIndex = mChildList->findFirstIndex(child);
+	mCurChildIndex = mChildList->findIndex(child);
 	if (mCurChildIndex < 0)
 	{
 		ERROR("在子节点列表中找不到指定子节点");

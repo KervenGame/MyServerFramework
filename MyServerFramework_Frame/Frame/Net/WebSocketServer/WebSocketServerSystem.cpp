@@ -15,10 +15,11 @@ void WebSocketServerSystem::quit()
 	mThreadManager->destroyThread(mAcceptThread);
 	// 销毁所有客户端
 	DELETE_MAP(mClientList);
+	CLOSE_SOCKET(mSocket);
 #ifdef WINDOWS
+	// 需要在CLOSE_SOCKET后面调用
 	WSACleanup();
 #endif
-	CLOSE_SOCKET(mSocket);
 	DELETE(mPacketDataBuffer);
 	DELETE_ARRAY(mRecvBuffer);
 }
@@ -50,8 +51,6 @@ void WebSocketServerSystem::init()
 		return;
 	}
 
-	mMaxSocket = (int)mSocket;
-
 	//设置服务器Socket地址
 	sockaddr_in addrServ;
 	makeSockAddr(addrServ, INADDR_ANY, mPort);
@@ -82,223 +81,226 @@ void WebSocketServerSystem::init()
 	int timeout = 2000;
 	int ret = setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
 	ret |= setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-	int enable = 1;
-	ret |= setsockopt(mSocket, SOL_SOCKET, TCP_NODELAY, (const char*)&enable, sizeof(enable));
 #elif defined LINUX
 	struct timeval timeout = { 2, 0 };
-	int enable = 1;
 	int ret = setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(struct timeval));
-	ret |= setsockopt(mSocket, SOL_SOCKET, TCP_NODELAY, (char*)&enable, sizeof(enable));
 #endif
 	if (ret != 0)
 	{
 		ERROR("设置socket选项失败");
 		return;
 	}
-	mSendThread = mThreadManager->createThread("SendSocketTCP", sendThread, this);
+	mSendThread = mThreadManager->createThread("SendSocketTCP", [this] {sendThread(); });
 	mSendThread->setTime(10);
 	mSendThread->setPrintFPS(true);
-	mReceiveThread = mThreadManager->createThread("ReceiveSocketTCP", receiveThread, this);
+	mReceiveThread = mThreadManager->createThread("ReceiveSocketTCP", [this] {recvThread(); });
 	mReceiveThread->setTime(10);
 	mReceiveThread->setPrintFPS(true);
-	mAcceptThread = mThreadManager->createThread("AcceptSocket", acceptThread, this);
+	mAcceptThread = mThreadManager->createThread("AcceptSocket", [this] {acceptThread(); });
 }
 
-void WebSocketServerSystem::acceptThread(CustomThread* thread)
+void WebSocketServerSystem::acceptThread()
 {
-	auto* netManager = static_cast<This*>(thread->getArgs());
 	sockaddr_in addr;
 #ifdef WINDOWS
 	int nLen = sizeof(addr);
 #elif defined LINUX
 	socklen_t nLen = sizeof(addr);
 #endif
-	MY_SOCKET sClient = accept(netManager->mSocket, (struct sockaddr*)&addr, &nLen);
+	MY_SOCKET socket = accept(mSocket, (struct sockaddr*)&addr, &nLen);
 	// 因为设置了2秒超时,所以accept每2秒就会返回一次INVALID_SOCKET
-	if (sClient == (MY_SOCKET)INVALID_SOCKET)
+	if (socket == (MY_SOCKET)INVALID_SOCKET)
 	{
 		return;
 	}
 	MyString<16> ip;
 	// 获得客户端IP,然后通知已经接收到一个客户端的连接
-	if (netManager->mOutputLog)
-	{
 #ifdef WINDOWS
-		SPRINTF(ip.toBuffer(), 16, "%d.%d.%d.%d", addr.sin_addr.S_un.S_un_b.s_b1, addr.sin_addr.S_un.S_un_b.s_b2, addr.sin_addr.S_un.S_un_b.s_b3, addr.sin_addr.S_un.S_un_b.s_b4);
+	ip.sprintf("%d.%d.%d.%d", addr.sin_addr.S_un.S_un_b.s_b1, addr.sin_addr.S_un.S_un_b.s_b2, addr.sin_addr.S_un.S_un_b.s_b3, addr.sin_addr.S_un.S_un_b.s_b4);
 #elif defined LINUX
-		int ip0 = getByte(addr.sin_addr.s_addr, 0);
-		int ip1 = getByte(addr.sin_addr.s_addr, 1);
-		int ip2 = getByte(addr.sin_addr.s_addr, 2);
-		int ip3 = getByte(addr.sin_addr.s_addr, 3);
-		SPRINTF(ip.toBuffer(), 16, "%d.%d.%d.%d", ip0, ip1, ip2, ip3);
+	int ip0 = getByte(addr.sin_addr.s_addr, 0);
+	int ip1 = getByte(addr.sin_addr.s_addr, 1);
+	int ip2 = getByte(addr.sin_addr.s_addr, 2);
+	int ip3 = getByte(addr.sin_addr.s_addr, 3);
+	ip.sprintf("%d.%d.%d.%d", ip0, ip1, ip2, ip3);
 #endif
-	}
 	int enable = 1;
 #ifdef WINDOWS
-	int ret = setsockopt(sClient, SOL_SOCKET, TCP_NODELAY, (const char*)&enable, sizeof(enable));
+	int ret = setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&enable, sizeof(enable));
 #elif defined LINUX
-	int ret = setsockopt(sClient, SOL_SOCKET, TCP_NODELAY, (char*)&enable, sizeof(enable));
+	int ret = setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char*)&enable, sizeof(enable));
 #endif
 	if (ret != 0)
 	{
 		ERROR("设置socket选项失败");
+		CLOSE_SOCKET(socket);
 		return;
 	}
-	THREAD_LOCK(netManager->mAcceptLock);
-	netManager->mAcceptBuffer.emplace_back(sClient, ip.str());
+	THREAD_LOCK(mAcceptLock);
+	mAcceptBuffer.emplace(socket, ip.str());
 }
 
-void WebSocketServerSystem::processSend()
+void WebSocketServerSystem::sendThread()
 {
 	if (mSendClientList.isEmpty())
 	{
 		return;
 	}
 	THREAD_LOCK(mSendLock);
-	try
+	// 遍历筛选出需要发送数据的客户端列表
+	thread_local static Vector<WebSocketServerClient*> needSendClient;
+	needSendClient.clear();
+	for (WebSocketServerClient* client : mSendClientList)
 	{
-		thread_local static Array<FD_SETSIZE, WebSocketServerClient*> selectedClient;
-		// select查看后立即返回
-		thread_local static timeval tv{ 0, 0 };
-		thread_local static fd_set fdwrite;
-		const int clientCount = mSendClientList.size();
-		for (int j = 0; j < clientCount; )
+		if (client->isDeadClient())
 		{
-			FD_ZERO(&fdwrite);
-			int selectedClientCount = 0;
-			// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
-			FOR(FD_SETSIZE)
+			continue;
+		}
+		// 确认将所有待发送的数据写入到发送缓冲区
+		client->writeToSendBuffer();
+		// 只检查有数据需要写的客户端
+		if (!client->getSendBuffer().isEmpty())
+		{
+			needSendClient.add(client);
+		}
+	}
+
+	thread_local static ArrayList<FD_SETSIZE, WebSocketServerClient*> selectedClient;
+	// select查看后立即返回
+	thread_local static timeval tv{ 0, 0 };
+	thread_local static fd_set fdwrite;
+	const int clientCount = needSendClient.size();
+	for (int j = 0; j < clientCount; )
+	{
+		FD_ZERO(&fdwrite);
+		selectedClient.clear();
+		int maxSocket = 0;
+		// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
+		FOR(FD_SETSIZE)
+		{
+			if (j >= clientCount)
 			{
-				if (j >= clientCount)
-				{
-					break;
-				}
-				WebSocketServerClient* client = mSendClientList[j++];
-				if (client->isDeadClient())
-				{
-					continue;
-				}
-				// 确认将所有待发送的数据写入到发送缓冲区
-				client->writeToSendBuffer();
-				// 只检查有数据需要写的客户端
-				if (client->getSendBuffer().size() > 0)
-				{
-					selectedClient[selectedClientCount++] = client;
-					FD_SET(client->getSocket(), &fdwrite);
-				}
+				break;
 			}
-			// select第一个参数在windows中可以为0,但是在其他系统中需要设置
-			// 如果有客户端可写
-			if (select(mMaxSocket + 1, nullptr, &fdwrite, nullptr, &tv) <= 0)
+			WebSocketServerClient* client = needSendClient[j++];
+			if (client->isDeadClient())
 			{
 				continue;
 			}
-			FOR(selectedClientCount)
-			{
-				WebSocketServerClient* client = selectedClient[i];
-				if (!FD_ISSET(client->getSocket(), &fdwrite))
-				{
-					continue;
-				}
-				// 因为send可能无法一次将所有数据都发送出去,所以需要一直检测是否发送完
-				const auto& sendBuffer = client->getSendBuffer();
-				if (sendBuffer.size() > 0)
-				{
-					for (const auto& item : sendBuffer)
-					{
-						if (client->isDeadClient())
-						{
-							break;
-						}
-						char* data = item.first;
-						const int dataLength = item.second.x;
-						int flags = 0;
 #ifdef LINUX
-						flags = MSG_NOSIGNAL;
-#endif
-						const int thisSendCount = send(client->getSocket(), data, dataLength, flags);
-						// 检查是否send有错误
-						if (thisSendCount <= 0)
-						{
-							checkSendRecvError(client, thisSendCount);
-						}
-					}
-				}
-				client->clearSendBuffer();
+			if (client->getSocket() >= FD_SETSIZE)
+			{
+				continue;
 			}
+#endif
+			selectedClient.add(client);
+			FD_SET(client->getSocket(), &fdwrite);
+			// 因为在linux上会根据socket的值放入到指定位置,所以值不能超过最大长度,否则放不进去
+			maxSocket = getMax(maxSocket, (int)client->getSocket());
 		}
-	}
-	catch (const exception& e)
-	{
-		LOG("exception : " + string(e.what()));
+		// select第一个参数在windows中可以为0,但是在其他系统中需要设置
+		if (select(maxSocket + 1, nullptr, &fdwrite, nullptr, &tv) <= 0)
+		{
+			continue;
+		}
+		for (WebSocketServerClient* client : selectedClient)
+		{
+			if (!FD_ISSET(client->getSocket(), &fdwrite))
+			{
+				continue;
+			}
+			// 因为send可能无法一次将所有数据都发送出去,所以需要一直检测是否发送完
+			const auto& sendBuffer = client->getSendBuffer();
+			for (const auto& item : sendBuffer)
+			{
+				if (client->isDeadClient())
+				{
+					break;
+				}
+				char* data = item.first;
+				const int dataLength = item.second.x;
+				int flags = 0;
+#ifdef LINUX
+				flags = MSG_NOSIGNAL;
+#endif
+				const int thisSendCount = send(client->getSocket(), data, dataLength, flags);
+				// 检查是否send有错误
+				if (thisSendCount <= 0)
+				{
+					checkSendRecvError(client, thisSendCount);
+					break;
+				}
+			}
+			client->clearSendBuffer();
+		}
 	}
 }
 
-void WebSocketServerSystem::processRecv()
+void WebSocketServerSystem::recvThread()
 {
 	if (mRecvClientList.isEmpty())
 	{
 		return;
 	}
 	THREAD_LOCK(mRecvLock);
-	try
+	thread_local static ArrayList<FD_SETSIZE, WebSocketServerClient*> selectedClient;
+	// select查看后立即返回
+	thread_local static timeval tv{ 0, 0 };
+	thread_local static fd_set fdread;
+	const int clientCount = mRecvClientList.size();
+	for (int j = 0; j < clientCount; )
 	{
-		thread_local static Array<FD_SETSIZE, WebSocketServerClient*> selectedClient;
-		// select查看后立即返回
-		thread_local static timeval tv{ 0, 0 };
-		thread_local static fd_set fdread;
-		const int clientCount = mRecvClientList.size();
-		for (int j = 0; j < clientCount; )
+		FD_ZERO(&fdread);
+		selectedClient.clear();
+		int maxSocket = 0;
+		// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
+		FOR(FD_SETSIZE)
 		{
-			FD_ZERO(&fdread);
-			int selectedClientCount = 0;
-			// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
-			FOR(FD_SETSIZE)
+			if (j >= clientCount)
 			{
-				if (j >= clientCount)
-				{
-					break;
-				}
-				WebSocketServerClient* client = mRecvClientList[j++];
-				if (client->isDeadClient())
-				{
-					continue;
-				}
-				selectedClient[selectedClientCount++] = client;
-				FD_SET(client->getSocket(), &fdread);
+				break;
 			}
-			// select第一个参数在windows中可以为0,但是在其他系统中需要设置
-			if (select(mMaxSocket + 1, &fdread, nullptr, nullptr, &tv) <= 0)
+			WebSocketServerClient* client = mRecvClientList[j++];
+			if (client->isDeadClient())
 			{
 				continue;
 			}
-			FOR(selectedClientCount)
-			{
-				WebSocketServerClient* client = selectedClient[i];
-				if (client->isDeadClient() || !FD_ISSET(client->getSocket(), &fdread))
-				{
-					continue;
-				}
-				const int nRecv = recv(client->getSocket(), mRecvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0);
 #ifdef LINUX
-				int opt = 1;
-				setsockopt(client->getSocket(), IPPROTO_TCP, TCP_QUICKACK, (char*)&opt, sizeof(opt));
+			if (client->getSocket() >= FD_SETSIZE)
+			{
+				continue;
+			}
 #endif
-				if (nRecv > 0)
-				{
-					mReceiveBytesCount += nRecv;
-					client->recvData(mRecvBuffer, nRecv);
-				}
-				else
-				{
-					checkSendRecvError(client, nRecv);
-				}
+			selectedClient.add(client);
+			FD_SET(client->getSocket(), &fdread);
+			maxSocket = getMax(maxSocket, (int)client->getSocket());
+		}
+		// select第一个参数在windows中可以为0,但是在其他系统中需要设置
+		if (select(maxSocket + 1, &fdread, nullptr, nullptr, &tv) <= 0)
+		{
+			continue;
+		}
+		for (WebSocketServerClient* client : selectedClient)
+		{
+			if (client->isDeadClient() || !FD_ISSET(client->getSocket(), &fdread))
+			{
+				continue;
+			}
+			const int nRecv = recv(client->getSocket(), mRecvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0);
+#ifdef LINUX
+			int opt = 1;
+			setsockopt(client->getSocket(), IPPROTO_TCP, TCP_QUICKACK, (char*)&opt, sizeof(opt));
+#endif
+			if (nRecv > 0)
+			{
+				mReceiveBytesCount += nRecv;
+				client->recvData(mRecvBuffer, nRecv);
+			}
+			else
+			{
+				checkSendRecvError(client, nRecv);
 			}
 		}
-	}
-	catch (const exception& e)
-	{
-		LOG("exception : " + string(e.what()));
 	}
 }
 
@@ -313,7 +315,11 @@ void WebSocketServerSystem::checkSendRecvError(WebSocketServerClient* client, co
 	{
 		client->setDeadClient("recv或send返回值小于0", DEAD_TYPE::SERVER_KICK_OUT);
 	}
+#ifdef WINDOWS
+	const int errorCode = WSAGetLastError();
+#else
 	const int errorCode = errno;
+#endif
 	if (errorCode == 0)
 	{
 		return;
@@ -340,7 +346,7 @@ void WebSocketServerSystem::update(const float elapsedTime)
 		return;
 	}
 	// 将接收缓存列表同步到客户端列表,double check避免不必要的等待
-	if (mAcceptBuffer.size() > 0)
+	if (!mAcceptBuffer.isEmpty())
 	{
 		THREAD_LOCK(mAcceptLock);
 		for (const auto& acceptInfo : mAcceptBuffer)
@@ -360,7 +366,7 @@ void WebSocketServerSystem::update(const float elapsedTime)
 		// 将已经死亡的客户端放入列表
 		if (client->isDeadClient())
 		{
-			tempLogoutClientList.emplace_back(item.first, client->getDeadReason());
+			tempLogoutClientList.emplace(item.first, client->getDeadReason());
 		}
 	}
 
@@ -419,21 +425,19 @@ int WebSocketServerSystem::notifyAcceptClient(MY_SOCKET socket, const string& ip
 
 	WebSocketServerClient* client = new WebSocketServerClient(clientGUID, socket, ip);
 	client->init();
-	mClientList.insert(clientGUID, client);
+	mClientList.add(clientGUID, client);
 	if (mOutputLog)
 	{
 		LOG("IP:" + string(ip) + " 连接服务器! 当前连接数:" + IToS(mClientList.size()));
 	}
-	mMaxSocket = getMax(mMaxSocket, (int)socket);
-
 	// 加入客户端列表,三个列表都要加入
 	{
 		THREAD_LOCK(mSendLock);
-		mSendClientList.push_back(client);
+		mSendClientList.add(client);
 	}
 	{
 		THREAD_LOCK(mRecvLock);
-		mRecvClientList.push_back(client);
+		mRecvClientList.add(client);
 	}
 	return clientGUID;
 }
@@ -446,17 +450,12 @@ void WebSocketServerSystem::disconnectSocket(const int clientGUID, const string&
 		return;
 	}
 	WebSocketServerClient* client = iterClient->second;
+	THREAD_LOCK(mSendLock);
+	THREAD_LOCK(mRecvLock);
 	// 从客户端列表移除,三个列表都要移除
-	{
-		THREAD_LOCK(mSendLock);
-		mSendClientList.eraseElement(client);
-	}
-	{
-		THREAD_LOCK(mRecvLock);
-		mRecvClientList.eraseElement(client);
-	}
-	// 从主线程的客户端列表中移除
-	mClientList.erase(iterClient);
+	mSendClientList.remove(client);
+	mRecvClientList.remove(client);
+	mClientList.remove(iterClient);
 	if (mOutputLog)
 	{
 		PLAYER_LOG("客户端断开连接:角色ID:" + LLToS(client->getPlayerGUID()) + 
@@ -472,52 +471,10 @@ void WebSocketServerSystem::logoutAll()
 {
 	// 复制一份列表出来
 	HashMap<int, WebSocketServerClient*> tempList;
-	mClientList.clone(tempList);
+	mClientList.cloneTo(tempList);
 	for (const auto& iter : tempList)
 	{
 		iter.second->setDeadClient("全部退出登录", DEAD_TYPE::SERVER_KICK_OUT);
 		CmdNetServerLogoutAccount::execute(iter.second);
-	}
-}
-
-void WebSocketServerSystem::encrypt(char* data, const int length, const byte* key, const int keyLen, const byte param)
-{
-	if (length == 0)
-	{
-		return;
-	}
-	int keyIndex = (param ^ 223) & (keyLen - 1);
-	FOR(length)
-	{
-		const byte keyChar = (byte)(key[keyIndex] ^ (byte)param);
-		data[i] ^= keyChar;
-		data[i] += keyChar >> 1;
-		data[i] ^= (byte)(((keyChar * keyIndex) & (mKey0 * mKey1)) | ((mKey2 + mKey3) * keyIndex));
-		keyIndex += i;
-		if (keyIndex >= keyLen)
-		{
-			keyIndex &= keyLen - 1;
-		}
-	}
-}
-
-void WebSocketServerSystem::decrypt(char* data, const int length, const byte* key, const int keyLen, const byte param)
-{
-	if (length <= 0)
-	{
-		return;
-	}
-	int keyIndex = (param ^ 223) & (keyLen - 1);
-	FOR(length)
-	{
-		const byte keyChar = (byte)(key[keyIndex] ^ (byte)param);
-		data[i] ^= (byte)(((keyChar * keyIndex) & (mKey0 * mKey1)) | ((mKey2 + mKey3) * keyIndex));
-		data[i] -= keyChar >> 1;
-		data[i] ^= keyChar;
-		keyIndex += i;
-		if (keyIndex >= keyLen)
-		{
-			keyIndex &= keyLen - 1;
-		}
 	}
 }

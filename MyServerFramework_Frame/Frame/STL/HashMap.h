@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <unordered_map>
+#include "FrameCallbackClean.h"
 
 using std::pair;
 using std::initializer_list;
@@ -61,7 +62,7 @@ public:
 	const_iterator cbegin() const		{ return mMap.cbegin(); }
 	const_iterator cend() const			{ return mMap.cend(); }
 	// 获取列表中指定顺序的值,如果获取失败,则返回设置的defaultValue,适用于value是指针类型或者整数类型的列表
-	const Value& getAtIndex(const int index, const Value& defaultValue) const
+	const Value& getAt(const int index, const Value& defaultValue) const
 	{
 		int curIndex = 0;
 		for (const auto& iter : mMap)
@@ -86,33 +87,34 @@ public:
 		return iter != mMap.end() ? &(iter->second) : nullptr;
 	}
 	// 获取值,如果获取失败,则返回设置的defaultValue,适用于value是指针类型或者整数类型的列表
-	const Value& tryGet(const Key& key, const Value& defaultValue) const
+	const Value& get(const Key& key, const Value& defaultValue) const
 	{
 		auto iter = mMap.find(key);
 		return iter != mMap.end() ? iter->second : defaultValue;
 	}
 	// 获取值,如果获取失败,则返回默认值,适用于value是类对象,可以自动调用构造的
-	const Value& tryGet(const Key& key) const
+	const Value& get(const Key& key) const
 	{
 		auto iter = mMap.find(key);
 		return iter != mMap.end() ? iter->second : mEmptyValue;
 	}
-	// 获取值,如果获取失败,则报错,且返回默认值,适用于value是类对象,可以自动调用构造的
-	const Value& get(const Key& key) const
-	{
-		auto iter = mMap.find(key);
-		if (iter != mMap.end())
-		{
-			return iter->second;
-		}
-		ERROR("failed to get value from HashMap!");
-		return mEmptyValue;
-	}
 	const_iterator find(const Key& key) const { return mMap.find(key); }
 	iterator find(const Key& key) { return mMap.find(key); }
 	bool contains(const Key& key) const { return mMap.find(key) != mMap.end(); }
+	bool addOrRemove(const Key& key, const Value& value, bool isAdd)
+	{
+		if (isAdd)
+		{
+			add(key, value);
+		}
+		else
+		{
+			remove(key);
+		}
+		return isAdd;
+	}
 	// 尝试修改列表中的值,如果key存在则执行成功,key不存在则执行失败
-	bool trySet(const Key& key, const Value& value)
+	bool set(const Key& key, const Value& value)
 	{
 		auto iter = mMap.find(key);
 		const bool result = iter != mMap.end();
@@ -123,7 +125,7 @@ public:
 		return result;
 	}
 	// 尝试向列表中插入值或者更新对应键的值,返回值表示是否插入成功
-	bool insertOrUpdate(const Key& key, const Value& value)
+	bool addOrSet(const Key& key, const Value& value)
 	{
 		// linux不支持try_emplace,所以为了统一,还是先查询再emplace
 		auto iter = mMap.find(key);
@@ -139,7 +141,7 @@ public:
 		return insertSuccess;
 	}
 	// 尝试向列表中插入值或者更新对应键的值,返回值表示是否插入成功
-	bool insertOrUpdate(const Key& key, Value&& value)
+	bool addOrSet(const Key& key, Value&& value)
 	{
 		// linux不支持try_emplace,所以为了统一,还是先查询再emplace
 		auto iter = mMap.find(key);
@@ -155,7 +157,7 @@ public:
 		return insertSuccess;
 	}
 	// 向列表中插入键,插入成功则返回插入值的引用,如果key已经存在,则返回对应的value的引用
-	Value& insertOrGet(const Key& key)
+	Value& addOrGet(const Key& key)
 	{
 		auto iter = mMap.find(key);
 		if (iter == mMap.end())
@@ -165,7 +167,7 @@ public:
 		return iter->second;
 	}
 	// 向列表中插入键,插入成功则返回插入值的引用,如果key已经存在,则返回对应的value的引用
-	Value& insertOrGet(const Key& key, const Value& value)
+	Value& addOrGet(const Key& key, const Value& value)
 	{
 		// linux不支持try_emplace,所以为了统一,还是先查询再emplace
 		auto iter = mMap.find(key);
@@ -176,7 +178,7 @@ public:
 		return iter->second;
 	}
 	// 向列表中插入键,插入成功则返回插入值的引用,如果key已经存在,则返回对应的value的引用
-	Value& insertOrGet(const Key& key, Value&& value)
+	Value& addOrGet(const Key& key, Value&& value)
 	{
 		// linux不支持try_emplace,所以为了统一,还是先查询再emplace
 		auto iter = mMap.find(key);
@@ -187,26 +189,76 @@ public:
 		return iter->second;
 	}
 	// 插入key和value,如果key存在则插入失败
-	bool insert(const Key& key, const Value& value)
+	bool add(const Key& key, const Value& value)
 	{
 		return mMap.emplace(key, value).second;
 	}
 	// 插入key和value,如果key存在则插入失败
-	bool insert(const Key& key, Value&& value)
+	bool add(const Key& key, Value&& value)
 	{
 		return mMap.emplace(key, move(value)).second;
 	}
 	// 插入key,value为默认值,如果key存在则插入失败
-	bool insert(const Key& key)
+	bool add(const Key& key)
 	{
 		return mMap.emplace(key, mEmptyValue).second;
 	}
-	iterator erase(const iterator& iter)
+	// 插入key和value,如果key存在则插入失败,condition为true才会执行插入
+	bool addIf(const Key& key, const Value& value, bool condition)
+	{
+		if (!condition)
+		{
+			return false;
+		}
+		return mMap.emplace(key, value).second;
+	}
+	// 移除迭代器位置的元素,并返回下一个元素的迭代器
+	iterator remove(const iterator& iter)
 	{
 		return mMap.erase(iter);
 	}
+	// 移除迭代器位置的元素,并返回下一个元素的迭代器
+	bool removeOrNext(iterator& iter, bool condition)
+	{
+		if (condition)
+		{
+			iter = mMap.erase(iter);
+		}
+		else
+		{
+			++iter;
+		}
+		return condition;
+	}
+	void remove(const BoolFunctionT2<Key, Value>& condition, const CallbackT<Value>& willRemoveCallback)
+	{
+		for (auto iter = begin(); iter != end(); )
+		{
+			if (condition(iter->first, iter->second))
+			{
+				willRemoveCallback(iter->second);
+				iter = remove(iter);
+			}
+			else
+			{
+				++iter;
+			}
+		}
+	}
+	void removeFirst(const BoolFunctionT2<Key, Value>& condition, const CallbackT<Value>& willRemoveCallback)
+	{
+		for (auto iter = begin(); iter != end(); ++iter)
+		{
+			if (condition(iter->first, iter->second))
+			{
+				willRemoveCallback(iter->second);
+				remove(iter);
+				break;
+			}
+		}
+	}
 	// 将key从列表中移除,如果移除成功,则将value设置为被移除的元素的second,一般用于指针类型
-	bool erase(const Key& key, Value& value)
+	bool remove(const Key& key, Value& value)
 	{
 		auto iter = mMap.find(key);
 		if (iter != mMap.end())
@@ -218,7 +270,7 @@ public:
 		return false;
 	}
 	// 返回值表示移除成功或失败
-	bool erase(const Key& key)
+	bool remove(const Key& key)
 	{
 		auto iter = mMap.find(key);
 		if (iter != mMap.end())
@@ -227,6 +279,37 @@ public:
 			return true;
 		}
 		return false;
+	}
+	// 返回值表示移除成功或失败
+	bool removeIf(const Key& key, bool condition)
+	{
+		if (!condition)
+		{
+			return false;
+		}
+		auto iter = mMap.find(key);
+		if (iter == mMap.end())
+		{
+			return false;
+		}
+		mMap.erase(iter);
+		return true;
+	}
+	// 将key从列表中移除,如果移除成功,则将value设置为被移除的元素的second,一般用于指针类型
+	bool removeIf(const Key& key, Value& value, bool condition)
+	{
+		if (!condition)
+		{
+			return false;
+		}
+		auto iter = mMap.find(key);
+		if (iter == mMap.end())
+		{
+			return false;
+		}
+		value = iter->second;
+		mMap.erase(iter);
+		return true;
 	}
 	// 因为clear本身会执行元素的析构,即使列表为空,也会执行较多的指令,所以先排除空列表的不必要的清空操作
 	void clear(bool disposeMemory = false)
@@ -246,7 +329,7 @@ public:
 		unordered_map<Key, Value> temp;
 		mMap.swap(temp);
 	}
-	bool merge(const HashMap<Key, Value>& other)
+	bool addRange(const HashMap<Key, Value>& other)
 	{
 		bool success = true;
 		for (const auto& iter : other)
@@ -259,7 +342,7 @@ public:
 	bool isEmpty() const { return (int)mMap.size() == 0; }
 	Value& operator[](const Key& k) { return mMap[k]; }
 	// 添加克隆函数的目的是为了显式调用拷贝,而非自动调用拷贝,可以避免可以使用移动构造而没有使用的情况
-	void clone(HashMap<Key, Value>& target) const
+	void cloneTo(HashMap<Key, Value>& target) const
 	{
 		target.mMap = mMap;
 	}

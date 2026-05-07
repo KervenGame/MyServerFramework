@@ -10,7 +10,7 @@ public:
 	virtual ~TimeTask() { destroy(); }
 	void destroy() override;
 	virtual void init(){}
-	virtual void update(const float elapsedTime){}
+	virtual void update(float elapsedTime){}
 	void resetProperty() override;
 protected:
 	TimePoint* mTimePoint = nullptr;

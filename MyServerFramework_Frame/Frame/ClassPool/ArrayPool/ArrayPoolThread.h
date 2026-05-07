@@ -23,11 +23,11 @@ public:
 		const int threadID = getThreadID();
 		{
 			THREAD_LOCK(mLock);
-			threadArrayMemory = mArrayPoolSingleList.tryGet(threadID);
+			threadArrayMemory = mArrayPoolSingleList.get(threadID);
 			if (threadArrayMemory == nullptr)
 			{
 				threadArrayMemory = new ArrayPoolSingle();
-				mArrayPoolSingleList.insert(threadID, threadArrayMemory);
+				mArrayPoolSingleList.add(threadID, threadArrayMemory);
 			}
 		}
 		// 在线程内存列表中找到指定类型的内存列表
@@ -40,7 +40,7 @@ public:
 		ArrayPoolSingle* threadArrayMemory = nullptr;
 		{
 			THREAD_LOCK(mLock);
-			threadArrayMemory = mArrayPoolSingleList.tryGet(getThreadID());
+			threadArrayMemory = mArrayPoolSingleList.get(getThreadID());
 		}
 		if (threadArrayMemory != nullptr)
 		{
@@ -50,7 +50,7 @@ public:
 	}
 	static void deleteCharArray(char*& data, int size);
 private:
-	static void onHour(void* userData);
+	void onHour();
 protected:
 	static HashMap<int, ArrayPoolSingle*> mArrayPoolSingleList;
 	static HashMap<int, ArrayPoolSingleChar*> mArrayPoolSingleCharList;

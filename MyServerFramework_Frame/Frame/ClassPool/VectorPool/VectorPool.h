@@ -17,10 +17,10 @@ public:
 		Vector<ClassType>* list = nullptr;
 
 		// 首先从未使用的列表中获取,获取不到再重新创建一个
-		const int unusedCount = mUnusedList.size();
-		if (unusedCount > 0)
+		if (!mUnusedList.isEmpty())
 		{
-			list = mUnusedList.popBack();
+			list = mUnusedList[mUnusedList.size() - 1];
+			mUnusedList.removeLast();
 		}
 		else
 		{
@@ -36,7 +36,7 @@ public:
 	static void destroyVector(Vector<ClassType>* listPtr)
 	{
 		// 添加到未使用列表中
-		mUnusedList.push_back(listPtr);
+		mUnusedList.add(listPtr);
 
 		// 重置所有属性
 		listPtr->clear();

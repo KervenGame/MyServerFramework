@@ -9,10 +9,6 @@ protected:
 	PacketWebSocket* create(const ushort type) override
 	{
 		auto* factory = mPacketWebSocketFactoryManager->getFactory(type);
-		if (factory == nullptr)
-		{
-			return nullptr;
-		}
-		return factory->create();
+		return factory != nullptr ? factory->create() : nullptr;
 	}
 };

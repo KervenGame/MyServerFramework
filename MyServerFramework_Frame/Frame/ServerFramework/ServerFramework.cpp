@@ -5,18 +5,13 @@ template<>ServerFramework* Singleton<ServerFramework>::ms_Singleton = nullptr;
 ServerFramework::ServerFramework():
 	mStop(false)
 {
-	Dump::init();
+	CrashHandler::init();
+	MemoryTracker::NewInstance();
 #ifdef LINUX
 	struct timeval startTime;
 	gettimeofday(&startTime, nullptr);
 	mStartMiliTime = startTime.tv_sec * 1000 + (int)(startTime.tv_usec * 0.001f);
 #endif
-
-	const auto t1 = readTSC();
-	sleep_for(milliseconds(100));
-	const auto t2 = readTSC();
-	const double mhz = (t2 - t1) / 1e5;
-	mTickToNS = 1e9 / (mhz * 1e6);
 }
 
 void ServerFramework::registeComponent()
@@ -25,6 +20,7 @@ void ServerFramework::registeComponent()
 	registeSystem<CharacterManager>(STR(CharacterManager));
 	registeSystem<VectorPoolManager>(STR(VectorPoolManager));
 	registeSystem<CommandSystem>(STR(CommandSystem));
+	registeSystem<DelayCallSystem>(STR(DelayCallSystem));
 	registeSystem<RandomSystem>(STR(RandomSystem));
 	registeSystem<FrameConfigSystem>(STR(FrameConfigSystem));
 	registeSystem<ExcelManager>(STR(ExcelManager));
@@ -55,7 +51,6 @@ void ServerFramework::registeComponent()
 	registeSystem<CounterThreadPool>(STR(CounterThreadPool));
 	registeSystem<DelayCommandPool>(STR(DelayCommandPool));
 	registeSystem<DTNodePool>(STR(DTNodePool));
-	registeSystem<EventInfoPool>(STR(EventInfoPool));
 	registeSystem<GameComponentPool>(STR(GameComponentPool));
 	registeSystem<LogInfoPool>(STR(LogInfoPool));
 #ifdef _MYSQL
@@ -64,13 +59,14 @@ void ServerFramework::registeComponent()
 #ifdef _MYSQL
 	registeSystem<MySQLDataPool>(STR(MySQLDataPool));
 #endif
+	registeSystem<PacketTCPCSThreadPool>(STR(PacketTCPCSThreadPool));
 	registeSystem<PacketTCPPool>(STR(PacketTCPPool));
-	registeSystem<PacketTCPThreadPool>(STR(PacketTCPThreadPool));
+	registeSystem<PacketTCPSCThreadPool>(STR(PacketTCPSCThreadPool));
+	registeSystem<PacketUDPThreadPool>(STR(PacketUDPThreadPool));
 	registeSystem<PacketWebSocketPool>(STR(PacketWebSocketPool));
 	registeSystem<PacketWebSocketThreadPool>(STR(PacketWebSocketThreadPool));
 	registeSystem<StateParamPool>(STR(StateParamPool));
 	registeSystem<StatePool>(STR(StatePool));
-	registeSystem<TickerPool>(STR(TickerPool));
 	registeSystem<TimePointPool>(STR(TimePointPool));
 	registeSystem<CharacterFactoryManager>(STR(CharacterFactoryManager));
 	registeSystem<CharacterStateFactoryManager>(STR(CharacterStateFactoryManager));
@@ -101,7 +97,6 @@ void ServerFramework::init()
 	// 初始化所有组件
 	for (FrameComponent* component : mFrameComponentVector)
 	{
-		LOG(string("init:") + typeid(*component).name());
 		component->init();
 	}
 	// 注册各个系统需要创建的对象类型
@@ -111,12 +106,10 @@ void ServerFramework::init()
 	mExcelManager->checkAll();
 	for (FrameComponent* component : mFrameComponentVector)
 	{
-		LOG(string("lateInit:") + typeid(*component).name());
 		component->lateInit();
 	}
 	for (FrameComponent* component : mFrameComponentVector)
 	{
-		LOG(string("finalInit:") + typeid(*component).name());
 		component->finalInit();
 	}
 }
@@ -130,21 +123,21 @@ void ServerFramework::update(const float elapsedTime)
 	{
 		for (const auto& item : mSecondCallback)
 		{
-			item.second(item.first);
+			item.second();
 		}
 	}
 	TICK_LOOP(elapsedTime, 60.0f)
 	{
 		for (const auto& item : mMinuteCallback)
 		{
-			item.second(item.first);
+			item.second();
 		}
 	}
 	TICK_LOOP(elapsedTime, 3600.0f)
 	{
 		for (const auto& item : mHourCallback)
 		{
-			item.second(item.first);
+			item.second();
 		}
 	}
 	TICK_LOOP(elapsedTime, 1.0f)
@@ -159,13 +152,13 @@ void ServerFramework::update(const float elapsedTime)
 			{
 				for (const auto& item : mWeekCallback)
 				{
-					item.second(item.first);
+					item.second();
 				}
 			}
 			mLastDayOfWeek = dayOfWeek;
 			for (const auto& item : mDayCallback)
 			{
-				item.second(item.first);
+				item.second();
 			}
 		}
 	}
@@ -229,7 +222,13 @@ void ServerFramework::update(const float elapsedTime)
 	}
 	TICK_LOOP(elapsedTime, 1.0f)
 	{
-		Profiler::dump(mTickToNS);
+		Profiler::dump();
+		ThreadLock::dump();
+	}
+
+	TICK_LOOP_1(elapsedTime, 10.0f)
+	{
+		MemoryTracker::Get()->DumpReport(FrameDefine::DUMP_FILE.c_str());
 	}
 }
 
@@ -273,10 +272,10 @@ void ServerFramework::destroy()
 	// 清空所有系统组件的引用,避免在析构过程中访问出错
 	clearSystem();
 
-	// 因为释放内存会出现报错,所以不释放了
 	// 在析构阶段,任何对象都不能再访问其他对象实例,只能访问自己
 	DELETE_LIST(mFrameComponentVector);
 	mFrameComponentMap.clear();
+	MemoryTracker::Get()->DumpReport(FrameDefine::DUMP_FILE.c_str());
 	LOG("关闭服务器!");
 }
 

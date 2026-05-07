@@ -2,7 +2,7 @@
 
 void MovableObjectComponentMoveCurve::setKeyPosList(const Vector<Vector3>& posList)
 {
-	posList.clone(mKeyPosList);
+	posList.cloneTo(mKeyPosList);
 	if (mKeyPosList.isEmpty())
 	{
 		setActive(false);
@@ -17,7 +17,7 @@ void MovableObjectComponentMoveCurve::setKeyPosList(const Vector<Vector3>& posLi
 		{
 			totalLength += getLength(mKeyPosList[i] - mKeyPosList[i - 1]);
 		}
-		mPointToStartLengthList.push_back(totalLength);
+		mPointToStartLengthList.add(totalLength);
 	}
 	mTotalLength = totalLength;
 }
@@ -30,7 +30,7 @@ void MovableObjectComponentMoveCurve::applyTrembling(float value)
 	}
 	auto* obj = static_cast<MovableObject*>(mComponentOwner);
 	// 根据当前的距离找出位于哪两个点之间
-	MathUtility::saturate(value);
+	saturate(value);
 	const float curDistance = value * mTotalLength;
 	const int index = findPointIndex(mPointToStartLengthList, curDistance, 0, mPointToStartLengthList.size() - 1);
 	const Vector3& indexPos = mKeyPosList[index];

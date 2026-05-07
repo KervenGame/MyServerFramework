@@ -27,8 +27,9 @@ public:
 	static const string& getStaticPacketName() { return mPacketName; }
 	static constexpr ushort getStaticType() { return PACKET_TYPE::SCAttack; }
 	static constexpr bool hasMember() { return false; }
-	bool readFromBuffer(SerializerBitRead* reader) override { return true; }
-	bool writeToBuffer(SerializerBitWrite* serializer) const override { return true; }
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override { return true; }
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override { return true; }
+	bool generateHasSignInternal() const override { return false; }
 	void resetProperty() override
 	{
 		base::resetProperty();

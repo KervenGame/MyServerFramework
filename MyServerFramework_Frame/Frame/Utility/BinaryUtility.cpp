@@ -82,26 +82,11 @@ namespace BinaryUtility
 		0x4400, 0x84C1, 0x8581, 0x4540, 0x8701, 0x47C0, 0x4680, 0x8641,
 		0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 	};
-	// 计算 16进制的c中1的个数,此处可使用查表法进行优化,但是由于几乎没有哪个地方在用,所以不做实际修改
-	constexpr int crc_check(const char c)
-	{
-		int count = 0;
-		constexpr int bitCount = sizeof(char) * 8;
-		FOR(bitCount)
-		{
-			if ((c & (1 << i)) > 0)
-			{
-				++count;
-			}
-		}
-		return count;
-	}
-
 	ushort crc16(ushort crc, const char* buffer, const int len, const int bufferOffset)
 	{
 		FOR(len)
 		{
-			crc = crc16_byte(crc, buffer[bufferOffset + i]);
+			crc = crc16Byte(crc, buffer[bufferOffset + i]);
 		}
 		return crc;
 	}
@@ -120,29 +105,29 @@ namespace BinaryUtility
 		return true;
 	}
 
-	bool readFloatBit(const char* buffer, const int bufferSize, int& bitIndex, float& value, const int precision)
+	bool readFloatBit(const char* buffer, const int bufferSize, int& bitIndex, float& value, const bool needReadSign, const int precision)
 	{
 		// 浮点数按照一定精度转换为整数再写入
 		int intValue = 0;
-		const bool result = readSignedIntegerBit(buffer, bufferSize, bitIndex, intValue);
+		const bool result = readSignedIntegerBit(buffer, bufferSize, bitIndex, intValue, needReadSign);
 		value = intValue * inversePow10(precision);
 		return result;
 	}
 
-	bool readDoubleBit(const char* buffer, const int bufferSize, int& bitIndex, double& value, const int precision)
+	bool readDoubleBit(const char* buffer, const int bufferSize, int& bitIndex, double& value, const bool needReadSign, const int precision)
 	{
 		// 浮点数按照一定精度转换为整数再写入
 		llong llongValue = 0;
-		const bool result = readSignedIntegerBit(buffer, bufferSize, bitIndex, llongValue);
+		const bool result = readSignedIntegerBit(buffer, bufferSize, bitIndex, llongValue, needReadSign);
 		value = llongValue * inversePow10LLong(precision);
 		return result;
 	}
 
-	bool readFloatListBit(const char* buffer, int bufferSize, int& bitIndex, Vector<float>& list, const int precision)
+	bool readFloatListBit(const char* buffer, const int bufferSize, int& bitIndex, Vector<float>& list, const bool needReadSign, const int precision)
 	{
 		// 读取长度
-		int count = 0;
-		if (!readSignedIntegerBit(buffer, bufferSize, bitIndex, count))
+		ushort count = 0;
+		if (!readUnsignedIntegerBit(buffer, bufferSize, bitIndex, count))
 		{
 			return false;
 		}
@@ -155,10 +140,9 @@ namespace BinaryUtility
 		list.resize(count);
 
 		// 先读取长度位是使用哪种方式写入的
-		const bool lengthBitType = getBufferBit(buffer, bitIndex++);
 		const float powValue = inversePow10(precision);
 		// 使用统一的长度位
-		if (lengthBitType)
+		if (getBufferBit(buffer, bitIndex++))
 		{
 			// 读取位数量
 			byte bitCount = 0;
@@ -170,7 +154,7 @@ namespace BinaryUtility
 			{
 				return true;
 			}
-			if (bitCountToByteCount(bitIndex + (1 + bitCount) * count) > bufferSize)
+			if (bitCountToByteCount(bitIndex + ((needReadSign ? 1 : 0) + bitCount) * count) > bufferSize)
 			{
 				return false;
 			}
@@ -180,7 +164,11 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				// 读符号位
-				const bool isNegative = getBufferBit(buffer, bitIndex++);
+				bool isNegative = false;
+				if (needReadSign)
+				{
+					isNegative = getBufferBit(buffer, bitIndex++);
+				}
 
 				// 读取值
 				int intValue = 0;
@@ -197,25 +185,23 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				int value = 0;
-				readSignedIntegerBit(buffer, bufferSize, bitIndex, value);
+				readSignedIntegerBit(buffer, bufferSize, bitIndex, value, needReadSign);
 				list[i] = value * powValue;
 			}
 		}
 		return true;
 	}
 
-	bool readFloatListBit(const char* buffer, int bufferSize, int& bitIndex, float** list, const int count, const int precision)
+	bool readFloatListBit(const char* buffer, const int bufferSize, int& bitIndex, float** list, const int count, const bool needReadSign, const int precision)
 	{
 		if (count == 0)
 		{
 			return true;
 		}
 
-		// 先读取长度位是使用哪种方式写入的
-		const bool lengthBitType = getBufferBit(buffer, bitIndex++);
 		const float powValue = inversePow10(precision);
 		// 使用统一的长度位
-		if (lengthBitType)
+		if (getBufferBit(buffer, bitIndex++))
 		{
 			// 读取位数量
 			byte bitCount = 0;
@@ -227,7 +213,7 @@ namespace BinaryUtility
 			{
 				return true;
 			}
-			if (bitCountToByteCount(bitIndex + (1 + bitCount) * count) > bufferSize)
+			if (bitCountToByteCount(bitIndex + ((needReadSign ? 1 : 0) + bitCount) * count) > bufferSize)
 			{
 				return false;
 			}
@@ -237,7 +223,11 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				// 读符号位
-				const bool isNegative = getBufferBit(buffer, bitIndex++);
+				bool isNegative = false;
+				if (needReadSign)
+				{
+					isNegative = getBufferBit(buffer, bitIndex++);
+				}
 
 				// 读取值
 				int intValue = 0;
@@ -254,18 +244,18 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				int value = 0;
-				readSignedIntegerBit(buffer, bufferSize, bitIndex, value);
+				readSignedIntegerBit(buffer, bufferSize, bitIndex, value, needReadSign);
 				*list[i] = value * powValue;
 			}
 		}
 		return true;
 	}
 
-	bool readDoubleListBit(const char* buffer, const int bufferSize, int& bitIndex, Vector<double>& list, const int precision)
+	bool readDoubleListBit(const char* buffer, const int bufferSize, int& bitIndex, Vector<double>& list, const bool needReadSign, const int precision)
 	{
 		// 读取长度
-		int count = 0;
-		if (!readSignedIntegerBit(buffer, bufferSize, bitIndex, count))
+		ushort count = 0;
+		if (!readUnsignedIntegerBit(buffer, bufferSize, bitIndex, count))
 		{
 			return false;
 		}
@@ -277,11 +267,9 @@ namespace BinaryUtility
 		list.clear();
 		list.resize(count);
 
-		// 先读取长度位是使用哪种方式写入的
-		const bool lengthBitType = getBufferBit(buffer, bitIndex++);
 		const double powValue = inversePow10LLong(precision);
 		// 使用统一的长度位
-		if (lengthBitType)
+		if (getBufferBit(buffer, bitIndex++))
 		{
 			byte bitCount = 0;
 			if (!readSignedLengthBit<llong>(buffer, bufferSize, bitIndex, bitCount))
@@ -292,7 +280,7 @@ namespace BinaryUtility
 			{
 				return true;
 			}
-			if (bitCountToByteCount(bitIndex + (1 + bitCount) * count) > bufferSize)
+			if (bitCountToByteCount(bitIndex + ((needReadSign ? 1 : 0) + bitCount) * count) > bufferSize)
 			{
 				return false;
 			}
@@ -301,13 +289,17 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				// 读符号位
-				const bool isNegative = getBufferBit(buffer, bitIndex++);
+				bool isNegative = false;
+				if (needReadSign)
+				{
+					isNegative = getBufferBit(buffer, bitIndex++);
+				}
 
 				// 读取值
 				llong llongValue = 0;
 				FOR_J(byteCount - 1)
 				{
-					readByteBits(buffer, bitIndex, ((byte*)&(llongValue))[j], 8);
+					readByteBits(buffer, bitIndex, ((byte*)&llongValue)[j], 8);
 				}
 				readByteBits(buffer, bitIndex, ((byte*)&(llongValue))[byteCount - 1], bitCount - ((byteCount - 1) << 3));
 				list[i] = isNegative ? -llongValue * powValue : llongValue * powValue;
@@ -318,25 +310,23 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				llong value = 0;
-				readSignedIntegerBit(buffer, bufferSize, bitIndex, value);
+				readSignedIntegerBit(buffer, bufferSize, bitIndex, value, needReadSign);
 				list[i] = value * powValue;
 			}
 		}
 		return true;
 	}
 
-	bool readDoubleListBit(const char* buffer, const int bufferSize, int& bitIndex, double** list, const int count, const int precision)
+	bool readDoubleListBit(const char* buffer, const int bufferSize, int& bitIndex, double** list, const int count, const bool needReadSign, const int precision)
 	{
 		if (count == 0)
 		{
 			return true;
 		}
 
-		// 先读取长度位是使用哪种方式写入的
-		const bool lengthBitType = getBufferBit(buffer, bitIndex++);
 		const double powValue = inversePow10LLong(precision);
 		// 使用统一的长度位
-		if (lengthBitType)
+		if (getBufferBit(buffer, bitIndex++))
 		{
 			byte bitCount = 0;
 			if (!readSignedLengthBit<llong>(buffer, bufferSize, bitIndex, bitCount))
@@ -347,7 +337,7 @@ namespace BinaryUtility
 			{
 				return true;
 			}
-			if (bitCountToByteCount(bitIndex + (1 + bitCount) * count) > bufferSize)
+			if (bitCountToByteCount(bitIndex + ((needReadSign ? 1 : 0) + bitCount) * count) > bufferSize)
 			{
 				return false;
 			}
@@ -356,7 +346,11 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				// 读符号位
-				const bool isNegative = getBufferBit(buffer, bitIndex++);
+				bool isNegative = false;
+				if (needReadSign)
+				{
+					isNegative = getBufferBit(buffer, bitIndex++);
+				}
 
 				// 读取值
 				llong llongValue = 0;
@@ -373,7 +367,7 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				llong value = 0;
-				readSignedIntegerBit(buffer, bufferSize, bitIndex, value);
+				readSignedIntegerBit(buffer, bufferSize, bitIndex, value, needReadSign);
 				*list[i] = value * powValue;
 			}
 		}
@@ -439,10 +433,10 @@ namespace BinaryUtility
 	}
 
 	// 将所有的浮点数都扩大到整数存储
-	bool writeFloatListBit(char* buffer, const int bufferSize, int& bitIndex, const float* list, const int count, const bool needWriteCount, const int precision)
+	bool writeFloatListBit(char* buffer, const int bufferSize, int& bitIndex, const float* list, const int count, const bool needWriteCount, const bool needWriteSign, const int precision)
 	{
 		// 写入长度
-		if (needWriteCount && !writeSignedIntegerBit(buffer, bufferSize, bitIndex, count))
+		if (needWriteCount && !writeUnsignedIntegerBit(buffer, bufferSize, bitIndex, (ushort)count))
 		{
 			return false;
 		}
@@ -453,32 +447,34 @@ namespace BinaryUtility
 
 		// 计算出最大值的位数量,所有的值都使用这个位数量来存储
 		const int powValue = pow10(precision);
-		const byte maxBitCount = generateBitCount(MathUtility::round(getFloatListMaxAbs(list, count) * powValue));
+		const byte maxBitCount = generateBitCount((uint)round_(getFloatListMaxAbs(list, count) * powValue));
+		constexpr byte TYPE_LENGTH_MAX_BIT = SIGNED_LENGTH_MAX_BIT[sizeof(int)];
 		// 如果使用一个统一的位数来表示写入位个数所占用的总位数
 		int bitCountUnity;
 		if (maxBitCount > 0)
 		{
-			bitCountUnity = (maxBitCount + 1) * count + SIGNED_LENGTH_MAX_BIT[sizeof(float)];
+			// 这里加的是一个符号位
+			bitCountUnity = (maxBitCount + 1) * count + TYPE_LENGTH_MAX_BIT;
 		}
 		else
 		{
-			bitCountUnity = SIGNED_LENGTH_MAX_BIT[sizeof(float)];
+			bitCountUnity = TYPE_LENGTH_MAX_BIT;
 		}
 		
 		// 如果每个值都使用自己的实际位数来表示写入位个数所占用的总位数
 		// 先加上每个元素的长度位的位数量
-		int bitCountSingle = SIGNED_LENGTH_MAX_BIT[sizeof(float)] * count;
+		int bitCountSingle = TYPE_LENGTH_MAX_BIT * count;
 		// 写入独立长度所占空间小于统一个数时才会继续计算值所占的空间,如果长度部分已经大于了,则不需要再继续计算了
 		if (bitCountSingle < bitCountUnity)
 		{
 			FOR(count)
 			{
-				const int thisAbsValue = MathUtility::round(MathUtility::abs(list[i]) * powValue);
+				const int thisAbsValue = round_(abs(list[i]) * powValue);
 				// 值为0时不会写入符号位和数据,不为0时才会写入
 				if (thisAbsValue > 0)
 				{
 					// 每个元素绝对值所占用的位数,最高位固定是1,所以减去1位,然后还要加上一个符号位
-					bitCountSingle += generateBitCount(thisAbsValue) - 1 + 1;
+					bitCountSingle += generateBitCount((uint)thisAbsValue) - 1 + 1;
 					if (bitCountSingle > bitCountUnity)
 					{
 						break;
@@ -509,14 +505,21 @@ namespace BinaryUtility
 			const byte byteCount = bitCountToByteCount(maxBitCount);
 			FOR(count)
 			{
-				int intValue = MathUtility::round(list[i] * powValue);
-				// 写入符号位
-				if (intValue < 0)
+				int intValue = round_(list[i] * powValue);
+				const bool isNegative = intValue < 0;
+				if (isNegative)
 				{
 					intValue = -intValue;
-					setBufferBitOne(buffer, bitIndex);
 				}
-				++bitIndex;
+				if (needWriteSign)
+				{
+					// 写入符号位
+					if (isNegative)
+					{
+						setBufferBitOne(buffer, bitIndex);
+					}
+					++bitIndex;
+				}
 				// 再写入值的所有位
 				FOR_J(byteCount - 1)
 				{
@@ -532,16 +535,16 @@ namespace BinaryUtility
 			++bitIndex;
 			FOR(count)
 			{
-				writeSignedIntegerBit(buffer, bufferSize, bitIndex, MathUtility::round(list[i] * powValue));
+				writeSignedIntegerBit(buffer, bufferSize, bitIndex, round_(list[i] * powValue), needWriteSign);
 			}
 		}
 		return true;
 	}
 
-	bool writeDoubleListBit(char* buffer, const int bufferSize, int& bitIndex, const double* list, const int count, const bool needWriteCount, const int precision)
+	bool writeDoubleListBit(char* buffer, const int bufferSize, int& bitIndex, const double* list, const int count, const bool needWriteCount, const bool needWriteSign, const int precision)
 	{
 		// 写入长度
-		if (needWriteCount && !writeSignedIntegerBit(buffer, bufferSize, bitIndex, count))
+		if (needWriteCount && !writeUnsignedIntegerBit(buffer, bufferSize, bitIndex, (ushort)count))
 		{
 			return false;
 		}
@@ -552,31 +555,32 @@ namespace BinaryUtility
 
 		// 计算出最大值的位数量,所有的值都使用这个位数量来存储
 		const llong powValue = pow10LLong(precision);
-		const byte maxBitCount = generateBitCount(roundDouble(getDoubleListMaxAbs(list, count) * powValue));
+		const byte maxBitCount = generateBitCount((ullong)roundDouble(getDoubleListMaxAbs(list, count) * powValue));
+		constexpr byte TYPE_LENGTH_MAX_BIT = SIGNED_LENGTH_MAX_BIT[sizeof(llong)];
 		// 如果使用一个统一的位数来表示写入位个数所占用的总位数
 		int bitCountUnity;
 		if (maxBitCount > 0)
 		{
-			bitCountUnity = (maxBitCount + 1) * count + SIGNED_LENGTH_MAX_BIT[sizeof(double)];
+			bitCountUnity = (maxBitCount + 1) * count + TYPE_LENGTH_MAX_BIT;
 		}
 		else
 		{
-			bitCountUnity = SIGNED_LENGTH_MAX_BIT[sizeof(double)];
+			bitCountUnity = TYPE_LENGTH_MAX_BIT;
 		}
 		// 如果每个值都使用自己的实际位数来表示写入位个数所占用的总位数
 		// 先加上每个元素的长度位的位数量
-		int bitCountSingle = SIGNED_LENGTH_MAX_BIT[sizeof(double)] * count;
+		int bitCountSingle = TYPE_LENGTH_MAX_BIT * count;
 		// 写入独立长度所占空间小于统一个数时才会继续计算值所占的空间,如果长度部分已经大于了,则不需要再继续计算了
 		if (bitCountSingle < bitCountUnity)
 		{
 			FOR(count)
 			{
-				const llong thisAbsValue = roundDouble(MathUtility::abs(list[i]) * powValue);
+				const llong thisAbsValue = roundDouble(abs(list[i]) * powValue);
 				// 值为0时不会写入符号位和数据,不为0时才会写入
 				if (thisAbsValue > 0)
 				{
 					// 每个元素绝对值所占用的位数,最高位固定是1,所以减去1位,然后还要加上一个符号位
-					bitCountSingle += generateBitCount(thisAbsValue) - 1 + 1;
+					bitCountSingle += generateBitCount((ullong)thisAbsValue) - 1 + 1;
 					if (bitCountSingle > bitCountUnity)
 					{
 						break;
@@ -608,13 +612,20 @@ namespace BinaryUtility
 			FOR(count)
 			{
 				llong llongValue = roundDouble(list[i] * powValue);
-				// 写入符号位
-				if (llongValue < 0)
+				const bool isNegative = llongValue < 0;
+				if (isNegative)
 				{
 					llongValue = -llongValue;
-					setBufferBitOne(buffer, bitIndex);
 				}
-				++bitIndex;
+				if (needWriteSign)
+				{
+					// 写入符号位
+					if (isNegative)
+					{
+						setBufferBitOne(buffer, bitIndex);
+					}
+					++bitIndex;
+				}
 				// 再写入值的所有位
 				FOR_J(byteCount - 1)
 				{
@@ -630,151 +641,12 @@ namespace BinaryUtility
 			++bitIndex;
 			FOR(count)
 			{
-				writeSignedIntegerBit(buffer, bufferSize, bitIndex, roundDouble(list[i] * powValue));
+				writeSignedIntegerBit(buffer, bufferSize, bitIndex, roundDouble(list[i] * powValue), needWriteSign);
 			}
 		}
 		return true;
 	}
-
-	bool writeVector2(char* buffer, const int bufferSize, int& index, const Vector2 value)
-	{
-		return write(buffer, bufferSize, index, value.x) && write(buffer, bufferSize, index, value.y);
-	}
-
-	bool writeVector2Inverse(char* buffer, const int bufferSize, int& index, const Vector2 value)
-	{
-		return writeInverse(buffer, bufferSize, index, value.x) && writeInverse(buffer, bufferSize, index, value.y);
-	}
-
-	bool writeVector2Int(char* buffer, const int bufferSize, int& index, const Vector2Int value)
-	{
-		return write(buffer, bufferSize, index, value.x) && write(buffer, bufferSize, index, value.y);
-	}
-
-	bool writeVector2IntInverse(char* buffer, const int bufferSize, int& index, const Vector2Int value)
-	{
-		return writeInverse(buffer, bufferSize, index, value.x) && writeInverse(buffer, bufferSize, index, value.y);
-	}
-
-	bool writeVector3(char* buffer, const int bufferSize, int& index, const Vector3& value)
-	{
-		return write(buffer, bufferSize, index, value.x) &&
-			write(buffer, bufferSize, index, value.y) &&
-			write(buffer, bufferSize, index, value.z);
-	}
-
-	bool writeVector3Inverse(char* buffer, const int bufferSize, int& index, const Vector3& value)
-	{
-		return writeInverse(buffer, bufferSize, index, value.x) &&
-			writeInverse(buffer, bufferSize, index, value.y) &&
-			writeInverse(buffer, bufferSize, index, value.z);
-	}
-
-	bool writeVector4(char* buffer, const int bufferSize, int& index, const Vector4& value)
-	{
-		return write(buffer, bufferSize, index, value.x) &&
-			write(buffer, bufferSize, index, value.y) &&
-			write(buffer, bufferSize, index, value.z) &&
-			write(buffer, bufferSize, index, value.w);
-	}
-
-	bool writeVector4Inverse(char* buffer, const int bufferSize, int& index, const Vector4& value)
-	{
-		return writeInverse(buffer, bufferSize, index, value.x) &&
-			writeInverse(buffer, bufferSize, index, value.y) &&
-			writeInverse(buffer, bufferSize, index, value.z) &&
-			writeInverse(buffer, bufferSize, index, value.w);
-	}
-
-	bool writeColor(char* buffer, const int bufferSize, int& index, const Color& value)
-	{
-		return write(buffer, bufferSize, index, value.r) &&
-			write(buffer, bufferSize, index, value.g) &&
-			write(buffer, bufferSize, index, value.b) &&
-			write(buffer, bufferSize, index, value.a);
-	}
-
-	bool writeColorInverse(char* buffer, const int bufferSize, int& index, const Color& value)
-	{
-		return writeInverse(buffer, bufferSize, index, value.r) &&
-			writeInverse(buffer, bufferSize, index, value.g) &&
-			writeInverse(buffer, bufferSize, index, value.b) &&
-			writeInverse(buffer, bufferSize, index, value.a);
-	}
-
-	bool readVector2(const char* buffer, const int bufferSize, int& index, Vector2& value)
-	{
-		return read(buffer, bufferSize, index, value.x) && read(buffer, bufferSize, index, value.y);
-	}
-
-	bool readVector2Inverse(const char* buffer, const int bufferSize, int& index, Vector2& value)
-	{
-		return readInverse(buffer, bufferSize, index, value.x) && readInverse(buffer, bufferSize, index, value.y);
-	}
-
-	bool readVector2Int(const char* buffer, const int bufferSize, int& index, Vector2Int& value)
-	{
-		return read(buffer, bufferSize, index, value.x) && read(buffer, bufferSize, index, value.y);
-	}
-
-	bool readVector2IntInverse(const char* buffer, const int bufferSize, int& index, Vector2Int& value)
-	{
-		return readInverse(buffer, bufferSize, index, value.x) && readInverse(buffer, bufferSize, index, value.y);
-	}
-
-	bool readVector3(const char* buffer, const int bufferSize, int& index, Vector3& value)
-	{
-		return read(buffer, bufferSize, index, value.x) &&
-			read(buffer, bufferSize, index, value.y) &&
-			read(buffer, bufferSize, index, value.z);
-	}
-
-	bool readVector3Int(const char* buffer, const int bufferSize, int& index, Vector3Int& value)
-	{
-		return read(buffer, bufferSize, index, value.x) && 
-			read(buffer, bufferSize, index, value.y) &&
-			read(buffer, bufferSize, index, value.z);
-	}
-
-	bool readVector3Inverse(const char* buffer, const int bufferSize, int& index, Vector3& value)
-	{
-		return readInverse(buffer, bufferSize, index, value.x) &&
-			readInverse(buffer, bufferSize, index, value.y) &&
-			readInverse(buffer, bufferSize, index, value.z);
-	}
-
-	bool readVector4(const char* buffer, const int bufferSize, int& index, Vector4& value)
-	{
-		return read(buffer, bufferSize, index, value.x) &&
-			read(buffer, bufferSize, index, value.y) &&
-			read(buffer, bufferSize, index, value.z) &&
-			read(buffer, bufferSize, index, value.w);
-	}
-
-	bool readVector4Inverse(const char* buffer, const int bufferSize, int& index, Vector4& value)
-	{
-		return readInverse(buffer, bufferSize, index, value.x) &&
-			readInverse(buffer, bufferSize, index, value.y) &&
-			readInverse(buffer, bufferSize, index, value.z) &&
-			readInverse(buffer, bufferSize, index, value.w);
-	}
-
-	bool readColor(const char* buffer, const int bufferSize, int& index, Color& value)
-	{
-		return read(buffer, bufferSize, index, value.r) &&
-			read(buffer, bufferSize, index, value.g) &&
-			read(buffer, bufferSize, index, value.b) &&
-			read(buffer, bufferSize, index, value.a);
-	}
-
-	bool readColorInverse(const char* buffer, const int bufferSize, int& index, Color& value)
-	{
-		return readInverse(buffer, bufferSize, index, value.r) &&
-			readInverse(buffer, bufferSize, index, value.g) &&
-			readInverse(buffer, bufferSize, index, value.b) &&
-			readInverse(buffer, bufferSize, index, value.a);
-	}
-
+	
 	float getFloatListMaxAbs(const float* list, const int count)
 	{
 		if (count == 0)
@@ -782,10 +654,10 @@ namespace BinaryUtility
 			return 0;
 		}
 
-		float maxValue = MathUtility::abs(list[0]);
+		float maxValue = abs(list[0]);
 		for (int i = 1; i < count; ++i)
 		{
-			clampMinRef(maxValue, MathUtility::abs(list[i]));
+			clampMinRef(maxValue, abs(list[i]));
 		}
 		return maxValue;
 	}
@@ -797,10 +669,10 @@ namespace BinaryUtility
 			return 0;
 		}
 
-		double maxValue = MathUtility::abs(list[0]);
+		double maxValue = abs(list[0]);
 		for (int i = 1; i < count; ++i)
 		{
-			clampMinRef(maxValue, MathUtility::abs(list[i]));
+			clampMinRef(maxValue, abs(list[i]));
 		}
 		return maxValue;
 	}

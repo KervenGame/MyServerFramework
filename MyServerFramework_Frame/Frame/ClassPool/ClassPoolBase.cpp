@@ -2,22 +2,12 @@
 
 void ClassPoolBase::init()
 {
-	mServerFramework->registeHour(this, onHourInternal);
-	mServerFramework->registeSecond(this, onSecondInternal);
+	mServerFramework->registeHour(this, [this] {onHour(); });
+	mServerFramework->registeSecond(this, [this] {onSecond(); });
 }
 
 void ClassPoolBase::quit()
 {
 	mServerFramework->unregisteHour(this);
 	mServerFramework->unregisteSecond(this);
-}
-
-void ClassPoolBase::onHourInternal(void* userData)
-{
-	static_cast<This*>(userData)->onHour();
-}
-
-void ClassPoolBase::onSecondInternal(void* userData)
-{
-	static_cast<This*>(userData)->onSecond();
 }

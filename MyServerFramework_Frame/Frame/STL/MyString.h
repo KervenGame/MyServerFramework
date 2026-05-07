@@ -11,24 +11,414 @@ public:
 	MyString() {}
 	// 为了方便查代码,将返回指针的函数命名为具体的名字
 	const char* str() const				{ return mValue; }
-	char* toBuffer()					{ return mValue; }
 	// 仅为了在类型匹配时能够编译通过,尽量避免直接使用
 	const char* data() const			{ return mValue; }
 	char* data()						{ return mValue; }
-	bool isEmpty() const				{ return mValue[0] == '\0'; }
+	bool isEmpty() const				{ return mLength == 0; }
 	constexpr int getMaxLength() const	{ return Length; }
-	void clear()						{ mValue[0] = '\0'; }
-	int length() const 
+	int length() const					{ return mLength; }
+	void truncate(int length)
 	{
-		FOR(Length)
-		{
-			if (mValue[i] == '\0')
-			{
-				return i;
-			}
-		}
-		return Length;
+		mLength = length;
+		mValue[mLength] = '\0';
 	}
+	void clear()						
+	{
+		mLength = 0; 
+		mValue[0] = '\0'; 
+	}
+	constexpr const char& operator[](int index) const
+	{
+		if (index < 0 || index >= Length)
+		{
+			ERROR("数组越界");
+			index = Length - 1;
+		}
+		return mValue[index];
+	}
+	// 将数组的内容重置为0
+	void zero()
+	{
+		memset(mValue, 0, sizeof(char) * Length);
+		mLength = 0;
+	}
+	void set(const char* str, int strLength)
+	{
+		mLength = strLength;
+		if (mLength >= Length)
+		{
+			mLength = Length - 1;
+		}
+		copy(str, mLength);
+		mValue[mLength] = '\0';
+	}
+	void set(const char* str)
+	{
+		mLength = (int)::strlen(str);
+		if (mLength >= Length)
+		{
+			mLength = Length - 1;
+		}
+		copy(str, mLength);
+		mValue[mLength] = '\0';
+	}
+	void set(const string& str)
+	{
+		mLength = (int)str.length();
+		copy(str.c_str(), mLength);
+		mValue[mLength] = '\0';
+	}
+	void set(const string& str, const int length)
+	{
+		mLength = length;
+		copy(str.c_str(), mLength);
+		mValue[mLength] = '\0';
+	}
+	void set(const char c)
+	{
+		mLength = 1;
+		mValue[0] = c;
+		mValue[mLength] = '\0';
+	}
+	bool add(const string& str, int length)
+	{
+		if (length == 0)
+		{
+			return true;
+		}
+		if (mLength + length >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str, length);
+		mLength += length;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const string& str)
+	{
+		const int len = (int)str.length();
+		if (len == 0)
+		{
+			return true;
+		}
+		if (mLength + len >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str);
+		mLength += len;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str)
+	{
+		if (str == nullptr)
+		{
+			return true;
+		}
+		const int len = (int)::strlen(str);
+		if (len == 0)
+		{
+			return true;
+		}
+		if (mLength + len >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str, len);
+		mLength += len;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str0, const char* str1)
+	{
+		if (str0 == nullptr || str1 == nullptr)
+		{
+			return true;
+		}
+		const int len0 = (int)::strlen(str0);
+		const int len1 = (int)::strlen(str1);
+		if (len0 + len1 == 0)
+		{
+			return true;
+		}
+		if (mLength + len0 + len1 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str0, len0);
+		mLength += len0;
+		copy(mLength, str1, len1);
+		mLength += len1;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str0, const char* str1, const char* str2)
+	{
+		if (str0 == nullptr || str1 == nullptr || str2 == nullptr)
+		{
+			return true;
+		}
+		const int len0 = (int)::strlen(str0);
+		const int len1 = (int)::strlen(str1);
+		const int len2 = (int)::strlen(str2);
+		if (len0 + len1 + len2 == 0)
+		{
+			return true;
+		}
+		if (mLength + len0 + len1 + len2 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str0, len0);
+		mLength += len0;
+		copy(mLength, str1, len1);
+		mLength += len1;
+		copy(mLength, str2, len2);
+		mLength += len2;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str0, const char* str1, const char* str2, const char* str3)
+	{
+		if (str0 == nullptr || str1 == nullptr || str2 == nullptr || str3 == nullptr)
+		{
+			return true;
+		}
+		const int len0 = (int)::strlen(str0);
+		const int len1 = (int)::strlen(str1);
+		const int len2 = (int)::strlen(str2);
+		const int len3 = (int)::strlen(str3);
+		if (len0 + len1 + len2 + len3 == 0)
+		{
+			return true;
+		}
+		if (mLength + len0 + len1 + len2 + len3 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str0, len0);
+		mLength += len0;
+		copy(mLength, str1, len1);
+		mLength += len1;
+		copy(mLength, str2, len2);
+		mLength += len2;
+		copy(mLength, str3, len3);
+		mLength += len3;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4)
+	{
+		if (str0 == nullptr || str1 == nullptr || str2 == nullptr || str3 == nullptr || str4 == nullptr)
+		{
+			return true;
+		}
+		const int len0 = (int)::strlen(str0);
+		const int len1 = (int)::strlen(str1);
+		const int len2 = (int)::strlen(str2);
+		const int len3 = (int)::strlen(str3);
+		const int len4 = (int)::strlen(str4);
+		if (len0 + len1 + len2 + len3 + len4 == 0)
+		{
+			return true;
+		}
+		if (mLength + len0 + len1 + len2 + len3 + len4 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str0, len0);
+		mLength += len0;
+		copy(mLength, str1, len1);
+		mLength += len1;
+		copy(mLength, str2, len2);
+		mLength += len2;
+		copy(mLength, str3, len3);
+		mLength += len3;
+		copy(mLength, str4, len4);
+		mLength += len4;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4, const char* str5)
+	{
+		if (str0 == nullptr || str1 == nullptr || str2 == nullptr || str3 == nullptr || str4 == nullptr || str5 == nullptr)
+		{
+			return true;
+		}
+		const int len0 = (int)::strlen(str0);
+		const int len1 = (int)::strlen(str1);
+		const int len2 = (int)::strlen(str2);
+		const int len3 = (int)::strlen(str3);
+		const int len4 = (int)::strlen(str4);
+		const int len5 = (int)::strlen(str5);
+		if (len0 + len1 + len2 + len3 + len4 + len5 == 0)
+		{
+			return true;
+		}
+		if (mLength + len0 + len1 + len2 + len3 + len4 + len5 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str0, len0);
+		mLength += len0;
+		copy(mLength, str1, len1);
+		mLength += len1;
+		copy(mLength, str2, len2);
+		mLength += len2;
+		copy(mLength, str3, len3);
+		mLength += len3;
+		copy(mLength, str4, len4);
+		mLength += len4;
+		copy(mLength, str5, len5);
+		mLength += len5;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4, const char* str5, const char* str6)
+	{
+		if (str0 == nullptr || str1 == nullptr || str2 == nullptr || str3 == nullptr || str4 == nullptr || str5 == nullptr || str6 == nullptr)
+		{
+			return true;
+		}
+		const int len0 = (int)::strlen(str0);
+		const int len1 = (int)::strlen(str1);
+		const int len2 = (int)::strlen(str2);
+		const int len3 = (int)::strlen(str3);
+		const int len4 = (int)::strlen(str4);
+		const int len5 = (int)::strlen(str5);
+		const int len6 = (int)::strlen(str6);
+		if (len0 + len1 + len2 + len3 + len4 + len5 + len6 == 0)
+		{
+			return true;
+		}
+		if (mLength + len0 + len1 + len2 + len3 + len4 + len5 + len6 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str0, len0);
+		mLength += len0;
+		copy(mLength, str1, len1);
+		mLength += len1;
+		copy(mLength, str2, len2);
+		mLength += len2;
+		copy(mLength, str3, len3);
+		mLength += len3;
+		copy(mLength, str4, len4);
+		mLength += len4;
+		copy(mLength, str5, len5);
+		mLength += len5;
+		copy(mLength, str6, len6);
+		mLength += len6;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	void add(const char** sourceArray, const int sourceCount)
+	{
+		FOR(sourceCount)
+		{
+			add(sourceArray[i]);
+		}
+	}
+	template<int SourceLength>
+	void add(const Array<SourceLength, const char*>& sourceArray)
+	{
+		for (const char* curSource : sourceArray)
+		{
+			add(curSource);
+		}
+	}
+	bool add(const char* str, const int length)
+	{
+		if (str == nullptr)
+		{
+			return true;
+		}
+		if (length == 0)
+		{
+			return true;
+		}
+		if (mLength + length >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		copy(mLength, str, length);
+		mLength += length;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool add(const char c)
+	{
+		if (mLength + 1 >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		mValue[mLength++] = c;
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool addCount(const char c, const int count)
+	{
+		if (mLength + count >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		FOR(count)
+		{
+			mValue[mLength++] = c;
+		}
+		mValue[mLength] = '\0';
+		return true;
+	}
+	bool setCount(const char c, const int count)
+	{
+		clear();
+		if (mLength + count >= Length)
+		{
+			LOG("添加的字符串太长");
+			return false;
+		}
+		FOR(count)
+		{
+			mValue[mLength++] = c;
+		}
+		mValue[mLength] = '\0';
+		return true;
+	}
+	void sprintf(const char* format, ...)
+	{
+		if (format == nullptr)
+		{
+			return;
+		}
+
+		va_list args;
+		va_start(args, format);
+		const int ret = vsnprintf(mValue, Length, format, args);
+		va_end(args);
+		if (ret < 0)
+		{
+			clear();
+		}
+		else
+		{
+			mLength = ret >= Length ? Length - 1 : ret;
+		}
+	}
+protected:
 	template<int SourceLength>
 	void copy(const MyString<SourceLength>& src)
 	{
@@ -133,69 +523,7 @@ public:
 		}
 		MEMCPY(mValue + destOffset, Length - destOffset, src.c_str(), copyLength);
 	}
-	constexpr int size() const { return Length; }
-	constexpr const char& operator[](int index) const
-	{
-		if (index < 0 || index >= Length)
-		{
-			ERROR("数组越界");
-			index = Length - 1;
-		}
-		return mValue[index];
-	}
-	constexpr char& operator[](int index)
-	{
-		if (index < 0 || index >= Length)
-		{
-			ERROR("数组越界");
-			index = Length - 1;
-		}
-		return mValue[index];
-	}
-	// 将数组的内容重置为0
-	void zero()
-	{
-		memset(mValue, 0, sizeof(char) * Length);
-	}
-	// 将数组的每一个元素都设置为value
-	void fillArray(const char value)
-	{
-		memset(mValue, value, Length);
-	}
-	// 将数组的从start开始的所有元素都设置为value
-	void fillArray(const int start, const char value)
-	{
-		memset(mValue + start, value, Length - start);
-	}
-	void setString(const char* str, int strLength = -1)
-	{
-		if (strLength == -1)
-		{
-			strLength = (int)::strlen(str);
-		}
-		copy(str, strLength);
-		mValue[strLength] = '\0';
-	}
-	void setString(const string& str)
-	{
-		const int len = (int)str.length();
-		copy(str.c_str(), len);
-		mValue[len] = '\0';
-	}
-	void setString(const int offset, const char* str, int strLength = 0)
-	{
-		if (strLength == 0)
-		{
-			strLength = (int)::strlen(str);
-		}
-		copy(offset, str, strLength);
-		mValue[offset + strLength] = '\0';
-	}
-	void setString(const int offset, const string& str)
-	{
-		copy(offset, str);
-		mValue[offset + (int)str.length()] = '\0';
-	}
-public:
+protected:
 	char mValue[Length]{};
+	int mLength = 0;
 };

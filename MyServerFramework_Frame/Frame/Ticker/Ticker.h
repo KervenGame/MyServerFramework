@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "ClassObject.h"
+#include "ClassPool.h"
 #include "FrameCallback.h"
 
 class MICRO_LEGEND_FRAME_API Ticker : public ClassObject
@@ -18,3 +19,5 @@ protected:
 	BoolFunction mCallback = nullptr;
 	bool mFinish = false;
 };
+
+CLASS_POOL(Ticker);

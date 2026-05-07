@@ -28,6 +28,9 @@
     <Filter Include="Game\DataBase">
       <UniqueIdentifier>{0bc03ba1-aa1f-4429-8ae3-137ec3bfcf14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\DataBase\Excel">
+      <UniqueIdentifier>{95c3b95c-4799-437f-b351-6747bab8ff4f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Game\DataBase\MySQL">
       <UniqueIdentifier>{9ae0ab26-b61c-426b-a3ce-97a60202ece0}</UniqueIdentifier>
     </Filter>
@@ -147,6 +150,12 @@
     </ClInclude>
     <ClInclude Include="Game\Config\GameConfigSystem.h">
       <Filter>Game\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\DataBase\Excel\ExcelRegister.cpp">
+      <Filter>Game\DataBase\Excel</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\DataBase\Excel\ExcelRegister.h">
+      <Filter>Game\DataBase\Excel</Filter>
     </ClInclude>
     <ClInclude Include="Game\DataBase\MySQL\MySQLRegister.cpp">
       <Filter>Game\DataBase\MySQL</Filter>

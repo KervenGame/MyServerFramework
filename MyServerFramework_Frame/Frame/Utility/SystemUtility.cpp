@@ -169,11 +169,11 @@ namespace SystemUtility
 		GetLocalTime(&sys);
 		if (timeStamp)
 		{
-			SPRINTF(timeBuffer.toBuffer(), timeBuffer.size(), "%d-%02d-%02d %02d:%02d:%02d", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
+			timeBuffer.sprintf("%d-%02d-%02d %02d:%02d:%02d", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
 		}
 		else
 		{
-			SPRINTF(timeBuffer.toBuffer(), timeBuffer.size(), "%04d年%02d月%02d日%02d时%02d分%02d秒%03d毫秒", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
+			timeBuffer.sprintf("%04d年%02d月%02d日%02d时%02d分%02d秒%03d毫秒", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
 		}
 #elif defined LINUX
 		time_t tt;
@@ -182,11 +182,11 @@ namespace SystemUtility
 		localtime_r(&tt, &date);
 		if (timeStamp)
 		{
-			SPRINTF(timeBuffer.toBuffer(), timeBuffer.size(), "%d-%02d-%02d %02d:%02d:%02d", date.tm_year + 1900, date.tm_mon + 1, date.tm_mday, date.tm_hour, date.tm_min, date.tm_sec);
+			timeBuffer.sprintf("%d-%02d-%02d %02d:%02d:%02d", date.tm_year + 1900, date.tm_mon + 1, date.tm_mday, date.tm_hour, date.tm_min, date.tm_sec);
 		}
 		else
 		{
-			SPRINTF(timeBuffer.toBuffer(), timeBuffer.size(), "%04d年%02d月%02d日%02d时%02d分%02d秒", date.tm_year + 1900, date.tm_mon + 1, date.tm_mday, date.tm_hour, date.tm_min, date.tm_sec);
+			timeBuffer.sprintf("%04d年%02d月%02d日%02d时%02d分%02d秒", date.tm_year + 1900, date.tm_mon + 1, date.tm_mday, date.tm_hour, date.tm_min, date.tm_sec);
 		}
 #endif
 		return timeBuffer.str();
@@ -379,7 +379,7 @@ namespace SystemUtility
 		cout << str;
 		if (nextLine)
 		{
-			cout << "\n";
+			cout << '\n';
 		}
 #elif defined LINUX
 		printf("%s", str);
@@ -396,7 +396,7 @@ namespace SystemUtility
 		cin >> str;
 #elif defined LINUX
 		MyString<256> i;
-		if (scanf("%s", i.toBuffer()) == 1)
+		if (scanf("%s", i.data()) == 1)
 		{
 			str = i.str();
 		}
@@ -449,13 +449,13 @@ namespace SystemUtility
 		//重复调用 Process32Next，直到函数返回 FALSE 为止 
 		while (Process32Next(handle, &info))
 		{
-			processList.insert(info.szExeFile);
+			processList.add(info.szExeFile);
 		}
 	}
 
 	int getPID()
 	{
-		return 0;
+		return (int)GetCurrentProcessId();
 	}
 
 	void launchExeInScreen(const string& screenName, const string& fullPath) {}
@@ -501,11 +501,11 @@ namespace SystemUtility
 		bool isRunning = false;
 		MyString<1024> buff;
 		Vector<string> temp;
-		while (fgets(buff.toBuffer(), buff.size(), fstream) != nullptr)
+		while (fgets(buff.data(), buff.getMaxLength(), fstream) != nullptr)
 		{
 			temp.clear();
 			split(buff.str(), " ", temp);
-			if (temp.size() > 0 && getExePath(temp[0]) == fileName)
+			if (!temp.isEmpty() && getExePath(temp[0]) == fileName)
 			{
 				isRunning = true;
 				break;
@@ -518,7 +518,7 @@ namespace SystemUtility
 	string getExePath(const string& pid)
 	{
 		MyString<256> task_absolute_path;
-		if (readlink(("/proc/" + pid + "/exe").c_str(), task_absolute_path.toBuffer(), 256) < 0)
+		if (readlink(("/proc/" + pid + "/exe").c_str(), task_absolute_path.data(), 256) < 0)
 		{
 			return "";
 		}
@@ -527,7 +527,7 @@ namespace SystemUtility
 
 	void launchExeInScreen(const string& screenName, const string& fullPath)
 	{
-		string path = getFilePath(fullPath);
+		string path = getFilePath(fullPath, false);
 		string cmd = "./" + getFileName(fullPath);
 		system(("screen -S " + screenName + " -X stuff 'cd " + path + " && " + cmd + "\n'").c_str());
 	}

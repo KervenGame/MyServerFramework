@@ -21,7 +21,7 @@ void CharacterState::enter(StateParam* param)
 	{
 		mParamMemberList = new Vector<StateParamMemberValue>();
 	}
-	if (mParamMemberList->size() > 0)
+	if (!mParamMemberList->isEmpty())
 	{
 		ERROR_PROFILE("参数列表不为空");
 	}
@@ -37,7 +37,7 @@ void CharacterState::enter(StateParam* param)
 		{
 			member.mStringValue = sourceMember.asString();
 		}
-		mParamMemberList->push_back(member);
+		mParamMemberList->add(member);
 	}
 }
 
@@ -80,7 +80,7 @@ void CharacterState::removeSelf(const bool isBreak, const bool removeByDie)
 	{
 		return;
 	}
-	mCharacter->getComponentAtIndex<COMCharacterStateMachine>()->removeState(this, isBreak, removeByDie);
+	mCharacter->getComponentAtIndex<COMCharacterStateMachine>()->removeState(Ref<CharacterState>(this), isBreak, removeByDie);
 }
 
 void CharacterState::callWillRemoveCallback()

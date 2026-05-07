@@ -15,15 +15,15 @@ public:
 	bool isMainState(ushort state) const		{ return mMainStateList.contains(state); }
 	void addState(ushort state, bool mainState)
 	{
-		mStateList.insert(state);
+		mStateList.add(state);
 		if (mainState)
 		{
-			mMainStateList.insert(state);
+			mMainStateList.add(state);
 		}
 	}
 protected:
-	Set<ushort> mMainStateList;					// 状态组中的主状态类型
-	Set<ushort> mStateList;						// 状态组中的所有状态
+	Vector<ushort> mMainStateList;				// 状态组中的主状态类型
+	Vector<ushort> mStateList;					// 状态组中的所有状态
 	ushort mType = 0;							// 状态组类型
 	GROUP_MUTEX mMutex = GROUP_MUTEX::COEXIST;	// 同一状态组中的状态互斥选项
 };

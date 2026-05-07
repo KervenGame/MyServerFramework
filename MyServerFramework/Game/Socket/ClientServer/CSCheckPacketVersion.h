@@ -10,6 +10,7 @@ class CSCheckPacketVersion : public PacketTCP
 	BASE(CSCheckPacketVersion, PacketTCP);
 public:
 	string mPacketVersion;
+	static CSCheckPacketVersion mStaticObject;
 	static string mPacketName;
 public:
 	CSCheckPacketVersion()
@@ -17,19 +18,28 @@ public:
 		mType = PACKET_TYPE::CSCheckPacketVersion;
 		mShowInfo = true;
 	}
+	static CSCheckPacketVersion& get()
+	{
+		mStaticObject.resetProperty();
+		return mStaticObject;
+	}
 	static const string& getStaticPacketName() { return mPacketName; }
 	const string& getPacketName() override { return mPacketName; }
-	bool readFromBuffer(SerializerBitRead* reader) override
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override
 	{
 		bool success = true;
 		success = success && reader->readString(mPacketVersion);
 		return success;
 	}
-	bool writeToBuffer(SerializerBitWrite* serializer) const override
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override
 	{
 		bool success = true;
-		success = success && serializer->writeString(mPacketVersion);
+		success = success && writer->writeString(mPacketVersion);
 		return success;
+	}
+	bool generateHasSignInternal() const override
+	{
+		return false;
 	}
 	void resetProperty() override
 	{

@@ -80,7 +80,6 @@ Game/Utility;
 ../MyServerFramework_Frame/Frame/CommandSystem/CmdCharacterManager;
 ../MyServerFramework_Frame/Frame/CommandSystem/CmdGlobal;
 ../MyServerFramework_Frame/Frame/CommandSystem/CmdHttp;
-../MyServerFramework_Frame/Frame/CommandSystem/CmdMySQLManager;
 ../MyServerFramework_Frame/Frame/CommandSystem/CmdNetServer;
 ../MyServerFramework_Frame/Frame/Common;
 ../MyServerFramework_Frame/Frame/Component;

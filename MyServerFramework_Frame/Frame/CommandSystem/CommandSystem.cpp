@@ -59,12 +59,15 @@ void CommandSystem::update(const float elapsedTime)
 	// 执行之前需要先清空列表,为了避免在执行命令的过程中又向mDelayCommandList添加了命令而造成错误,所以需要单独使用一个列表存储
 	mExecuteList.clear();
 	// 开始处理命令处理列表
-	if (mDelayCommandList.size() > 0)
+	if (!mDelayCommandList.isEmpty())
 	{
-		THREAD_LOCK(mDelayCommandListLock);
-		for (int i = 0; i < mDelayCommandList.size(); ++i)
 		{
-			DelayCommand* delayCmd = mDelayCommandList[i];
+			THREAD_LOCK(mDelayCommandListLock);
+			mDelayCommandCacheList.setRange(mDelayCommandList);
+		}
+		mDelayCommandDestroyList.clear();
+		for (DelayCommand* delayCmd : mDelayCommandCacheList)
+		{
 			if (delayCmd == nullptr)
 			{
 				continue;
@@ -78,9 +81,14 @@ void CommandSystem::update(const float elapsedTime)
 			if (delayCmd->mDelayTime <= 0.0f)
 			{
 				// 命令的延迟执行时间到了,则执行命令
-				mExecuteList.push_back(delayCmd);
-				mDelayCommandList.eraseAt(i--);
+				mExecuteList.add(delayCmd);
+				mDelayCommandDestroyList.add(delayCmd);
 			}
+		}
+		if (!mDelayCommandDestroyList.isEmpty())
+		{
+			THREAD_LOCK(mDelayCommandListLock);
+			mDelayCommandList.remove(mDelayCommandDestroyList);
 		}
 	}
 	const llong time1 = getRealTimeMS();
@@ -141,7 +149,7 @@ void CommandSystem::update(const float elapsedTime)
 					if (delayCmd->mDelayTime <= 0.0f)
 					{
 						item.first->addCmd(delayCmd);
-						cmdList.eraseAt(i--);
+						cmdList.removeAt(i--);
 					}
 				}
 				// 被中断的命令
@@ -149,7 +157,7 @@ void CommandSystem::update(const float elapsedTime)
 				{
 					destroyCmd(delayCmd->mCommand);
 					destroyDelayCommand(delayCmd);
-					cmdList.eraseAt(i--);
+					cmdList.removeAt(i--);
 				}
 			}
 		}
@@ -194,13 +202,13 @@ bool CommandSystem::interruptCommand(const llong assignID)
 				cmd->debugInfo(infoStr);
 				LLONG_STR(assignIDStr, assignID);
 				MyString<512> totalInfo;
-				strcat_t(totalInfo, "CMD: interrupt:", assignIDStr.str(), ", ", infoStr.str(), ", receiver:", delayInfo->mReceiver->getPrintName().c_str());
+				totalInfo.add("CMD: interrupt:", assignIDStr.str(), ", ", infoStr.str(), ", receiver:", delayInfo->mReceiver->getPrintName().c_str());
 				LOG(totalInfo.str());
 
 				cmd->onInterrupted();
 				// 销毁回收命令
 				destroyCmd(cmd);
-				mDelayCommandList.eraseAt(i);
+				mDelayCommandList.removeAt(i);
 				destroyDelayCommand(delayInfo);
 				ret = true;
 				break;
@@ -293,12 +301,14 @@ void CommandSystem::pushCommandDelay(GameCommand* cmd, CommandReceiver* cmdRecei
 		LLONG_STR(assignIDStr, cmd->getAssignID());
 		FLOAT_STR(delayTimeStr, delayExecute);
 		MyString<2048> allInfo;
-		strcat_t(allInfo, "CMD : delay cmd:", assignIDStr.str(), ", ", delayTimeStr.str(), ", info:", info.str(), "receiver:", cmdReceiver->getPrintName().c_str());
+		allInfo.add("CMD : delay cmd:", assignIDStr.str(), ", ", delayTimeStr.str(), ", info:", info.str());
+		allInfo.add("receiver:", cmdReceiver->getPrintName().c_str());
 		LOG(allInfo.str());
 	}
+	DelayCommand* delayCmd = createDelayCommand(cmdReceiver, nullptr, cmd, delayExecute);
 	{
 		THREAD_LOCK(mDelayCommandListLock);
-		mDelayCommandList.push_back(createDelayCommand(cmdReceiver, nullptr, cmd, delayExecute));
+		mDelayCommandList.add(delayCmd);
 	}
 }
 
@@ -319,8 +329,9 @@ void CommandSystem::pushCommandThread(GameCommand* cmd, CommandReceiver* cmdRece
 	cmd->setCommandState(COMMAND_STATE::PUSHED);
 	cmd->onPush();
 	{
+		DelayCommand* delayCmd = createDelayCommand(cmdReceiver, thread, cmd, 0.0f);
 		THREAD_LOCK(mThreadCommandListLock);
-		mThreadCommandList.insertOrGet(thread).push_back(createDelayCommand(cmdReceiver, thread, cmd, 0.0f));
+		mThreadCommandList.addOrGet(thread).add(delayCmd);
 	}
 }
 
@@ -336,8 +347,9 @@ void CommandSystem::pushCommandThreadDelay(GameCommand* cmd, CommandReceiver* cm
 	cmd->setCommandState(COMMAND_STATE::PUSHED);
 	cmd->onPush();
 	{
+		DelayCommand* delayCmd = createDelayCommand(cmdReceiver, thread, cmd, delayExecute);
 		THREAD_LOCK(mThreadCommandListLock);
-		mThreadCommandList.insertOrGet(thread).push_back(createDelayCommand(cmdReceiver, thread, cmd, delayExecute));
+		mThreadCommandList.addOrGet(thread).add(delayCmd);
 	}
 }
 
@@ -362,7 +374,7 @@ void CommandSystem::notifyReceiverDestroied(CommandReceiver* receiver)
 			{
 				destroyCmd(delayInfo->mCommand);
 				destroyDelayCommand(delayInfo);
-				mDelayCommandList.eraseAt(i--);
+				mDelayCommandList.removeAt(i--);
 			}
 		}
 	}
@@ -402,7 +414,7 @@ void CommandSystem::executeCommand(GameCommand* cmd, CommandReceiver* cmdReceive
 		cmd->debugInfo(info);
 		LLONG_STR(assignIDStr, cmd->getAssignID());
 		MyString<2048> allInfo;
-		strcat_t(allInfo, "CMD: ", assignIDStr.str(), ", ", info.str(), ", receiver:", cmdReceiver->getPrintName().c_str());
+		allInfo.add("CMD: ", assignIDStr.str(), ", ", info.str(), ", receiver:", cmdReceiver->getPrintName().c_str());
 		LOG(allInfo.str());
 	}
 	cmd->runStartCallBack();
@@ -460,7 +472,7 @@ bool CommandSystem::checkCmd(GameCommand* cmd, CommandReceiver* cmdReceiver) con
 		cmd->debugInfo(info);
 		LLONG_STR(assignIDStr, cmd->getAssignID());
 		MyString<2048> allInfo;
-		strcat_t(allInfo, "cmd is a delay cmd! can not use pushCommand! assign id: ", assignIDStr.str(), ", info:", info.str());
+		allInfo.add("cmd is a delay cmd! can not use pushCommand! assign id: ", assignIDStr.str(), ", info:", info.str());
 		ERROR(allInfo.str());
 		return false;
 	}
@@ -480,7 +492,7 @@ bool CommandSystem::checkDelayCmd(GameCommand* cmd) const
 		cmd->debugInfo(info);
 		LLONG_STR(assignIDStr, cmd->getAssignID());
 		MyString<2048> allInfo;
-		strcat_t(allInfo, "cmd is not a delay command, Command: ", assignIDStr.str(), ", info:", info.str());
+		allInfo.add("cmd is not a delay command, Command: ", assignIDStr.str(), ", info:", info.str());
 		ERROR(allInfo.str());
 		return false;
 	}

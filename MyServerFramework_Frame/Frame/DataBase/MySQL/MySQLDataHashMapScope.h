@@ -33,7 +33,7 @@ public:
         {
             return;
         }
-        other.mList.clone(mList);
+        other.mList.cloneTo(mList);
         mCounter->increase();
     }
     // 移动构造函数
@@ -71,14 +71,14 @@ public:
     const_iterator cend() const     { return mList.cend(); }
     const HashMap<llong, MySQLData*>& get() const& { return mList; }
     const HashMap<llong, MySQLData*>& get() const&& = delete;
-    bool isValid() const { return mList.size() != 0; }
+    bool isValid() const            { return mList.size() != 0; }
     // 如果已经确认data在外部被销毁了,则可以从当前列表中移除
-    void erase(MySQLData* data) { mList.erase(data->mID); }
-    void erase(const Vector<MySQLData*>& dataList)
+    void remove(MySQLData* data)    { mList.remove(data->mID); }
+    void remove(const Vector<MySQLData*>& dataList)
     {
         for (MySQLData* data : dataList)
         {
-            mList.erase(data->mID);
+            mList.remove(data->mID);
         }
     }
     void release()

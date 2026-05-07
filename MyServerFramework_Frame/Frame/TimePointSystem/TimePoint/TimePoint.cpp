@@ -9,7 +9,6 @@ void TimePoint::resetProperty()
 {
 	base::resetProperty();
 	mCallback = nullptr;
-	mUserData = nullptr;
 	mTime.clear();
 	mArrivalCD = -1.0f;
 	mArrivalTime = false;
@@ -28,5 +27,5 @@ void TimePoint::arrivalTime()
 	}
 	mArrivalTime = true;
 	mArrivalCD = 2.0f;
-	mCallback(mUserData);
+	CALL(mCallback);
 }

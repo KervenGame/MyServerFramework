@@ -13,7 +13,7 @@ public:
 	ullong columnsToFlag(const Vector<int>& colNames) const;
 	MySQLData* getCacheData(const llong id) const
 	{
-		MySQLCacheData* cacheData = mCacheDataList.tryGet(id);
+		MySQLCacheData* cacheData = mCacheDataList.get(id);
 		return cacheData != nullptr ? cacheData->getData() : nullptr;
 	}
 	MySQLData* getDataByLLong2Or(int column0, llong value0, int column1, llong value1);

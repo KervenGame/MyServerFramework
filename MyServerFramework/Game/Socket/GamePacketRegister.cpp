@@ -1,4 +1,5 @@
-﻿#include "GameHeader.h"
+﻿// auto generate start
+#include "GameHeader.h"
 
 string GamePacketRegister::PACKET_VERSION = "EAD600B6CBC29EBC1AA09EE872F46C46";
 void GamePacketRegister::registeAll()
@@ -14,3 +15,4 @@ void GamePacketRegister::registeAll()
 	mPacketTCPFactoryManager->addFactory<SCGetItemTip>(PACKET_TYPE::SCGetItemTip);
 	mPacketTCPFactoryManager->addFactory<SCAttack>(PACKET_TYPE::SCAttack);
 };
+// auto generate end

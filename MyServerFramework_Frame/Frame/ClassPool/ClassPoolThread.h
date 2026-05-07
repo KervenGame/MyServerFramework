@@ -23,7 +23,7 @@ public:
 		{
 			ClassType* obj = new ClassType();
 			obj->resetProperty();
-			list.push_back(obj);
+			list.add(obj);
 		}
 		THREAD_LOCK(mLock);
 		mUnusedList.addRange(list);
@@ -40,14 +40,14 @@ public:
 		ClassType* obj = newClass();
 #ifdef WINDOWS
 		THREAD_LOCK(mRemainTimeLock);
-		mClassRemainTimeList.insert(obj, DEFAULT_LIFE_TIME);
+		mClassRemainTimeList.add(obj, DEFAULT_LIFE_TIME);
 #endif
 		return obj;
 	}
 	ClassType* newClass()
 	{
 		ClassType* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			// 不能把LOG也锁住,LOG中也会通过对象池创建对象,会造成死锁
 			THREAD_LOCK(mLock);
@@ -88,14 +88,14 @@ public:
 #ifdef WINDOWS
 		{
 			THREAD_LOCK(mRemainTimeLock);
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 		}
 #endif
 		// 重置所有属性,一定要在添加到列表之前就重置属性,一旦添加到列表,随时就可能再分配出去,从而导致线程冲突
 		{
 			THREAD_LOCK(mLock);
 			// 添加到未使用列表中
-			mUnusedList.push_back(obj);
+			mUnusedList.add(obj);
 		}
 		obj = nullptr;
 	}
@@ -126,9 +126,9 @@ public:
 				continue;
 			}
 #ifdef WINDOWS
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 #endif
-			mUnusedList.push_back(obj);
+			mUnusedList.add(obj);
 		}
 		objList.clear();
 	}
@@ -161,9 +161,9 @@ public:
 				continue;
 			}
 #ifdef WINDOWS
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 #endif
-			mUnusedList.push_back(obj);
+			mUnusedList.add(obj);
 		}
 		objMap.clear();
 	}
@@ -195,9 +195,9 @@ public:
 				continue;
 			}
 #ifdef WINDOWS
-			mClassRemainTimeList.erase(obj);
+			mClassRemainTimeList.remove(obj);
 #endif
-			mUnusedList.push_back(obj);
+			mUnusedList.add(obj);
 		}
 		objList.clear();
 	}

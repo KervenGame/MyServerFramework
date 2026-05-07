@@ -39,7 +39,7 @@ public:
 		}
 #endif
 		classList.clearAndReserve(dataCount);
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			if (auto* objSet = mUnusedList.getPtr(key))
 			{
@@ -51,7 +51,7 @@ public:
 					{
 						break;
 					}
-					classList.push_back(obj);
+					classList.add(obj);
 				}
 			}
 		}
@@ -73,9 +73,9 @@ public:
 					obj->resetProperty();
 					tempValidObj = obj;
 				}
-				classList.push_back(obj);
+				classList.add(obj);
 			}
-			mTotalCount.insertOrGet(key, make_pair(typeid(*tempValidObj).name(), 0)).second += createCount;
+			mTotalCount.addOrGet(key, make_pair(typeid(*tempValidObj).name(), 0)).second += createCount;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0 && tempValidObj != nullptr)
 			{
 				LOG(string(typeid(*tempValidObj).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -100,7 +100,7 @@ public:
 		}
 #endif
 		ClassType* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			// 首先从未使用的列表中获取,获取不到再重新创建一个
 			if (auto* objSet = mUnusedList.getPtr(key))
@@ -118,7 +118,7 @@ public:
 				return nullptr;
 			}
 			obj->resetProperty();
-			++mTotalCount.insertOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
+			++mTotalCount.addOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0)
 			{
 				LOG(string(typeid(*obj).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -135,11 +135,11 @@ public:
 		if (!isMainThread())
 		{
 			ERROR(string("只能在主线程调用,type:") + typeid(ClassType).name());
-			return;
+			return nullptr;
 		}
 #endif
 		T* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			// 首先从未使用的列表中获取,获取不到再重新创建一个
 			if (auto* objVector = mUnusedList.getPtr(key))
@@ -152,7 +152,7 @@ public:
 		{
 			obj = new T();
 			obj->resetProperty();
-			++mTotalCount.insertOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
+			++mTotalCount.addOrGet(key, make_pair(typeid(*obj).name(), 0)).second;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0)
 			{
 				LOG(string(typeid(*obj).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -174,7 +174,7 @@ public:
 		}
 #endif
 		classList.clearAndReserve(dataCount);
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			if (auto* objVector = mUnusedList.getPtr(key))
 			{
@@ -186,7 +186,7 @@ public:
 					{
 						break;
 					}
-					classList.push_back(obj);
+					classList.add(obj);
 				}
 			}
 		}
@@ -199,9 +199,9 @@ public:
 			{
 				T* obj = new T();
 				obj->resetProperty();
-				classList.push_back(obj);
+				classList.add(obj);
 			}
-			mTotalCount.insertOrGet(key, make_pair(typeid(*classList[0]).name(), 0)).second += needCreateCount;
+			mTotalCount.addOrGet(key, make_pair(typeid(*classList[0]).name(), 0)).second += needCreateCount;
 			if (mShowCountLog && (mTotalCount[key].second & (4096 - 1)) == 0)
 			{
 				LOG(string(typeid(*classList[0]).name()) + "的数量已经达到了" + IToS(mTotalCount[key].second) + "个");
@@ -237,7 +237,7 @@ public:
 		}
 
 		// 添加到未使用列表中
-		mUnusedList.insertOrGet(key).push_back(obj);
+		mUnusedList.addOrGet(key).add(obj);
 		obj = nullptr;
 	}
 	void dump() override
@@ -247,7 +247,7 @@ public:
 			const int itemCount = item.second.second;
 			if (itemCount > 1000)
 			{
-				const int unuseCount = mUnusedList.tryGet(item.first).size();
+				const int unuseCount = mUnusedList.get(item.first).size();
 				LOG("ClassKeyPool: " + item.second.first + "的数量:" + IToS(itemCount) + ",总大小:" + LLToS(itemCount * sizeof(ClassType) / 1024) + "KB" + ", 未使用数量:" + IToS(unuseCount));
 			}
 		}

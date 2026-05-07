@@ -15,6 +15,7 @@ public:
 	void setMySQL(MYSQL* mysql) { mMySQL = mysql; }
 	virtual void init() {}
 	virtual void lateInit() { checkTableStructure(); }
+	const char* getTableName() const { return mTableName; }
 
 	// 查询
 	MySQLDataListScope queryAll(MySQLDataListScope& scope)
@@ -130,10 +131,14 @@ public:
 	// 查询单条数据的一个字符串字段
 	string queryString(llong id, int col);
 
-	void addColName(const string& name) { mColumnNameList.push_back(name); mColumnIndexList.insert(name, mColumnNameList.size() - 1); }
+	void addColName(const string& name) 
+	{
+		mColumnNameList.add(name);
+		mColumnIndexList.add(name, mColumnNameList.size() - 1); 
+	}
 	int getColCount() const { return mColumnNameList.size(); }
 	const string& getColName(const int colIndex) const { return mColumnNameList[colIndex]; }
-	int getColIndex(const string& name) const { return mColumnIndexList.tryGet(name, -1); }
+	int getColIndex(const string& name) const { return mColumnIndexList.get(name, -1); }
 	ullong generateColumnFlag(int colIndex);
 	ullong generateColumnFlag(short* colIndex, int colCount);
 	void notifyDataBaseConnected() { mMaxGUID = queryMaxGUID(); }

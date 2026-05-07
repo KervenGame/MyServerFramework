@@ -14,7 +14,7 @@ public:
 	virtual void paramList(string& params) const = 0;
 	// 生成更新所需的字符串,flag表示要更新的字段下标,最多允许64个字段
 	virtual void generateUpdate(string& params, ullong flag) const = 0;
-	virtual void clone(MySQLData* target) const { target->mID = mID; }
+	virtual void cloneTo(MySQLData* target) const { target->mID = mID; }
 	// 克隆数据,flag表示要更新的字段下标,最多允许64个字段
 	virtual void cloneWithFlag(MySQLData* target, ullong flag) const;
 	// 基类不处理任何数据的更新,因为基类只有一个ID,而ID是不会被改变的

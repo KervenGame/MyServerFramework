@@ -7,7 +7,7 @@
 
 // pod类型的对象池
 // 线程安全
-template<typename T, typename TypeCheck = typename IsPodType<T>::mType>
+template<typename T, typename TypeCheck = typename IsPodIntegerType<T>::mType>
 class PodPoolThread : public ClassPoolBase
 {
 	BASE(PodPoolThread, ClassPoolBase);
@@ -17,7 +17,7 @@ public:
 		Vector<T*> list(count);
 		FOR(count)
 		{
-			list.push_back(new T());
+			list.add(new T());
 		}
 		THREAD_LOCK(mLock);
 		mUnusedList.addRange(list);
@@ -31,7 +31,7 @@ public:
 	T* newPod()
 	{
 		T* obj = nullptr;
-		if (mUnusedList.size() > 0)
+		if (!mUnusedList.isEmpty())
 		{
 			// 不能把LOG也锁住,LOG中也会通过对象池创建对象,会造成死锁
 			THREAD_LOCK(mLock);
@@ -61,7 +61,7 @@ public:
 		// 重置所有属性,一定要在添加到列表之前就重置属性,一旦添加到列表,随时就可能再分配出去,从而导致线程冲突
 		THREAD_LOCK(mLock);
 		// 添加到未使用列表中
-		mUnusedList.push_back(obj);
+		mUnusedList.add(obj);
 		obj = nullptr;
 	}
 	void clearPool()

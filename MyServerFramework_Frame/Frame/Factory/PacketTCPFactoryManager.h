@@ -14,7 +14,7 @@ public:
 	}
 	void addUDPPacket(const ushort type)
 	{
-		mUDPTypeList.insert(type);
+		mUDPTypeList.add(type);
 	}
 protected:
 	Set<ushort> mUDPTypeList;

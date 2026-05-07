@@ -5,7 +5,7 @@ ArrayPoolSingleChar* ArrayPool::mArrayPoolSingleChar = new ArrayPoolSingleChar()
 
 void ArrayPool::init()
 {
-	mServerFramework->registeHour(this, onHour);
+	mServerFramework->registeHour(this, [this] { onHour(); });
 }
 
 void ArrayPool::quit()
@@ -13,10 +13,10 @@ void ArrayPool::quit()
 	mServerFramework->unregisteHour(this);
 }
 
-void ArrayPool::onHour(void* userData)
+void ArrayPool::onHour()
 {
-	static_cast<This*>(userData)->mArrayPoolSingle->dump();
-	static_cast<This*>(userData)->mArrayPoolSingleChar->dump();
+	mArrayPoolSingle->dump();
+	mArrayPoolSingleChar->dump();
 }
 
 ArrayPool::~ArrayPool()

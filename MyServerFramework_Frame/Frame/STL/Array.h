@@ -16,44 +16,48 @@ public:
 	const T* cend() const { return mValue + Length; }
 	const T* data() const { return mValue; }
 	T* data() { return mValue; }
-	int eraseElement(const T& element, const int curCount)
+	// 移除所有指定值的元素,并返回移除后的元素数量,curCount是当前数组中有效元素的数量
+	int removeAll(const T& element, const int curCount)
 	{
 		int newCount = curCount;
-		FOR_INVERSE_I(curCount)
+		FOR_INVERSE(curCount)
 		{
 			if (mValue[i] == element)
 			{
-				eraseAt(curCount, i);
+				removeAt(curCount, i);
 				--newCount;
 			}
 		}
 		return newCount;
 	}
-	bool eraseLastElement(const T& element, const int curCount)
+	// 移除最后一个指定值的元素,并返回是否移除成功,curCount是当前数组中有效元素的数量
+	bool removeLast(const T& element, const int curCount)
 	{
-		FOR_INVERSE_I(curCount)
+		FOR_INVERSE(curCount)
 		{
 			if (mValue[i] == element)
 			{
-				eraseAt(curCount, i);
+				removeAt(curCount, i);
 				return true;
 			}
 		}
 		return false;
 	}
-	bool eraseFirstElement(const T& element, const int curCount)
+	// 移除第一个指定值的元素,并返回是否移除成功,curCount是当前数组中有效元素的数量
+	bool remove(const T& element, const int curCount)
 	{
 		FOR(curCount)
 		{
 			if (mValue[i] == element)
 			{
-				eraseAt(curCount, i);
+				removeAt(curCount, i);
 				return true;
 			}
 		}
 		return false;
 	}
-	void eraseAt(const int curCount, const int index)
+	// 移除指定下标的元素,并将该位置的元素替换为默认值,如果下标不合法则返回false,curCount是当前数组中有效元素的数量
+	void removeAt(const int curCount, const int index)
 	{
 		if (index < curCount - 1)
 		{
@@ -175,18 +179,18 @@ public:
 	// 因为那会将虚表也重置为0,引起崩溃
 	void zero()
 	{
-		static_assert(!std::is_polymorphic<T>::value, "Type T cannot have virtual functions");
+		static_assert(is_trivially_copyable_v<T>, "zero() only supports trivially copyable types");
 		memset(mValue, 0, sizeof(T) * Length);
 	}
 	// 将数组的每一个元素都设置为value
-	void fillArray(const T& value)
+	void setAll(const T& value)
 	{
 		FOR(Length)
 		{
 			mValue[i] = value;
 		}
 	}
-	void fillArray(const int start, const T& value)
+	void setAll(const int start, const T& value)
 	{
 		for (int i = start; i < Length; ++i)
 		{

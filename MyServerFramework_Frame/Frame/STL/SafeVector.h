@@ -53,7 +53,7 @@ public:
 		{
 			for (const T& item : mMainList)
 			{
-				mModifyList.emplace_back(item, false);
+				mModifyList.emplace(item, false);
 			}
 		}
 		else
@@ -67,21 +67,21 @@ public:
 	bool isEmpty() const					{ return mMainList.isEmpty(); }
 	T* data() const							{ return mMainList.data(); }
 	bool contains(const T& value) const		{ return mMainList.contains(value); }
-	void push_back(const T& value)
+	void add(const T& value)
 	{
-		mMainList.push_back(value);
+		mMainList.add(value);
 		// 只有当正在遍历中对列表进行修改时,才会记录修改操作
 		if (mForeaching)
 		{
-			mModifyList.emplace_back(value, true);
+			mModifyList.emplace(value, true);
 		}
 		else
 		{
-			mUpdateList.push_back(value);
+			mUpdateList.add(value);
 		}
 		mModified = true;
 	}
-	bool eraseAt(const int index)
+	bool removeAt(const int index)
 	{
 		if (index < 0 || index >= mMainList.size())
 		{
@@ -90,13 +90,13 @@ public:
 		// 只有当正在遍历中对列表进行修改时,才会记录修改操作
 		if (mForeaching)
 		{
-			mModifyList.emplace_back(mMainList[index], false);
+			mModifyList.emplace(mMainList[index], false);
 		}
 		else
 		{
-			mUpdateList.eraseElement(mMainList[index]);
+			mUpdateList.remove(mMainList[index]);
 		}
-		mMainList.eraseAt(index);
+		mMainList.removeAt(index);
 		mModified = true;
 		return true;
 	}
@@ -105,9 +105,9 @@ public:
 	// 另外一种是重置元素为默认值,比如设置为空指针,由于不会修改列表,所以可以立即执行,重置之后这一帧就不会再去遍历
 	// 不过在重置时,结束遍历时需要将列表中所有已经重置的元素进行清除,确保列表中不会有多余的元素
 	// 而且重置的效率实际上比较低,因为每一次的遍历结束后都要再次遍历一次,相当于遍历了两次,但是运行结果是最准确的
-	bool eraseElement(const T& value)
+	bool remove(const T& value)
 	{
-		if (!mMainList.eraseElement(value))
+		if (!mMainList.remove(value))
 		{
 			return false;
 		}
@@ -120,7 +120,7 @@ public:
 		// 不在遍历中,则可以直接移除
 		else
 		{
-			mUpdateList.eraseElement(value);
+			mUpdateList.remove(value);
 			mModified = true;
 		}
 		return true;
@@ -132,7 +132,7 @@ public:
 		{
 			for (const T& item : mMainList)
 			{
-				mModifyList.emplace_back(item, false);
+				mModifyList.emplace(item, false);
 			}
 		}
 		else
@@ -161,20 +161,13 @@ protected:
 				FOR(modifyCount)
 				{
 					auto& modifyValue = mModifyList[i];
-					if (modifyValue.mAdd)
-					{
-						mUpdateList.push_back(modifyValue.mValue);
-					}
-					else
-					{
-						mUpdateList.eraseElement(modifyValue.mValue);
-					}
+					mUpdateList.addOrRemove(modifyValue.mValue, modifyValue.mAdd);
 				}
 			}
 			// 更新操作较多,则直接复制列表
 			else
 			{
-				mMainList.clone(mUpdateList);
+				mMainList.cloneTo(mUpdateList);
 			}
 		}
 		mModifyList.clear();

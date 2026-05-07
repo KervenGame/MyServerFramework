@@ -3,8 +3,9 @@
 #include "Array.h"
 #include "ArrayList.h"
 #include "IsPODType.h"
+#include "FrameCallbackClean.h"
 
-template<typename T, typename TypeCheck = typename IsNotPodAndPointerType<T>::mType>
+template<typename T, typename TypeCheck = enable_if_t<IsNotPodAndPointerType<T>::mValue>>
 static void copyVector(const vector<T>& source, const int sourceCount, vector<T>& target, const int targetOldCount)
 {
 	target.reserve(target.size() + sourceCount);
@@ -14,7 +15,7 @@ static void copyVector(const vector<T>& source, const int sourceCount, vector<T>
 	}
 }
 
-template<typename T, typename TypeCheck = typename IsNotPodAndPointerType<T>::mType>
+template<typename T, typename TypeCheck = enable_if_t<IsNotPodAndPointerType<T>::mValue>>
 static void copyVector(const T* source, const int sourceCount, vector<T>& target, const int targetOldCount)
 {
 	target.reserve(targetOldCount + sourceCount);
@@ -24,7 +25,7 @@ static void copyVector(const T* source, const int sourceCount, vector<T>& target
 	}
 }
 
-template<typename T, typename TypeCheck = typename IsPodOrPointerType<T>::mType>
+template<typename T, typename TypeCheck = enable_if_t<IsPodOrPointerType<T>::mValue>>
 static void memcpyVector(const vector<T>& source, const int sourceCount, vector<T>& target, const int targetOldCount)
 {
 	const int newSize = targetOldCount + sourceCount;
@@ -32,7 +33,7 @@ static void memcpyVector(const vector<T>& source, const int sourceCount, vector<
 	MEMCPY((char*)target.data() + targetOldCount * sizeof(T), newSize * sizeof(T), source.data(), sizeof(T) * sourceCount);
 }
 
-template<typename T, typename TypeCheck = typename IsPodOrPointerType<T>::mType>
+template<typename T, typename TypeCheck = enable_if_t<IsPodOrPointerType<T>::mValue>>
 static void memcpyVector(const T* source, const int sourceCount, vector<T>& target, const int targetOldCount)
 {
 	const int newSize = targetOldCount + sourceCount;
@@ -61,12 +62,6 @@ public:
 		mVector(other.mVector)
 	{
 		mSize = other.size();
-#ifdef WINDOWS
-		if (mSize > 0)
-		{
-			LOG("Vector请尝试使用移动构造,减少拷贝构造");
-		}
-#endif
 	}
 	Vector(Vector<T>&& other) noexcept :
 		mVector(move(other.mVector))
@@ -90,9 +85,6 @@ public:
 	{
 		mVector = other.mVector;
 		mSize = other.mSize;
-#ifdef WINDOWS
-		LOG("Vector请尝试使用移动赋值,减少拷贝赋值");
-#endif
 		return *this;
 	}
 	bool operator==(const Vector<T>& other)
@@ -126,17 +118,35 @@ public:
 		return false;
 	}
 	virtual ~Vector()				{ mVector.clear(); }
-	T* data() const					{ return (T*)mVector.data(); }
+	T* data() const					
+	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
+		return (T*)mVector.data(); 
+	}
 	int size() const				{ return mSize; }
 	bool isEmpty() const			{ return mSize <= 0; }
+	// 用于支持范围for循环
 	iterator begin()				{ return mVector.begin(); }
 	iterator end()					{ return mVector.end(); }
 	const_iterator begin() const	{ return mVector.begin(); }
 	const_iterator end()  const		{ return mVector.end(); }
-	reverse_iterator rbegin() const { return mVector.rbegin(); }
-	reverse_iterator rend() const	{ return mVector.rend(); }
+	reverse_iterator rbegin()		{ return mVector.rbegin(); }
+	reverse_iterator rend()			{ return mVector.rend(); }
 	const_iterator cbegin() const	{ return mVector.cbegin(); }
 	const_iterator cend() const		{ return mVector.cend(); }
+	// 添加或者删除一个指定元素
+	bool addOrRemove(const T& value, bool isAdd)
+	{
+		if (isAdd)
+		{
+			add(value);
+		}
+		else
+		{
+			remove(value);
+		}
+		return isAdd;
+	}
 	// 返回最后一个元素,并且将该元素移除,如果当前列表为空,则返回defaultValue
 	T popBack(const T& defaultValue)
 	{
@@ -195,6 +205,7 @@ public:
 	// 通过直接内存拷贝的方式进行添加,仅限基础数据类型
 	void addRange(const T* values, const int count)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		if (count == 0)
 		{
 			return;
@@ -205,6 +216,7 @@ public:
 	// 通过直接内存拷贝的方式进行添加,仅限基础数据类型
 	void setRange(const T* values, const int count)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		clear();
 		if (count == 0)
 		{
@@ -217,6 +229,7 @@ public:
 	template<int Length>
 	void addRange(const ArrayList<Length, T>& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		const int count = values.size();
 		if (count == 0)
 		{
@@ -229,6 +242,7 @@ public:
 	template<int Length>
 	void setRange(const ArrayList<Length, T>& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		clear();
 		const int count = values.size();
 		if (count == 0)
@@ -242,6 +256,7 @@ public:
 	template<int Length>
 	void addRange(const Array<Length, T>& values, const int count)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		if (count == 0)
 		{
 			return;
@@ -253,6 +268,7 @@ public:
 	template<typename T0>
 	void addRangePtr(const Vector<T0*>& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		const int sourceCount = values.size();
 		if (sourceCount == 0)
 		{
@@ -268,6 +284,7 @@ public:
 	// 通过直接内存拷贝的方式进行添加,仅限基础数据类型
 	void addRange(const Vector<T>& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		const int sourceCount = values.size();
 		if (sourceCount == 0)
 		{
@@ -279,6 +296,7 @@ public:
 	// 通过直接内存拷贝的方式进行添加,仅限基础数据类型
 	void setRange(const Vector<T>& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		clear();
 		const int sourceCount = values.size();
 		if (sourceCount == 0)
@@ -291,6 +309,7 @@ public:
 	// 通过直接内存拷贝的方式进行添加,仅限基础数据类型,虽然这里仍然使用的是拷贝
 	void addRange(Vector<T>&& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		const int sourceCount = values.size();
 		if (sourceCount == 0)
 		{
@@ -300,9 +319,28 @@ public:
 		mSize += sourceCount;
 		values.clear();
 	}
+	// 如果condition为true则添加元素,如果condition为false则不添加元素,并且返回condition
+	bool addIf(const T& value, bool condition)
+	{
+		if (condition)
+		{
+			add(value);
+		}
+		return condition;
+	}
+	// 如果condition为true则添加元素,如果condition为false则不添加元素,并且返回condition
+	bool addIf(T&& value, bool condition)
+	{
+		if (condition)
+		{
+			add(value);
+		}
+		return condition;
+	}
 	// 通过直接内存拷贝的方式进行添加,仅限基础数据类型,虽然这里仍然使用的是拷贝
 	void setRange(Vector<T>&& values)
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		clear();
 		const int sourceCount = values.size();
 		if (sourceCount == 0)
@@ -313,6 +351,7 @@ public:
 		mSize += sourceCount;
 		values.clear();
 	}
+	// 设置元素列表
 	void setData(const T* values, const int count)
 	{
 		mVector.clear();
@@ -323,15 +362,19 @@ public:
 			mVector.emplace_back(values[i]);
 		}
 	}
+	// 将所有元素设置为默认值,仅限基础数据类型
 	void setAllDefaultMemorySet()
 	{
+		static_assert(!is_same<typename decay<T>::type, bool>::value, "not support Vector<bool>");
 		memset(mVector.data(), mDefaultValue, mVector.size() * sizeof(T));
 	}
-	void push_back()
+	// 添加元素
+	void add()
 	{
 		++mSize;
 		mVector.emplace_back(mDefaultValue);
 	}
+	// 如果元素不存在则添加,如果元素已经存在则不添加,并且返回false,如果添加成功则返回true
 	bool addUnique(const T& elem)
 	{
 		if (!contains(elem))
@@ -342,8 +385,9 @@ public:
 		}
 		return false;
 	}
+	// 添加元素
 	template <class... ParamList>
-	void emplace_back(ParamList&&... _Val)
+	void emplace(ParamList&&... _Val)
 	{
 		++mSize;
 		mVector.emplace_back(forward<ParamList>(_Val)...);
@@ -358,24 +402,40 @@ public:
 		++mSize;
 		mVector.emplace_back(elem);
 	}
-	void push_back(const T& elem)
+	// 如果add为true则添加元素,如果add为false则移除元素,如果添加或者移除成功则返回true,如果添加失败或者移除失败则返回false
+	void addUniqueOrRemove(const T& elem, bool add)
+	{
+		if (add)
+		{
+			addUnique(elem);
+		}
+		else
+		{
+			remove(elem);
+		}
+	}
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(const T& elem)
 	{
 		++mSize;
 		mVector.emplace_back(elem);
 	}
-	void push_back(T&& elem)
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(T&& elem)
 	{
 		++mSize;
 		mVector.emplace_back(move(elem));
 	}
-	void push_back(const T& elem0, const T& elem1)
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(const T& elem0, const T& elem1)
 	{
 		mSize += 2;
 		mVector.reserve(mSize);
 		mVector.emplace_back(elem0);
 		mVector.emplace_back(elem1);
 	}
-	void push_back(const T& elem0, const T& elem1, const T& elem2)
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(const T& elem0, const T& elem1, const T& elem2)
 	{
 		mSize += 3;
 		mVector.reserve(mSize);
@@ -383,7 +443,8 @@ public:
 		mVector.emplace_back(elem1);
 		mVector.emplace_back(elem2);
 	}
-	void push_back(const T& elem0, const T& elem1, const T& elem2, const T& elem3)
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(const T& elem0, const T& elem1, const T& elem2, const T& elem3)
 	{
 		mSize += 4;
 		mVector.reserve(mSize);
@@ -392,7 +453,8 @@ public:
 		mVector.emplace_back(elem2);
 		mVector.emplace_back(elem3);
 	}
-	void push_back(const T& elem0, const T& elem1, const T& elem2, const T& elem3, const T& elem4)
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(const T& elem0, const T& elem1, const T& elem2, const T& elem3, const T& elem4)
 	{
 		mSize += 5;
 		mVector.reserve(mSize);
@@ -402,7 +464,8 @@ public:
 		mVector.emplace_back(elem3);
 		mVector.emplace_back(elem4);
 	}
-	void push_back(const T& elem0, const T& elem1, const T& elem2, const T& elem3, const T& elem4, const T& elem5)
+	// 虽然这里仍然使用的是拷贝,但是可以减少调用add的次数,因此效率会更高一些
+	void add(const T& elem0, const T& elem1, const T& elem2, const T& elem3, const T& elem4, const T& elem5)
 	{
 		mSize += 6;
 		mVector.reserve(mSize);
@@ -413,19 +476,22 @@ public:
 		mVector.emplace_back(elem4);
 		mVector.emplace_back(elem5);
 	}
-	iterator erase(const iterator& iter)
+	// 移除指定迭代器位置的元素,并返回下一个元素的迭代器,如果下标不合法则返回end迭代器
+	iterator remove(const iterator& iter)
 	{
 		iterator retIter = mVector.erase(iter);
 		mSize = (int)mVector.size();
 		return retIter;
 	}
-	iterator erase(const iterator& iter, const iterator& end)
+	// 移除指定范围内的元素,并返回第一个被移除元素的下一个元素的迭代器,如果下标不合法则返回end迭代器
+	iterator remove(const iterator& iter, const iterator& end)
 	{
 		iterator retIter = mVector.erase(iter, end);
 		mSize = (int)mVector.size();
 		return retIter;
 	}
-	iterator eraseAt(const int index)
+	// 移除指定下标的元素,并返回下一个元素的迭代器,如果下标不合法则返回end迭代器
+	iterator removeAt(const int index)
 	{
 		if (index < 0 || index >= mSize)
 		{
@@ -435,7 +501,8 @@ public:
 		mSize = (int)mVector.size();
 		return iter;
 	}
-	iterator eraseAt(const int index, const int count)
+	// 移除指定下标的元素,如果count大于1则移除多个元素,并返回第一个被移除元素的下标,如果下标不合法则返回-1
+	iterator removeRange(const int index, const int count)
 	{
 		if (index < 0 || index >= mSize)
 		{
@@ -445,7 +512,8 @@ public:
 		mSize = (int)mVector.size();
 		return iter;
 	}
-	const T& eraseAtAndGet(const int index)
+	// 移除指定下标的元素,并返回该元素的值,如果下标不合法则返回默认值
+	const T& removeAtAndGet(const int index)
 	{
 		if (index < 0 || index >= mSize)
 		{
@@ -456,7 +524,8 @@ public:
 		mSize = (int)mVector.size();
 		return value;
 	}
-	void eraseLast()
+	// 移除最后一个元素
+	void removeLast()
 	{
 		if (mSize == 0)
 		{
@@ -465,7 +534,8 @@ public:
 		--mSize;
 		mVector.pop_back();
 	}
-	bool eraseElement(const T& value)
+	// 移除第一个指定值的元素,并返回是否移除成功
+	bool remove(const T& value)
 	{
 		FOR(mSize)
 		{
@@ -478,14 +548,22 @@ public:
 		}
 		return false;
 	}
-	int eraseAllElement(const T& value)
+	void remove(const Vector<T>& valueList)
+	{
+		for (const T& value : valueList)
+		{
+			remove(value);
+		}
+	}
+	// 移除所有指定值的元素,并返回实际移除的数量
+	int removeAll(const T& value)
 	{
 		mVector.erase(std::remove(mVector.begin(), mVector.end(), value), mVector.end());
 		const int eraseCount = mSize - (int)mVector.size();
 		mSize = (int)mVector.size();
 		return eraseCount;
 	}
-	// 将指定值的元素替换为默认值
+	// 将第一个指定值的元素替换为默认值
 	bool resetElement(const T& value)
 	{
 		FOR(mSize)
@@ -498,6 +576,7 @@ public:
 		}
 		return false;
 	}
+	// 移除指定下标的元素,并将该位置的元素替换为默认值,如果下标不合法则返回false
 	bool resetElementAt(const int index)
 	{
 		if (index < 0 || index >= mSize)
@@ -507,9 +586,10 @@ public:
 		mVector[index] = mDefaultValue;
 		return true;
 	}
-	void clearDefaultElement(int count)
+	// 移除所有指定值的元素,如果count大于0则只移除count个,如果count小于等于0则移除所有,并返回实际移除的数量
+	void clearDefaultElement(int count = 0)
 	{
-		for (int i = mSize - 1; i >= 0; --i)
+		FOR_INVERSE(mSize)
 		{
 			if (mVector[i] == mDefaultValue)
 			{
@@ -522,6 +602,7 @@ public:
 			}
 		}
 	}
+	// 清空列表,如果disposeMemory为true则同时释放内存,如果disposeMemory为false则保留内存,如果当前列表已经为空则不作任何事情
 	void clear(bool disposeMemory = false)
 	{
 		if (mSize > 0)
@@ -534,27 +615,32 @@ public:
 			dispose();
 		}
 	}
+	// 清空列表并且预设容量,如果当前的最大容量已经大于等于要设置的容量则不作任何事情
 	void clearAndReserve(const int capacity)
 	{
 		clear();
 		reserve(capacity);
 	}
+	// 插入一个元素
 	void insert(const int index, const T& elem)
 	{
 		mVector.emplace(mVector.begin() + index, elem);
 		++mSize;
 	}
+	// 插入一个元素
 	void insert(const int index, T&& elem)
 	{
 		mVector.emplace(mVector.begin() + index, move(elem));
 		++mSize;
 	}
+	// 在迭代器位置插入元素,并返回该元素的迭代器,如果下标不合法则返回end迭代器
 	void insert(const iterator& iter, const T& elem)
 	{
 		mVector.emplace(iter, elem);
 		++mSize;
 	}
-	const T& operator[](const int i) const
+	// 根据下标获取元素,如果下标不合法则返回默认值
+	decltype(auto) operator[](const int i) const
 	{
 		if (i < 0 || i >= mSize)
 		{
@@ -563,15 +649,16 @@ public:
 		return mVector[i];
 	}
 	// 根据下标获取元素,如果下标不合法则返回默认值
-	const T& get(const int index) const
+	decltype(auto) get(const int index) const
 	{
 		if (index < 0 || index >= mSize)
 		{
-			return mDefaultValue;
+			return mVector.empty() ? mDefaultValue : mDefaultValue;
 		}
 		return mVector[index];
 	}
-	const T& get(const int index, const T& defaultValue) const
+	// 根据下标获取元素,如果下标不合法则返回defaultValue,返回值类型写成decltype(auto)可以兼容Vector<bool>,否则会编译报错
+	decltype(auto) get(const int index, const T& defaultValue) const
 	{
 		if (index < 0 || index >= mSize)
 		{
@@ -579,7 +666,7 @@ public:
 		}
 		return mVector[index];
 	}
-	T& operator[](const int i)
+	decltype(auto) operator[](const int i)
 	{
 		if (i < 0 || i >= mSize)
 		{
@@ -602,11 +689,38 @@ public:
 		}
 		mVector.reserve(capacity);
 	}
+	// 判断列表中是否包含指定元素
 	bool contains(const T& value) const
 	{
 		return mSize > 0 && std::find(mVector.begin(), mVector.end(), value) != mVector.end();
 	}
-	int findFirstIndex(const T& value, const int startIndex = 0) const
+	// 是否包含满足条件的元素,比普通遍历查找要慢,仅在非高频路径下使用
+	template<typename Predicate>
+	bool containsT(Predicate&& pred) const
+	{
+		FOR(mSize)
+		{
+			if (invoke(pred, mVector[i]))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	// 判断列表中的元素是否全部都等于指定元素
+	bool isAll(const T& element) const
+	{
+		FOR(mSize)
+		{
+			if (mVector[i] != element)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	// 查找指定元素的下标,如果没有找到则返回-1
+	int findIndex(const T& value, const int startIndex = 0) const
 	{
 		for (int i = startIndex; i < mSize; ++i)
 		{
@@ -617,10 +731,11 @@ public:
 		}
 		return -1;
 	}
-	int findElementCount(const T& value) const
+	// 查找指定元素的数量
+	int findCount(const T& value) const
 	{
 		int elementCount = 0;
-		for (int i = 0; i < mSize; ++i)
+		FOR(mSize)
 		{
 			if (mVector[i] == value)
 			{
@@ -629,14 +744,38 @@ public:
 		}
 		return elementCount;
 	}
+	// 交换两个元素的位置
 	void swapIndex(int index0, int index1)
 	{
 		T temp = move(mVector[index0]);
 		mVector[index0] = move(mVector[index1]);
 		mVector[index1] = move(temp);
 	}
+	// 随机移除一个元素并返回该元素,如果列表为空则返回默认值
+	const T& randomRemove()
+	{
+		const int count = size();
+		if (count == 0)
+		{
+			return mDefaultValue;
+		}
+		const int index = (((rand() & 0x7FFF) << 15) + (rand() & 0x7FFF)) % count;
+		const T& value = get(index);
+		removeAt(index);
+		return value;
+	}
+	// 随机获取一个元素,如果列表为空则返回默认值
+	const T& random() const
+	{
+		const int count = size();
+		if (count == 0)
+		{
+			return mDefaultValue;
+		}
+		return get((((rand() & 0x7FFF) << 15) + (rand() & 0x7FFF)) % count);
+	}
 	// 添加克隆函数的目的是为了显式调用拷贝,而非自动调用拷贝,可以避免可以使用移动构造而没有使用的情况
-	void clone(Vector<T>& target) const
+	void cloneTo(Vector<T>& target) const
 	{
 		target.mVector = mVector;
 		target.mSize = mSize;
@@ -645,11 +784,13 @@ public:
 	{
 		mVector.shrink_to_fit();
 	}
+	// 清空列表并且释放内存
 	void dispose()
 	{
 		vector<T> temp;
 		mVector.swap(temp);
 	}
+	// 对元素进行排序, 需要保证元素类型重载了 < 运算符
 	void sort()
 	{
 		std::sort(mVector.begin(), mVector.end());

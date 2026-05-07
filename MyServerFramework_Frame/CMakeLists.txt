@@ -64,7 +64,6 @@ Frame/CommandSystem;
 Frame/CommandSystem/CmdCharacterManager;
 Frame/CommandSystem/CmdGlobal;
 Frame/CommandSystem/CmdHttp;
-Frame/CommandSystem/CmdMySQLManager;
 Frame/CommandSystem/CmdNetServer;
 Frame/Common;
 Frame/Component;

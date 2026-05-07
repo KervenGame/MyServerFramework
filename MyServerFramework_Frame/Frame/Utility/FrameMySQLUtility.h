@@ -6,394 +6,485 @@
 #include "CmdUtility.h"
 #include "MySQLTableT.h"
 #include "CommandThreadPool.h"
-#include "CmdMySQLQueryCountByIntT.h"
-#include "CmdMySQLQueryCountByLLongT.h"
-#include "CmdMySQLDeleteByLLong2AndT.h"
-#include "CmdMySQLUpdateLLongT.h"
-#include "CmdMySQLUpdateLLongIntT.h"
-#include "CmdMySQLUpdateBoolT.h"
-#include "CmdMySQLUpdateIntT.h"
-#include "CmdMySQLUpdateIntFloatT.h"
-#include "CmdMySQLUpdateInt2T.h"
-#include "CmdMySQLUpdateFloatT.h"
-#include "CmdMySQLUpdateStringT.h"
-#include "CmdMySQLUpdateString2T.h"
-#include "CmdMySQLUpdateLLongListT.h"
-#include "CmdMySQLUpdateAllIntT.h"
-#include "CmdMySQLDeleteByLLongIntAndT.h"
-#include "CmdMySQLDeleteByLLongT.h"
-#include "CmdMySQLDeleteByStringT.h"
-#include "CmdMySQLDeleteByID.h"
-#include "CmdMySQLDeleteAll.h"
-#include "CmdMySQLInsertDataT.h"
-#include "CmdMySQLInsertOrUpdateDataT.h"
-#include "CmdMySQLUpdateDataT.h"
-#include "CmdMySQLQueryByStringT.h"
-#include "CmdMySQLQueryByIDT.h"
-#include "CmdMySQLQueryListByStringT.h"
-#include "CmdMySQLQueryExistByStringT.h"
-#include "CmdMySQLQueryListByIDT.h"
-#include "CmdMySQLQueryListByIntT.h"
-#include "CmdMySQLQueryListByLLongT.h"
-#include "CmdMySQLQueryListByStringListT.h"
-#include "CmdMySQLQueryCountByLLong2OrT.h"
-#include "CmdMySQLQueryAllT.h"
+#include "FrameUtility.h"
 
 namespace FrameMySQLUtility
 {
-	void MICRO_LEGEND_FRAME_API pushCommandToMySQL(GameCommand* cmd);
+	void MICRO_LEGEND_FRAME_API pushCommandToMySQL(VoidCallback call);
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateLLong(MySQLTableT<T>* table, llong id, typename T::Column colName, llong value)
+	void updateLLong(MySQLTableT<T>* table, llong id, typename T::Column colName, llong value, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateLLongT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateLLongInt(MySQLTableT<T>* table, llong id, typename T::Column colName0, llong value0, typename T::Column colName1, int value1)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateLLongIntT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn0 = colName0;
-		cmd->mColumn1 = colName1;
-		cmd->mValue0 = value0;
-		cmd->mValue1 = value1;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateBool(MySQLTableT<T>* table, llong id, typename T::Column colName, bool value)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateBoolT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateInt(MySQLTableT<T>* table, llong id, typename T::Column colName, int value)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateIntT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateIntFloat(MySQLTableT<T>* table, llong id, typename T::Column colName0, int value0, typename T::Column colName1, float value1)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateIntFloatT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn0 = colName0;
-		cmd->mValue0 = value0;
-		cmd->mColumn1 = colName1;
-		cmd->mValue1 = value1;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateInt2(MySQLTableT<T>* table, llong id, typename T::Column colName0, int value0, typename T::Column colName1, int value1)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateInt2T<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn0 = colName0;
-		cmd->mValue0 = value0;
-		cmd->mColumn1 = colName1;
-		cmd->mValue1 = value1;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateFloat(MySQLTableT<T>* table, llong id, typename T::Column colName, float value)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateFloatT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		pushCommandToMySQL(cmd);
-	}
-	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateString(MySQLTableT<T>* table, llong id, typename T::Column colName, const string& value, int length = -1)
-	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateStringT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		if (length > 0 && length < (int)cmd->mValue.length())
+		pushCommandToMySQL([=]()
 		{
-			cmd->mValue.erase(length);
+			bool result = table->updateLLongT(id, colName, value);
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateLLongInt(MySQLTableT<T>* table, llong id, typename T::Column colName0, llong value0, typename T::Column colName1, int value1, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]() 
+		{
+			bool result = table->updateLLongIntT(id, colName0, value0, colName1, value1);
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateBool(MySQLTableT<T>* table, llong id, typename T::Column colName, bool value, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]() 
+		{
+			bool result = table->updateBoolT(id, colName, value);
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateInt(MySQLTableT<T>* table, llong id, typename T::Column colName, int value, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]() 
+		{
+			bool result = table->updateIntT(id, colName, value); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateIntFloat(MySQLTableT<T>* table, llong id, typename T::Column colName0, int value0, typename T::Column colName1, float value1, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]()
+		{
+			bool result = table->updateIntFloatT(id, colName0, value0, colName1, value1);
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateInt2(MySQLTableT<T>* table, llong id, typename T::Column column0, int value0, typename T::Column column1, int value1, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]() 
+		{
+			bool result = true;
+			if (column0 != T::Column::NONE)
+			{
+				result &= table->updateIntT(id, column0, value0);
+			}
+			if (column1 != T::Column::NONE)
+			{
+				result &= table->updateIntT(id, column1, value1);
+			}
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateFloat(MySQLTableT<T>* table, llong id, typename T::Column colName, float value, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]() 
+		{
+			bool result = table->updateFloatT(id, colName, value);
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateString(MySQLTableT<T>* table, llong id, typename T::Column colName, const string& value, const BoolCallback& callback = nullptr)
+	{
+		pushCommandToMySQL([=]()
+		{ 
+			bool result = table->updateStringT(id, colName, value); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
+	}
+	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
+	void updateString(MySQLTableT<T>* table, llong id, typename T::Column colName, string value, int length, const BoolCallback& callback = nullptr)
+	{
+		if (length > 0 && length < (int)value.length())
+		{
+			value.erase(length);
 		}
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			bool result = table->updateStringT(id, colName, value); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateString2(MySQLTableT<T>* table, llong id, typename T::Column colName0, const string& value0, typename T::Column colName1, const string& value1)
+	void updateString2(MySQLTableT<T>* table, llong id, typename T::Column column0, const string& value0, typename T::Column column1, const string& value1, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateString2T<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn0 = colName0;
-		cmd->mValue0 = value0;
-		cmd->mColumn1 = colName1;
-		cmd->mValue1 = value1;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			bool result = table->updateString2T(id, column0, value0, column1, value1); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateString(MySQLTableT<T>* table, llong id, typename T::Column colName, string&& value)
+	void updateString(MySQLTableT<T>* table, llong id, typename T::Column colName, string&& value, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateStringT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		cmd->mValue = move(value);
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=, value = move(value)]() 
+		{
+			bool result = table->updateStringT(id, colName, value); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateLLongList(MySQLTableT<T>* table, llong id, typename T::Column colName, const Vector<llong>& value)
+	void updateLLongList(MySQLTableT<T>* table, llong id, typename T::Column column, const Vector<llong>& value, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateLLongListT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mColumn = colName;
-		value.clone(cmd->mValue);
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]()
+		{
+			bool result = table->updateStringT(id, column, LLsToS(value)); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateAllInt(MySQLTableT<T>* table, typename T::Column colName, int value)
+	void updateAllInt(MySQLTableT<T>* table, typename T::Column column, int value, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateAllIntT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]()
+		{
+			bool result = table->updateAllIntT(column, value); 
+			if (callback != nullptr)
+			{
+				CALL(callback, result);
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryAll(MySQLTableT<T>* table, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryAllT<T>>();
-		cmd->mTable = table;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto data = table->queryAllT();
+			// 延迟到主线程执行回调通知
+			delayCall([callback, data = move(data)]() { CALL(callback, data.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryCountByInt(MySQLTableT<T>* table, typename T::Column colName, int value, const LLongCallback& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryCountByIntT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			MyString<64> condition;
+			sqlConditionLLong(condition, table->getColNameT(colName), value);
+			const llong dataCount = table->queryCount(condition.str());
+
+			// 延迟到主线程执行回调通知
+			delayCall([=]() { CALL(callback, dataCount); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryCountByLLong(MySQLTableT<T>* table, typename T::Column colName, llong value, const LLongCallback& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryCountByLLongT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			MyString<64> condition;
+			sqlConditionLLong(condition, table->getColNameT(colName), value);
+			const llong dataCount = table->queryCount(condition.str());
+
+			// 延迟到主线程执行回调通知
+			delayCall([=]() { CALL(callback, dataCount); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteByLLong2And(MySQLTableT<T>* table, typename T::Column colName0, llong value0, typename T::Column colName1, llong value1, bool onlyOnce)
+	void deleteByLLong2And(MySQLTableT<T>* table, typename T::Column colName0, llong value0, typename T::Column colName1, llong value1, bool onlyOnce, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByLLong2AndT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn0 = colName0;
-		cmd->mColumn1 = colName1;
-		cmd->mValue0 = value0;
-		cmd->mValue1 = value1;
-		cmd->mOnlyOnce = onlyOnce;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]()
+		{
+			bool result = table->deleteByLLong2AndT(colName0, value0, colName1, value1, onlyOnce);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, result); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteByLLongIntAnd(MySQLTableT<T>* table, typename T::Column colName0, llong value0, typename T::Column colName1, int value1, bool onlyOnce)
+	void deleteByLLongIntAnd(MySQLTableT<T>* table, typename T::Column colName0, llong value0, typename T::Column colName1, int value1, bool onlyOnce, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByLLongIntAndT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn0 = colName0;
-		cmd->mColumn1 = colName1;
-		cmd->mValue0 = value0;
-		cmd->mValue1 = value1;
-		cmd->mOnlyOnce = onlyOnce;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]()
+		{
+			bool result = table->deleteByLLongIntAndT(colName0, value0, colName1, value1, onlyOnce);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, result); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteByLLong(MySQLTableT<T>* table, typename T::Column colName, llong value, bool onlyOnce)
+	void deleteByLLong(MySQLTableT<T>* table, typename T::Column colName, llong value, bool onlyOnce, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByLLongT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		cmd->mOnlyOnce = onlyOnce;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			// 第0列固定为ID
+			bool result = true;
+			if (colName == T::Column::ID)
+			{
+				table->deleteByID(value);
+			}
+			else
+			{
+				result = table->deleteByLLongT(colName, value, onlyOnce);
+			}
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, result); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteByString(MySQLTableT<T>* table, typename T::Column colName, const string& value, bool onlyOnce)
+	void deleteByString(MySQLTableT<T>* table, typename T::Column colName, const string& value, bool onlyOnce, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByStringT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = colName;
-		cmd->mValue = value;
-		cmd->mOnlyOnce = onlyOnce;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]()
+		{
+			bool result = table->deleteByStringT(colName, value, onlyOnce);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, result); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteByID(MySQLTableT<T>* table, llong id)
+	void deleteByID(MySQLTableT<T>* table, llong id, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByID>();
-		cmd->mTableList.push_back(table);
-		cmd->mIDList.push_back(id);
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			bool success = table->deleteByID(id);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, success); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteByIDList(MySQLTableT<T>* table, Vector<llong>&& idList)
+	void deleteByIDList(MySQLTableT<T>* table, Vector<llong>&& idList, const BoolCallback& callback = nullptr)
 	{
 		if (idList.isEmpty())
 		{
 			return;
 		}
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByID>();
-		cmd->mTableList.push_back(table);
-		idList.clone(cmd->mIDList);
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([table, idList = move(idList), callback]() mutable
+		{
+			// id去重
+			removeDumplicate(idList);
+			table->deleteByIDList(idList);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, true); });
+			}
+		});
 	}
 	template<typename T0, typename T1, typename TypeCheck0 = typename IsSubClassOf<MySQLData, T0>::mType, typename TypeCheck1 = typename IsSubClassOf<MySQLData, T1>::mType>
-	void deleteCombineByID(MySQLTableT<T0>* table0, MySQLTableT<T1>* table1, llong id)
+	void deleteCombineByID(MySQLTableT<T0>* table0, MySQLTableT<T1>* table1, llong id, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteByID>();
-		cmd->mTableList.push_back(table0, table1);
-		cmd->mIDList.push_back(id);
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			table0->deleteByID(id);
+			table1->deleteByID(id);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, true); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void deleteAll(MySQLTableT<T>* table)
+	void deleteAll(MySQLTableT<T>* table, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLDeleteAll>();
-		cmd->mTable = table;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			table->deleteAll(); 
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, true); });
+			}
+		});
 	}
 	// data需要是从对象池中创建的
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void insertData(MySQLTableT<T>* table, T* data)
+	void insertData(MySQLTableT<T>* table, T* data, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLInsertDataT<T>>();
-		cmd->mTable = table;
-		cmd->mData = data;
-		cmd->mCallback = nullptr;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() mutable
+		{
+			if (data->mID == 0)
+			{
+				data->mID = table->generateMaxGUID();
+			}
+			bool success = table->insertDataT(data, false);
+			mMySQLDataPool->destroyClass(data);
+			if (callback != nullptr)
+			{
+				delayCall([=]() {CALL(callback, success); });
+			}
+		});
 	}
 	// data需要是从对象池中创建的
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void insertOrUpdate(MySQLTableT<T>* table, T* data)
+	void insertOrUpdate(MySQLTableT<T>* table, T* data, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLInsertOrUpdateDataT<T>>();
-		cmd->mTable = table;
-		cmd->mData = data;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() mutable
+		{
+			if (data == nullptr || table == nullptr)
+			{
+				ERROR("Data或者Table为空!");
+				if (callback != nullptr)
+				{
+					delayCall([=]() { CALL(callback, false); });
+				}
+				return;
+			}
+			if (data->isDestroy())
+			{
+				ERROR_PROFILE(("0数据已经被销毁,type:" + string(typeid(*data).name())).c_str());
+				if (callback != nullptr)
+				{
+					delayCall([=]() { CALL(callback, false); });
+				}
+				return;
+			}
+			bool result = table->queryExistByID(data->mID)
+				? (table->updateDataT(data, FrameDefine::FULL_MYSQL_FLAG), true)
+				: table->insertDataT(data);
+			mMySQLDataPool->destroyClass(data);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, result); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
-	void updateData(MySQLTableT<T>* table, T* data)
+	void updateData(MySQLTableT<T>* table, T* data, const BoolCallback& callback = nullptr)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLUpdateDataT<T>>();
-		cmd->mTable = table;
-		cmd->mData = data;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() mutable
+		{
+			bool result = table->updateDataT(data, FrameDefine::FULL_MYSQL_FLAG);
+			mMySQLDataPool->destroyClass(data);
+			if (callback != nullptr)
+			{
+				delayCall([=]() { CALL(callback, result); });
+			}
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryByString(MySQLTableT<T>* table, typename T::Column column, const string& value, const QueryDataCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryByStringT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto data = table->queryByStringT(column, value);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, data = move(data)]() { CALL(callback, data.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByString(MySQLTableT<T>* table, typename T::Column column, const string& value, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByStringT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto dataList = table->queryListByStringT(column, value);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryByID(MySQLTableT<T>* table, llong id, const QueryDataCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryByIDT<T>>();
-		cmd->mTable = table;
-		cmd->mID = id;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto data = table->queryByIDT(id);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, data = move(data)]() { CALL(callback, data.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryExistByString(MySQLTableT<T>* table, typename T::Column column, const string& value, const BoolCallback& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryExistByStringT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			const bool exist = table->queryExistByStringT(column, value);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, exist]() { CALL(callback, exist); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByID(MySQLTableT<T>* table, Vector<llong>&& idList, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByIDT<T>>();
-		cmd->mTable = table;
-		cmd->mValueList = move(idList);
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([table, valueList = move(idList), callback]() mutable
+		{
+			// 去重
+			removeDumplicate(valueList);
+			auto dataList = table->queryListByIDListT(valueList);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByID(MySQLTableT<T>* table, const Vector<llong>& idList, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByIDT<T>>();
-		cmd->mTable = table;
-		cmd->mValueList = idList;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=, idList = Vector<llong>(idList)]() mutable
+		{
+			// 去重
+			removeDumplicate(idList);
+			auto dataList = table->queryListByIDListT(idList);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByInt(MySQLTableT<T>* table, typename T::Column column, int value, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByIntT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto dataList = table->queryListByIntT(column, value, 0);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByLLong(MySQLTableT<T>* table, typename T::Column column, int maxCount, llong value, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByLLongT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mMaxCount = maxCount;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto dataList = table->queryListByLLongT(column, value, maxCount);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByLLong(MySQLTableT<T>* table, typename T::Column column, llong value, const QueryDataListCallbackT<T>& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByLLongT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mValue = value;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]() 
+		{
+			auto dataList = table->queryListByLLongT(column, value, 0);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryListByStringList(MySQLTableT<T>* table, typename T::Column column, Vector<string>&& valueList, const QueryDataListCallbackT<T>& callback)
@@ -403,24 +494,26 @@ namespace FrameMySQLUtility
 			CALL(callback, Vector<T*>::mDefaultList);
 			return;
 		}
-		auto* cmd = CMD_THREAD<CmdMySQLQueryListByStringListT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn = column;
-		cmd->mValueList = move(valueList);
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([table, column, valueList = move(valueList), callback]()
+		{
+			auto dataList = table->queryListByStringListT(column, valueList);
+			// 延迟到主线程执行回调通知
+			delayCall([callback, dataList = move(dataList)]() { CALL(callback, dataList.get()); });
+		});
 	}
 	template<typename T, typename TypeCheck = typename IsSubClassOf<MySQLData, T>::mType>
 	void queryCountByLLong2Or(MySQLTableT<T>* table, typename T::Column column0, typename T::Column column1, llong value0, llong value1, const LLongCallback& callback)
 	{
-		auto* cmd = CMD_THREAD<CmdMySQLQueryCountByLLong2OrT<T>>();
-		cmd->mTable = table;
-		cmd->mColumn0 = column0;
-		cmd->mColumn1 = column1;
-		cmd->mValue0 = value0;
-		cmd->mValue1 = value1;
-		cmd->mCallback = callback;
-		pushCommandToMySQL(cmd);
+		pushCommandToMySQL([=]()
+		{
+			MyString<128> condition;
+			sqlConditionLLong(condition, table->getColNameT(column0), value0, "=", "||");
+			sqlConditionLLong(condition, table->getColNameT(column1), value1);
+			const llong dataCount = table->queryCount(condition.str());
+
+			// 延迟到主线程执行回调通知
+			delayCall([=]() { CALL(callback, dataCount); });
+		});
 	}
 };
 using namespace FrameMySQLUtility;

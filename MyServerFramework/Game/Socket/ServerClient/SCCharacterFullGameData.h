@@ -37,16 +37,16 @@ public:
 	static const string& getStaticPacketName() { return mPacketName; }
 	static constexpr ushort getStaticType() { return PACKET_TYPE::SCCharacterFullGameData; }
 	static constexpr bool hasMember() { return true; }
-	bool readFromBuffer(SerializerBitRead* reader) override
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override
 	{
 		bool success = true;
 		if (isFieldValid(Field::HP))
 		{
-			success = success && reader->readSigned(mHP);
+			success = success && reader->readSigned(needReadSign, mHP);
 		}
 		if (isFieldValid(Field::MaxHP))
 		{
-			success = success && reader->readSigned(mMaxHP);
+			success = success && reader->readSigned(needReadSign, mMaxHP);
 		}
 		if (isFieldValid(Field::Name))
 		{
@@ -54,22 +54,34 @@ public:
 		}
 		return success;
 	}
-	bool writeToBuffer(SerializerBitWrite* serializer) const override
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override
 	{
 		bool success = true;
 		if (isFieldValid(Field::HP))
 		{
-			success = success && serializer->writeSigned(mHP);
+			success = success && writer->writeSigned(needWriteSign, mHP);
 		}
 		if (isFieldValid(Field::MaxHP))
 		{
-			success = success && serializer->writeSigned(mMaxHP);
+			success = success && writer->writeSigned(needWriteSign, mMaxHP);
 		}
 		if (isFieldValid(Field::Name))
 		{
-			success = success && serializer->writeString(mName);
+			success = success && writer->writeString(mName);
 		}
 		return success;
+	}
+	bool generateHasSignInternal() const override
+	{
+		if ((mFieldFlag & (1ULL << (byte)Field::HP)) != 0 && mHP < 0)
+		{
+			return true;
+		}
+		if ((mFieldFlag & (1ULL << (byte)Field::MaxHP)) != 0 && mMaxHP < 0)
+		{
+			return true;
+		}
+		return false;
 	}
 	void resetProperty() override
 	{

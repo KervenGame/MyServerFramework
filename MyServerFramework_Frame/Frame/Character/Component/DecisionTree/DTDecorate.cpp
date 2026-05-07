@@ -30,7 +30,7 @@ void DTDecorate::resetProperty()
 
 void DTDecorate::addChild(DTNode* child)
 {
-	if (mChildList != nullptr && mChildList->size() > 0)
+	if (mChildList != nullptr && !mChildList->isEmpty())
 	{
 		ERROR("装饰节点最多只能加一个子节点");
 		return;

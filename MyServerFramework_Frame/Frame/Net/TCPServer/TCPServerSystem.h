@@ -20,35 +20,41 @@ public:
 	bool isAvailable() const													{ return mSocket != INVALID_SOCKET; }
 	int getClientCount() const													{ return mClientList.size(); }
 	ushort getPort() const														{ return mPort; }
-	TCPServerClient* getClient(int clientGUID) const							{ return mClientList.tryGet(clientGUID); }
+	TCPServerClient* getClient(int clientGUID) const							{ return mClientList.get(clientGUID); }
+	const HashMap<int, TCPServerClient*>& getClients() const					{ return mClientList; }
 	ServerCheckPingCallback getServerCheckPingCallback() const					{ return mServerCheckPing; }
+	const SerializerBitWrite* getPacketDataBuffer() const						{ return mPacketDataBuffer; }
 	void setServerCheckPingCallback(ServerCheckPingCallback callback)			{ mServerCheckPing = callback; }
 	void setFreezeAccountCallback(FreezeAccountCallback callback)				{ mFreezeAccount = callback; }
+	void increaseReceivePacketCount(int count)									{ mReceivePacketCount += count; }
 	void increaseSendPacketCount(ushort packetType, const string& name)	
 	{
 		++mSendPacketCount;
-		++mPacketSendCountMap.insertOrGet(packetType);
-		mPacketSendNameMap.insert(packetType, name);
+		++mPacketSendCountMap.addOrGet(packetType);
+		mPacketSendNameMap.add(packetType, name);
 	}
-	void increaseReceivePacketCount(int count)									{ mReceivePacketCount += count; }
 	void freezeAccount(llong accountGUID, llong timeSecond, const char* reason) { CALL(mFreezeAccount, accountGUID, timeSecond, reason); }
 	// 将消息数据写入到缓冲区,在发送消息前调用
 	void writePacket(PacketTCP* packet);
-	const SerializerBitWrite* getPacketDataBuffer() const						{ return mPacketDataBuffer; }
 	void logoutAll();
-	static void encrypt(char* data, int length, const byte* key, int keyLen, byte param);
-	static void decrypt(char* data, int length, const byte* key, int keyLen, byte param);
+	static void encrypt(char* data, int length, byte param);
+	static void decrypt(char* data, int length, byte param);
 protected:
-	static void acceptThread(CustomThread* thread);
-	static void receiveThread(CustomThread* thread) { static_cast<This*>(thread->getArgs())->processRecv(); }
-	static void sendThread(CustomThread* thread) { static_cast<This*>(thread->getArgs())->processSend(); }
-	static int comparePacketTypeCount(Vector2Int& x, Vector2Int& y) { return MathUtility::sign(y.y - x.y); }
+	static int comparePacketTypeCount(const Vector2Int& x, const Vector2Int& y) { return sign(y.y - x.y); }
 	int notifyAcceptClient(MY_SOCKET socket, const string& ip);
 	void disconnectSocket(TCPServerClient* client);	// 与客户端断开连接,只能在主线程中调用
-	void processSend();
-	void processRecv();
+	void acceptThread();
+	void sendThread();
+	void recvThread();
 	int generateSocketGUID() { return mSocketGUIDSeed++; }
 	void checkSendRecvError(TCPServerClient* client, int successLength) const;
+#ifdef STRESS_TEST
+public:
+	atomic<llong> mClientSendBytes = 0;
+	atomic<llong> mClientRecvBytes = 0;
+	atomic<int> mClientSendPacket = 0;
+	atomic<int> mClientRecvPacket = 0;
+#endif
 protected:
 	Vector<pair<MY_SOCKET, string>> mAcceptBuffer;			// 连接缓存列表
 	HashMap<ushort, string> mPacketSendNameMap;				// 用于查询消息ID对应的名字
@@ -70,12 +76,11 @@ protected:
 	float mHeartBeatTimeOut = 0.0f;							// 心跳超时时间
 	int mServerHeartBeat = 0;								// 服务器当前心跳次数
 	int mSocketGUIDSeed = 1;								// 客户端连接的ID种子
-	int mMaxSocket = 0;										// 连接的客户端的套接字的最大值
 	int mWritePacketBytes = 0;								// 记录写包数据的大小
 	int mWritePacketCount = 0;								// 记录写包数据的数量
 	int mSendPacketCount = 0;								// 记录发包的数量
-	atomic<int> mSendByteCount = 0;							// 每秒通过send发送出去的字节数
-	atomic<int> mReceiveBytesCount;							// 记录接收到的包字节数
+	atomic<llong> mSendByteCount = 0;						// 每秒通过send发送出去的字节数
+	atomic<llong> mReceiveBytesCount;						// 记录接收到的包字节数
 	atomic<int> mReceivePacketCount;						// 记录接收到的包数量
 	ushort mPort = 0;										// 端口号
 	bool mOutputLog = true;									// 是否输出日志
@@ -85,4 +90,6 @@ protected:
 	static constexpr int mKey1 = 3;
 	static constexpr int mKey2 = 600;
 	static constexpr int mKey3 = 34;
+private:
+	Vector<pair<MY_SOCKET, string>> mTempAcceptBuffer;		// 临时使用的列表
 };

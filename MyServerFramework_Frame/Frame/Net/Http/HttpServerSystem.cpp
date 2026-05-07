@@ -152,7 +152,7 @@ void HttpServerSystem::listenHttp(const string& uri, HttpCallback callback, void
 	HttpListenInfo* info = new HttpListenInfo();
 	info->mCallback = callback;
 	info->mUserData = userData;
-	mCallbackList.insert(uri, info);
+	mCallbackList.add(uri, info);
 }
 
 void HttpServerSystem::doResponse(evhttp_request* req, const string& response, int code, const string& contentType)
@@ -163,12 +163,12 @@ void HttpServerSystem::doResponse(evhttp_request* req, const string& response, i
 		ERROR("retbuff is null");
 		return;
 	}
-	const char* contentTypeStr = contentType.size() > 0 ? contentType.c_str() : "application/json;charset=UTF-8";
+	const char* contentTypeStr = !contentType.empty() ? contentType.c_str() : "application/json;charset=UTF-8";
 	evhttp_add_header(evhttp_request_get_output_headers(req), "Content-Type", contentTypeStr);
 	evbuffer_add_printf(retbuff, "%s", response.c_str());
 	evhttp_send_reply(req, code, "Client", retbuff);
 	evbuffer_free(retbuff);
-	mRequestHeaders.erase(req);
+	mRequestHeaders.remove(req);
 }
 
 void HttpServerSystem::destroy()
@@ -251,13 +251,13 @@ const string& HttpServerSystem::getHttpHeader(struct evhttp_request* req, const 
 		{
 			if (splitFull(str.c_str(), "=", tempPair))
 			{
-				tempHeaderList.insert(tempPair[0], tempPair[1]);
+				tempHeaderList.add(tempPair[0], tempPair[1]);
 			}
 		}
-		mRequestHeaders.insert(req, move(tempHeaderList));
+		mRequestHeaders.add(req, move(tempHeaderList));
 		listPtr = mRequestHeaders.getPtr(req);
 	}
-	return listPtr->tryGet(key);
+	return listPtr->get(key);
 }
 
 string HttpServerSystem::getPostParam(struct evhttp_request* req)
@@ -284,7 +284,7 @@ void HttpServerSystem::httpResponse(evhttp_request* req, void* arg)
 
 	string uri = evhttp_request_get_uri(req);
 	string uriKey = uri.substr(0, uri.find_first_of('?'));
-	if (HttpListenInfo* listenInfo = ((HttpServerSystem*)arg)->mCallbackList.tryGet(uriKey))
+	if (HttpListenInfo* listenInfo = ((HttpServerSystem*)arg)->mCallbackList.get(uriKey))
 	{
 		listenInfo->mCallback(req, uri, listenInfo->mUserData);
 	}

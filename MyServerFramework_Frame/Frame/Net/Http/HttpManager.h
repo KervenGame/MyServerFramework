@@ -15,7 +15,6 @@ public:
 	string httpPost(const string& url, const string& contentType, const string& postData, int* code = nullptr);
 protected:
 	static size_t writeCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
-	static void curlThread(CustomThread* thread) {}
 protected:
 	CustomThread* mThread = nullptr;
 #endif

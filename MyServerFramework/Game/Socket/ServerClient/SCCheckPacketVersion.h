@@ -28,17 +28,21 @@ public:
 	static const string& getStaticPacketName() { return mPacketName; }
 	static constexpr ushort getStaticType() { return PACKET_TYPE::SCCheckPacketVersion; }
 	static constexpr bool hasMember() { return true; }
-	bool readFromBuffer(SerializerBitRead* reader) override
+	bool readFromBuffer(SerializerBitRead* reader, const bool needReadSign) override
 	{
 		bool success = true;
 		success = success && reader->readBool(mResult);
 		return success;
 	}
-	bool writeToBuffer(SerializerBitWrite* serializer) const override
+	bool writeToBuffer(SerializerBitWrite* writer, const bool needWriteSign) const override
 	{
 		bool success = true;
-		success = success && serializer->writeBool(mResult);
+		success = success && writer->writeBool(mResult);
 		return success;
+	}
+	bool generateHasSignInternal() const override
+	{
+		return false;
 	}
 	void resetProperty() override
 	{

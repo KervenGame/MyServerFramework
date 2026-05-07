@@ -39,7 +39,7 @@ public:
 		data = nullptr;
 	}
 private:
-	static void onHour(void* userData);
+	void onHour();
 protected:
 	static ArrayPoolSingle* mArrayPoolSingle;
 	static ArrayPoolSingleChar* mArrayPoolSingleChar;

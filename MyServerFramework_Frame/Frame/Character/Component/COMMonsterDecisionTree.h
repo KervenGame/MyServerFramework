@@ -21,7 +21,7 @@ public:
 		DTNode* node = mDTNodePool->newClass<T>();
 		node->setCharacter(static_cast<Character*>(mComponentOwner));
 		node->init();
-		mNodeList.push_back(node);
+		mNodeList.add(node);
 		if (parent == nullptr)
 		{
 			parent = mRoot;
@@ -35,21 +35,21 @@ public:
 #endif
 		return node;
 	}
-	void addConditionMutex(DTConditionGroup* condition, DTNode* mutexNodex)
+	void addConditionMutex(DTConditionGroup* condition, DTNode* mutexNode)
 	{
-		mMutexConditionList.insertOrGet(condition).push_back(mutexNodex);
+		mMutexConditionList.addOrGet(condition).add(mutexNode);
 	}
 	template<int Length>
 	void addListenCondition(const ArrayList<Length, DTConditionGroup*>& conditionList)
 	{
 		// 只作为条件监听的条件组是不需要向父节点通知开始执行的
-		mConditionGroup.push_back();
+		mConditionGroup.add();
 		auto& lastGroup = mConditionGroup[mConditionGroup.size() - 1];
 		lastGroup.reserve(conditionList.size());
 		for (DTConditionGroup* conditionGroup : conditionList)
 		{
 			conditionGroup->setNotifyParentRunning(false);
-			lastGroup.push_back(conditionGroup);
+			lastGroup.add(conditionGroup);
 		}
 	}
 	void addListenCondition(DTConditionGroup* condition0, DTConditionGroup* condition1);
@@ -58,9 +58,7 @@ public:
 	const Vector<DTNode*>& getNodeList() const { return mNodeList; }
 	void createRoot();
 protected:
-	void registeTick() override { mComponentOwner->registeFrameTick(this, frameTick); }
-	void unregisteTick() override { mComponentOwner->unregisteFrameTick(this, frameTick); }
-	static void frameTick(GameComponent* component, float elapsedTime) { static_cast<This*>(component)->onFrameTick(elapsedTime); }
+	void registeTick() override { setFrameTick([this](float elapsedTime) {onFrameTick(elapsedTime); }); }
 private:
 	void onFrameTick(float elapsedTime);
 protected:

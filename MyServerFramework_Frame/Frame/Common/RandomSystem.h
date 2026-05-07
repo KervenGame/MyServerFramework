@@ -8,7 +8,7 @@ class MICRO_LEGEND_FRAME_API RandomSystem : public FrameComponent
 	BASE(RandomSystem, FrameComponent);
 public:
 	RandomSystem();
-	void update(const float elapsedTime) override;
+	void update(float elapsedTime) override;
 	int random() 
 	{
 		if (mRandomSequence.size() <= mCurIndex)

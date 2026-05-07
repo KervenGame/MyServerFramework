@@ -1,6 +1,6 @@
 ﻿#include "FrameHeader.h"
 
-void ExcelData::clone(ExcelData* target)
+void ExcelData::cloneTo(ExcelData* target)
 {
 	target->mID = mID;
 }

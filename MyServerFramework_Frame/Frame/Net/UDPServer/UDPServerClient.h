@@ -15,7 +15,7 @@ public:
 	void processSend(MY_SOCKET socket);
 	void removeClientToken(llong token);
 protected:
-	static PARSE_RESULT packetRead(char* buffer, int dataLength, int& bitIndex, PacketTCP*& packet, llong& token);
+	static PARSE_RESULT packetRead(const char* buffer, int dataLength, int& bitIndex, PacketTCP*& packet, ullong& token);
 protected:
 	HashMap<llong, UDPClientInfo*> mSendList;	// 所有地址的待发送消息列表
 	SerializerBitWrite* mSendWriter = nullptr;	// 只在发送消息时用将要发送的数据写入到发送缓冲区,避免频繁构造析构

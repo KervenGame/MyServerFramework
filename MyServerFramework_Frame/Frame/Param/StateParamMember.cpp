@@ -97,19 +97,19 @@ void StateParamMember::cloneFrom(StateParamMember& sourceMember)
 	}
 	else if (mValue.mTypeHash == mIntListType)
 	{
-		((Vector<int>*)sourceMember.mPointer)->clone(*(Vector<int>*)mPointer);
+		((Vector<int>*)sourceMember.mPointer)->cloneTo(*(Vector<int>*)mPointer);
 	}
 	else if (mValue.mTypeHash == mShortListType)
 	{
-		((Vector<short>*)sourceMember.mPointer)->clone(*(Vector<short>*)mPointer);
+		((Vector<short>*)sourceMember.mPointer)->cloneTo(*(Vector<short>*)mPointer);
 	}
 	else if (mValue.mTypeHash == mUShortListType)
 	{
-		((Vector<ushort>*)sourceMember.mPointer)->clone(*(Vector<ushort>*)mPointer);
+		((Vector<ushort>*)sourceMember.mPointer)->cloneTo(*(Vector<ushort>*)mPointer);
 	}
 	else if (mValue.mTypeHash == mFloatListType)
 	{
-		((Vector<float>*)sourceMember.mPointer)->clone(*(Vector<float>*)mPointer);
+		((Vector<float>*)sourceMember.mPointer)->cloneTo(*(Vector<float>*)mPointer);
 	}
 	else if (mValue.mTypeHash == mLLongType)
 	{

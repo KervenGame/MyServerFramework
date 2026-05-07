@@ -60,7 +60,7 @@ void DTNode::addChild(DTNode* child)
 	{
 		mChildList = new Vector<DTNode*>();
 	}
-	mChildList->push_back(child);
+	mChildList->add(child);
 }
 
 void DTNode::clearChild() 
@@ -152,7 +152,7 @@ DTNode* DTNode::getNextSibling(DTNode* node)
 	{
 		return nullptr;
 	}
-	const int index = mChildList->findFirstIndex(node);
+	const int index = mChildList->findIndex(node);
 	if (index < 0 || index == mChildList->size() - 1)
 	{
 		return nullptr;

@@ -15,10 +15,11 @@ void TCPServerSystem::quit()
 	mThreadManager->destroyThread(mAcceptThread);
 	// 销毁所有客户端
 	DELETE_MAP(mClientList);
+	CLOSE_SOCKET(mSocket);
 #ifdef WINDOWS
+	// 需要在CLOSE_SOCKET后面调用
 	WSACleanup();
 #endif
-	CLOSE_SOCKET(mSocket);
 	DELETE(mPacketDataBuffer);
 	DELETE_ARRAY(mRecvBuffer);
 }
@@ -49,8 +50,6 @@ void TCPServerSystem::init()
 		ERROR("socket failed!");
 		return;
 	}
-
-	mMaxSocket = (int)mSocket;
 
 	//设置服务器Socket地址
 	sockaddr_in addrServ;
@@ -83,218 +82,226 @@ void TCPServerSystem::init()
 	int timeout = 2000;
 	int ret = setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
 	ret |= setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-	int enable = 1;
-	ret |= setsockopt(mSocket, SOL_SOCKET, TCP_NODELAY, (const char*)&enable, sizeof(enable));
 #elif defined LINUX
 	struct timeval timeout = { 2, 0 };
-	int enable = 1;
 	int ret = setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(struct timeval));
-	ret |= setsockopt(mSocket, SOL_SOCKET, TCP_NODELAY, (char*)&enable, sizeof(enable));
 #endif
 	if (ret != 0)
 	{
 		ERROR("设置socket选项失败");
 		return;
 	}
-	mSendThread = mThreadManager->createThread("SendSocketTCP", sendThread, this);
+	mSendThread = mThreadManager->createThread("SendSocketTCP", [this]{sendThread(); });
 	mSendThread->setTime(10);
 	mSendThread->setPrintFPS(true);
-	mReceiveThread = mThreadManager->createThread("ReceiveSocketTCP", receiveThread, this);
+	mReceiveThread = mThreadManager->createThread("ReceiveSocketTCP", [this]{recvThread(); });
 	mReceiveThread->setTime(10);
 	mReceiveThread->setPrintFPS(true);
-	mAcceptThread = mThreadManager->createThread("AcceptSocket", acceptThread, this);
+	mAcceptThread = mThreadManager->createThread("AcceptSocket", [this]{acceptThread(); });
 }
 
-void TCPServerSystem::acceptThread(CustomThread* thread)
+void TCPServerSystem::acceptThread()
 {
-	auto* netManager = static_cast<This*>(thread->getArgs());
 	sockaddr_in addr;
 #ifdef WINDOWS
 	int nLen = sizeof(addr);
 #elif defined LINUX
 	socklen_t nLen = sizeof(addr);
 #endif
-	MY_SOCKET sClient = accept(netManager->mSocket, (struct sockaddr*)&addr, &nLen);
+	MY_SOCKET socket = accept(mSocket, (struct sockaddr*)&addr, &nLen);
 	// 因为设置了2秒超时,所以accept每2秒就会返回一次INVALID_SOCKET
-	if (sClient == (MY_SOCKET)INVALID_SOCKET)
+	if (socket == (MY_SOCKET)INVALID_SOCKET)
 	{
 		return;
 	}
 	MyString<16> ip;
 	// 获得客户端IP,然后通知已经接收到一个客户端的连接
-	if (netManager->mOutputLog)
-	{
 #ifdef WINDOWS
-		SPRINTF(ip.toBuffer(), 16, "%d.%d.%d.%d", addr.sin_addr.S_un.S_un_b.s_b1, addr.sin_addr.S_un.S_un_b.s_b2, addr.sin_addr.S_un.S_un_b.s_b3, addr.sin_addr.S_un.S_un_b.s_b4);
+	ip.sprintf("%d.%d.%d.%d", addr.sin_addr.S_un.S_un_b.s_b1, addr.sin_addr.S_un.S_un_b.s_b2, addr.sin_addr.S_un.S_un_b.s_b3, addr.sin_addr.S_un.S_un_b.s_b4);
 #elif defined LINUX
-		int ip0 = getByte(addr.sin_addr.s_addr, 0);
-		int ip1 = getByte(addr.sin_addr.s_addr, 1);
-		int ip2 = getByte(addr.sin_addr.s_addr, 2);
-		int ip3 = getByte(addr.sin_addr.s_addr, 3);
-		SPRINTF(ip.toBuffer(), 16, "%d.%d.%d.%d", ip0, ip1, ip2, ip3);
+	int ip0 = getByte(addr.sin_addr.s_addr, 0);
+	int ip1 = getByte(addr.sin_addr.s_addr, 1);
+	int ip2 = getByte(addr.sin_addr.s_addr, 2);
+	int ip3 = getByte(addr.sin_addr.s_addr, 3);
+	ip.sprintf("%d.%d.%d.%d", ip0, ip1, ip2, ip3);
 #endif
-	}
 	int enable = 1;
 #ifdef WINDOWS
-	int ret = setsockopt(sClient, SOL_SOCKET, TCP_NODELAY, (const char*)&enable, sizeof(enable));
+	int ret = setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&enable, sizeof(enable));
 #elif defined LINUX
-	int ret = setsockopt(sClient, SOL_SOCKET, TCP_NODELAY, (char*)&enable, sizeof(enable));
+	int ret = setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char*)&enable, sizeof(enable));
 #endif
 	if (ret != 0)
 	{
 		ERROR("设置socket选项失败");
+		CLOSE_SOCKET(socket);
 		return;
 	}
-	THREAD_LOCK(netManager->mAcceptLock);
-	netManager->mAcceptBuffer.emplace_back(sClient, ip.str());
+	THREAD_LOCK(mAcceptLock);
+	mAcceptBuffer.emplace(socket, ip.str());
 }
 
-void TCPServerSystem::processSend()
+void TCPServerSystem::sendThread()
 {
 	if (mSendClientList.isEmpty())
 	{
 		return;
 	}
+	// 这里需要保证一定不会访问到被析构的客户端对象,所以需要整个一起加锁
 	THREAD_LOCK(mSendLock);
-	try
+	// 遍历筛选出需要发送数据的客户端列表
+	thread_local static Vector<TCPServerClient*> needSendClient;
+	needSendClient.clear();
+	for (TCPServerClient* client : mSendClientList)
 	{
-		thread_local static Array<FD_SETSIZE, TCPServerClient*> selectedClient;
-		// select查看后立即返回
-		thread_local static timeval tv{ 0, 0 };
-		thread_local static fd_set fdwrite;
-		const int clientCount = mSendClientList.size();
-		for (int j = 0; j < clientCount; )
+		if (client->isDeadClient())
 		{
-			FD_ZERO(&fdwrite);
-			int selectedClientCount = 0;
-			// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
-			FOR(FD_SETSIZE)
+			continue;
+		}
+		// 确认将所有待发送的数据写入到发送缓冲区
+		client->writeToSendBuffer();
+		// 只检查有数据需要写的客户端
+		if (client->getSendBuffer()->getDataLength() > 0)
+		{
+			needSendClient.add(client);
+		}
+	}
+	thread_local static ArrayList<FD_SETSIZE, TCPServerClient*> selectedClient;
+	// select查看后立即返回
+	thread_local static timeval tv{ 0, 0 };
+	thread_local static fd_set fdwrite;
+	const int clientCount = needSendClient.size();
+	for (int j = 0; j < clientCount; )
+	{
+		FD_ZERO(&fdwrite);
+		selectedClient.clear();
+		int maxSocket = 0;
+		// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
+		FOR(FD_SETSIZE)
+		{
+			if (j >= clientCount)
 			{
-				if (j >= clientCount)
-				{
-					break;
-				}
-				TCPServerClient* client = mSendClientList[j++];
-				if (client->isDeadClient())
-				{
-					continue;
-				}
-				// 确认将所有待发送的数据写入到发送缓冲区
-				client->writeToSendBuffer();
-				// 只检查有数据需要写的客户端
-				if (client->getSendBuffer()->getDataLength() > 0)
-				{
-					selectedClient[selectedClientCount++] = client;
-					FD_SET(client->getSocket(), &fdwrite);
-				}
+				break;
 			}
-			// select第一个参数在windows中可以为0,但是在其他系统中需要设置
-			// 如果有客户端可写
-			if (select(mMaxSocket + 1, nullptr, &fdwrite, nullptr, &tv) <= 0)
+			TCPServerClient* client = needSendClient[j++];
+			if (client->isDeadClient())
 			{
 				continue;
 			}
-			FOR(selectedClientCount)
-			{
-				TCPServerClient* client = selectedClient[i];
-				if (!FD_ISSET(client->getSocket(), &fdwrite))
-				{
-					continue;
-				}
-				// 因为send可能无法一次将所有数据都发送出去,所以需要一直检测是否发送完
-				StreamBuffer* sendBuffer = client->getSendBuffer();
-				while (sendBuffer->getDataLength() > 0 && !client->isDeadClient())
-				{
-					int flags = 0;
 #ifdef LINUX
-					flags = MSG_NOSIGNAL;
+			// 因为在linux上会根据socket的值放入到指定位置,所以值不能超过最大长度,否则放不进去
+			if (client->getSocket() >= FD_SETSIZE)
+			{
+				continue;
+			}
 #endif
-					const int thisSendCount = send(client->getSocket(), sendBuffer->getData(), sendBuffer->getDataLength(), flags);
-					// 检查是否send有错误
-					if (thisSendCount > 0)
-					{
-						mSendByteCount += thisSendCount;
-						sendBuffer->removeDataFromFront(thisSendCount);
-					}
-					else
-					{
-						checkSendRecvError(client, thisSendCount);
-					}
+			selectedClient.add(client);
+			FD_SET(client->getSocket(), &fdwrite);
+			maxSocket = getMax(maxSocket, (int)client->getSocket());
+		}
+		// select第一个参数在windows中可以为0,但是在其他系统中需要设置
+		if (select(maxSocket + 1, nullptr, &fdwrite, nullptr, &tv) <= 0)
+		{
+			continue;
+		}
+		for (TCPServerClient* client : selectedClient)
+		{
+			if (!FD_ISSET(client->getSocket(), &fdwrite))
+			{
+				continue;
+			}
+			// 因为send可能无法一次将所有数据都发送出去,所以需要一直检测是否发送完,而且sendBuffer中数据本身就是分段存储的,是一个环形列表
+			StreamBuffer* sendBuffer = client->getSendBuffer();
+			while (sendBuffer->getDataLength() > 0 && !client->isDeadClient())
+			{
+				int flags = 0;
+#ifdef LINUX
+				flags = MSG_NOSIGNAL;
+#endif
+				const int thisSendCount = send(client->getSocket(), sendBuffer->getData(), sendBuffer->getContiguousDataLength(), flags);
+				// 检查是否send有错误
+				if (thisSendCount > 0)
+				{
+					mSendByteCount += thisSendCount;
+					sendBuffer->removeDataFromFront(thisSendCount);
+				}
+				else
+				{
+					// 出现异常就会断开此客户端,不再发送这个客户端后续的消息
+					checkSendRecvError(client, thisSendCount);
+					break;
 				}
 			}
 		}
 	}
-	catch (const exception& e)
-	{
-		LOG("exception : " + string(e.what()));
-	}
 }
 
-void TCPServerSystem::processRecv()
+void TCPServerSystem::recvThread()
 {
 	if (mRecvClientList.isEmpty())
 	{
 		return;
 	}
+	// 这里需要保证一定不会访问到被析构的客户端对象,所以需要整个一起加锁
 	THREAD_LOCK(mRecvLock);
-	try
+	thread_local static ArrayList<FD_SETSIZE, TCPServerClient*> selectedClient;
+	// select查看后立即返回
+	thread_local static timeval tv{ 0, 0 };
+	thread_local static fd_set fdread;
+	const int clientCount = mRecvClientList.size();
+	for (int j = 0; j < clientCount; )
 	{
-		thread_local static Array<FD_SETSIZE, TCPServerClient*> selectedClient;
-		// select查看后立即返回
-		thread_local static timeval tv{ 0, 0 };
-		thread_local static fd_set fdread;
-		const int clientCount = mRecvClientList.size();
-		for (int j = 0; j < clientCount; )
+		FD_ZERO(&fdread);
+		selectedClient.clear();
+		int maxSocket = 0;
+		// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
+		FOR(FD_SETSIZE)
 		{
-			FD_ZERO(&fdread);
-			int selectedClientCount = 0;
-			// 不能超过最大并发连接数,采用FD_SETSIZE一组的轮询方式
-			FOR(FD_SETSIZE)
+			if (j >= clientCount)
 			{
-				if (j >= clientCount)
-				{
-					break;
-				}
-				TCPServerClient* client = mRecvClientList[j++];
-				if (client->isDeadClient())
-				{
-					continue;
-				}
-				selectedClient[selectedClientCount++] = client;
-				FD_SET(client->getSocket(), &fdread);
+				break;
 			}
-			// select第一个参数在windows中可以为0,但是在其他系统中需要设置
-			if (select(mMaxSocket + 1, &fdread, nullptr, nullptr, &tv) <= 0)
+			TCPServerClient* client = mRecvClientList[j++];
+			if (client->isDeadClient())
 			{
 				continue;
 			}
-			FOR(selectedClientCount)
-			{
-				TCPServerClient* client = selectedClient[i];
-				if (client->isDeadClient() || !FD_ISSET(client->getSocket(), &fdread))
-				{
-					continue;
-				}
-				const int nRecv = recv(client->getSocket(), mRecvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0);
 #ifdef LINUX
-				int opt = 1;
-				setsockopt(client->getSocket(), IPPROTO_TCP, TCP_QUICKACK, (char*)&opt, sizeof(opt));
+			if (client->getSocket() >= FD_SETSIZE)
+			{
+				continue;
+			}
 #endif
-				if (nRecv > 0)
-				{
-					mReceiveBytesCount += nRecv;
-					client->recvData(mRecvBuffer, nRecv);
-				}
-				else
-				{
-					checkSendRecvError(client, nRecv);
-				}
+			selectedClient.add(client);
+			FD_SET(client->getSocket(), &fdread);
+			maxSocket = getMax(maxSocket, (int)client->getSocket());
+		}
+		// select第一个参数在windows中可以为0,但是在其他系统中需要设置
+		if (select(maxSocket + 1, &fdread, nullptr, nullptr, &tv) <= 0)
+		{
+			continue;
+		}
+		for (TCPServerClient* client : selectedClient)
+		{
+			if (client->isDeadClient() || !FD_ISSET(client->getSocket(), &fdread))
+			{
+				continue;
+			}
+			const int nRecv = recv(client->getSocket(), mRecvBuffer, FrameDefine::CLIENT_RECV_BUFFER, 0);
+#ifdef LINUX
+			int opt = 1;
+			setsockopt(client->getSocket(), IPPROTO_TCP, TCP_QUICKACK, (char*)&opt, sizeof(opt));
+#endif
+			if (nRecv > 0)
+			{
+				mReceiveBytesCount += nRecv;
+				client->recvData(mRecvBuffer, nRecv);
+			}
+			else
+			{
+				checkSendRecvError(client, nRecv);
 			}
 		}
-	}
-	catch (const exception& e)
-	{
-		LOG("exception : " + string(e.what()));
 	}
 }
 
@@ -309,7 +316,11 @@ void TCPServerSystem::checkSendRecvError(TCPServerClient* client, const int succ
 	{
 		client->setDeadClient("recv或send返回值小于0", DEAD_TYPE::SERVER_KICK_OUT);
 	}
+#ifdef WINDOWS
+	const int errorCode = WSAGetLastError();
+#else
 	const int errorCode = errno;
+#endif
 	if (errorCode == 0)
 	{
 		return;
@@ -336,14 +347,18 @@ void TCPServerSystem::update(const float elapsedTime)
 		return;
 	}
 	// 将接收缓存列表同步到客户端列表,double check避免不必要的等待
-	if (mAcceptBuffer.size() > 0)
+	if (!mAcceptBuffer.isEmpty())
 	{
-		THREAD_LOCK(mAcceptLock);
-		for (const auto& acceptInfo : mAcceptBuffer)
+		{
+			// 复制一份列表,减少锁的时间
+			THREAD_LOCK(mAcceptLock);
+			mTempAcceptBuffer = move(mAcceptBuffer);
+		}
+		for (const auto& acceptInfo : mTempAcceptBuffer)
 		{
 			notifyAcceptClient(acceptInfo.first, acceptInfo.second);
 		}
-		mAcceptBuffer.clear();
+		mTempAcceptBuffer.clear();
 	}
 
 	// 更新客户端,找出是否有客户端需要断开连接
@@ -356,7 +371,7 @@ void TCPServerSystem::update(const float elapsedTime)
 		// 将已经死亡的客户端放入列表
 		if (client->isDeadClient())
 		{
-			tempLogoutClientList.emplace_back(client);
+			tempLogoutClientList.emplace(client);
 		}
 	}
 
@@ -375,13 +390,29 @@ void TCPServerSystem::update(const float elapsedTime)
 	// 调试信息
 	TICK_LOOP(elapsedTime, mDumpPacketTimeInternal)
 	{
-		const int writePacketBytes = (int)(mWritePacketBytes / mDumpPacketTimeInternal);
-		const int writePacketCount = (int)(mWritePacketCount / mDumpPacketTimeInternal);
-		const int sendPacketCount = (int)(mSendPacketCount / mDumpPacketTimeInternal);
-		const int recvByteCount = (int)(mReceiveBytesCount / mDumpPacketTimeInternal);
-		const int recvPacketCount = (int)(mReceivePacketCount / mDumpPacketTimeInternal);
-		LOG("每秒发送字节数:" + IToS((int)(mSendByteCount / mDumpPacketTimeInternal)) + ", 每秒写入字节数:" + IToS(writePacketBytes) + ", 每秒写包数:" + IToS(writePacketCount) + ", 每秒发包数:" + IToS(sendPacketCount));
-		LOG("每秒接收字节数:" + IToS(recvByteCount) + ", 每秒接收包数:" + IToS(recvPacketCount));
+		const int writePacketBytes = (int)(mWritePacketBytes / mDumpPacketTimeInternal / 1024);
+		const int recvByteCount = (int)(mReceiveBytesCount / mDumpPacketTimeInternal / 1024);
+		const int sendByteCount = (int)(mSendByteCount / mDumpPacketTimeInternal / 1024);
+#ifdef STRESS_TEST
+		const int clientSendByteCount = (int)(mClientSendBytes / mDumpPacketTimeInternal / 1024);
+		const int clientRecvByteCount = (int)(mClientRecvBytes / mDumpPacketTimeInternal / 1024);
+		LOG("客户端每秒发送字节数:" + IToS(clientSendByteCount) + "KB, " + 
+			"每秒接收字节数:" + IToS(clientRecvByteCount) + "KB, " + 
+			"每秒发包数:" + IToS((int)(mClientSendPacket / mDumpPacketTimeInternal)) + ", " +
+			"每秒收包数:" + IToS((int)(mClientRecvPacket / mDumpPacketTimeInternal)));
+#endif
+		LOG("服务器每秒发送字节数:" + IToS(sendByteCount) + "KB, " + 
+			"每秒写入字节数:" + IToS(writePacketBytes) + "KB, " + 
+			"每秒写包数:" + IToS((int)(mWritePacketCount / mDumpPacketTimeInternal)) + ", " +
+			"每秒发包数:" + IToS((int)(mSendPacketCount / mDumpPacketTimeInternal)));
+		LOG("服务器每秒接收字节数:" + IToS(recvByteCount) + "KB, " + 
+			"每秒接收包数:" + IToS((int)(mReceivePacketCount / mDumpPacketTimeInternal)));
+#ifdef STRESS_TEST
+		mClientSendBytes = 0;
+		mClientRecvBytes = 0;
+		mClientSendPacket = 0;
+		mClientRecvPacket = 0;
+#endif
 		mWritePacketBytes = 0;
 		mWritePacketCount = 0;
 		mSendPacketCount = 0;
@@ -393,18 +424,18 @@ void TCPServerSystem::update(const float elapsedTime)
 		Vector<Vector2Int> temp;
 		for (const auto& item : mPacketSendCountMap)
 		{
-			temp.emplace_back(item.first, item.second);
+			temp.emplace(item.first, item.second);
 		}
 		quickSort(temp, comparePacketTypeCount);
 
-		LOG("发送数量top10的消息: start");
+		LOG(FToS(mDumpPacketTimeInternal) + "秒内发送数量top10的消息: start");
 		const int count = getMin(temp.size(), 10);
-		for (int i = 0; i < count; ++i)
+		FOR(count)
 		{
 			const Vector2Int item = temp[i];
-			LOG("类型:" + IToS(item.x) + ":" + mPacketSendNameMap.tryGet(item.x) + ",数量:" + IToS(item.y));
+			LOG("类型:" + IToS(item.x) + ":" + mPacketSendNameMap.get(item.x) + ",数量:" + IToS(item.y));
 		}
-		LOG("发送数量top10的消息: end");
+		LOG(FToS(mDumpPacketTimeInternal) + "秒内发送数量top10的消息: end");
 		mPacketSendCountMap.clear();
 	}
 }
@@ -418,7 +449,7 @@ void TCPServerSystem::writePacket(PacketTCP* packet)
 	// 而如果让外边存储一个缓冲区对象,使用起来又非常麻烦,所以就在TCPServerSystem中存储一个公用的缓冲区
 	// 并且不能是静态的,静态对象的析构不是在主线程执行,会在检测执行线程时报错
 	mPacketDataBuffer->clear();
-	packet->writeToBuffer(mPacketDataBuffer);
+	packet->writeToBuffer(mPacketDataBuffer, packet->hasSign());
 	mWritePacketBytes += mPacketDataBuffer->getByteCount();
 }
 
@@ -435,21 +466,20 @@ int TCPServerSystem::notifyAcceptClient(MY_SOCKET socket, const string& ip)
 
 	TCPServerClient* client = new TCPServerClient(clientGUID, socket, ip);
 	client->init();
-	mClientList.insert(clientGUID, client);
+	mClientList.add(clientGUID, client);
 	if (mOutputLog)
 	{
 		LOG("IP:" + string(ip) + " 连接服务器! 当前连接数:" + IToS(mClientList.size()));
 	}
-	mMaxSocket = getMax(mMaxSocket, (int)socket);
 
 	// 加入客户端列表,三个列表都要加入
 	{
 		THREAD_LOCK(mSendLock);
-		mSendClientList.push_back(client);
+		mSendClientList.add(client);
 	}
 	{
 		THREAD_LOCK(mRecvLock);
-		mRecvClientList.push_back(client);
+		mRecvClientList.add(client);
 	}
 	return clientGUID;
 }
@@ -461,17 +491,12 @@ void TCPServerSystem::disconnectSocket(TCPServerClient* client)
 		ERROR("只能在主线程中调用");
 		return;
 	}
+	THREAD_LOCK(mSendLock);
+	THREAD_LOCK(mRecvLock);
 	// 从客户端列表移除,三个列表都要移除
-	{
-		THREAD_LOCK(mSendLock);
-		mSendClientList.eraseElement(client);
-	}
-	{
-		THREAD_LOCK(mRecvLock);
-		mRecvClientList.eraseElement(client);
-	}
-	// 从主线程的客户端列表中移除
-	mClientList.erase(client->getClientGUID());
+	mSendClientList.remove(client);
+	mRecvClientList.remove(client);
+	mClientList.remove(client->getClientGUID());
 	if (mOutputLog)
 	{
 		PLAYER_LOG("客户端断开连接:角色ID:" + LLToS(client->getPlayerGUID()) + 
@@ -488,7 +513,7 @@ void TCPServerSystem::logoutAll()
 {
 	// 复制一份列表出来
 	HashMap<int, TCPServerClient*> tempList;
-	mClientList.clone(tempList);
+	mClientList.cloneTo(tempList);
 	for (const auto& iter : tempList)
 	{
 		iter.second->setDeadClient("全部退出登录", DEAD_TYPE::SERVER_KICK_OUT);
@@ -496,44 +521,38 @@ void TCPServerSystem::logoutAll()
 	}
 }
 
-void TCPServerSystem::encrypt(char* data, const int length, const byte* key, const int keyLen, const byte param)
+void TCPServerSystem::encrypt(char* data, const int length, const byte param)
 {
-	if (length == 0)
+	if (data == nullptr || length <= 0)
 	{
 		return;
 	}
-	int keyIndex = (param ^ 223) & (keyLen - 1);
+	int keyIndex = (param ^ 223) & (FrameDefine::ENCRYPT_KEY_LENGTH - 1);
 	FOR(length)
 	{
-		const byte keyChar = (byte)(key[keyIndex] ^ (byte)param);
+		const byte keyChar = (byte)(FrameDefine::ENCRYPT_KEY[keyIndex] ^ (byte)param);
 		data[i] ^= keyChar;
 		data[i] += keyChar >> 1;
 		data[i] ^= (byte)(((keyChar * keyIndex) & (mKey0 * mKey1)) | ((mKey2 + mKey3) * keyIndex));
 		keyIndex += i;
-		if (keyIndex >= keyLen)
-		{
-			keyIndex &= keyLen - 1;
-		}
+		keyIndex &= FrameDefine::ENCRYPT_KEY_LENGTH - 1;
 	}
 }
 
-void TCPServerSystem::decrypt(char* data, const int length, const byte* key, const int keyLen, const byte param)
+void TCPServerSystem::decrypt(char* data, const int length, const byte param)
 {
-	if (length <= 0)
+	if (data == nullptr || length <= 0)
 	{
 		return;
 	}
-	int keyIndex = (param ^ 223) & (keyLen - 1);
+	int keyIndex = (param ^ 223) & (FrameDefine::ENCRYPT_KEY_LENGTH - 1);
 	FOR(length)
 	{
-		const byte keyChar = (byte)(key[keyIndex] ^ (byte)param);
+		const byte keyChar = (byte)(FrameDefine::ENCRYPT_KEY[keyIndex] ^ (byte)param);
 		data[i] ^= (byte)(((keyChar * keyIndex) & (mKey0 * mKey1)) | ((mKey2 + mKey3) * keyIndex));
 		data[i] -= keyChar >> 1;
 		data[i] ^= keyChar;
 		keyIndex += i;
-		if (keyIndex >= keyLen)
-		{
-			keyIndex &= keyLen - 1;
-		}
+		keyIndex &= FrameDefine::ENCRYPT_KEY_LENGTH - 1;
 	}
 }

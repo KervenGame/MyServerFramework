@@ -28,10 +28,10 @@ public:
 	Vector4 operator-(const Vector4& that) const { return { x - that.x, y - that.y, z - that.z, w - that.w }; }
 	Vector4& operator+=(const Vector4& that)
 	{
-		x -= that.x;
-		y -= that.y;
-		z -= that.z;
-		w -= that.w;
+		x += that.x;
+		y += that.y;
+		z += that.z;
+		w += that.w;
 		return *this;
 	}
 	Vector4& operator-=(const Vector4& that)
