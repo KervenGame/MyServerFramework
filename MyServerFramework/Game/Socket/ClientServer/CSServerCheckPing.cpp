@@ -7,5 +7,5 @@ string CSServerCheckPing::mPacketName = STR(CSServerCheckPing);
 
 void CSServerCheckPing::execute()
 {
-	SCCheckPacketVersion::send(mClient);
+	SCServerCheckPing::send(mClient, mIndex);
 }
