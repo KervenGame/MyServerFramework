@@ -833,6 +833,8 @@
     <ClInclude Include="Frame\Utility\FrameUtility.h" />
     <ClInclude Include="Frame\Utility\MathUtility.cpp" />
     <ClInclude Include="Frame\Utility\MathUtility.h" />
+    <ClInclude Include="Frame\Utility\SQLUtility.cpp" />
+    <ClInclude Include="Frame\Utility\SQLUtility.h" />
     <ClInclude Include="Frame\Utility\StringUtility.cpp" />
     <ClInclude Include="Frame\Utility\StringUtility.h" />
     <ClInclude Include="Frame\Utility\SystemUtility.cpp" />

@@ -137,22 +137,36 @@ void CustomThread::updateThread()
 				mDelayCommandPool->destroyClassList(*readCmdScope.mReadList);
 			}
 
-			DoubleBufferReadScope<VoidCallback> readCallScope(mCallBuffer);
+			DoubleBufferReadScope<pair<VoidCallback, const char*>> readCallScope(mCallBuffer);
 			if (readCallScope.mReadList != nullptr)
 			{
+				mCallTypeList.clear();
 				const llong startTime = getRealTimeMS();
-				for (VoidCallback call : *readCallScope.mReadList)
+				for (const pair<VoidCallback, const char*>& call : *readCallScope.mReadList)
 				{
-					CALL(call);
+					mCallTypeList.addOrGet(call.second) += 1;
+					CALL(call.first);
 				}
 				if (mCmdDebug)
 				{
 					const llong endTime = getRealTimeMS();
 					if (!readCallScope.mReadList->isEmpty() && endTime - startTime > 20)
 					{
+						int maxCount = 0;
+						string maxCmd;
+						for (const auto& iter : mCallTypeList)
+						{
+							if (iter.second > maxCount)
+							{
+								maxCount = iter.second;
+								maxCmd = iter.first;
+							}
+						}
 						LOG("线程" + mName +
 							"耗时:" + IToS((int)(endTime - startTime)) +
-							"毫秒,调用数量:" + UIToS(readCallScope.mReadList->size()));
+							"毫秒,命令数量:" + UIToS(readCallScope.mReadList->size()) +
+							", 最多的是" + maxCmd +
+							", 数量:" + IToS(maxCount));
 					}
 				}
 			}

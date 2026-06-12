@@ -68,6 +68,8 @@ void ServerFramework::registeComponent()
 	registeSystem<StateParamPool>(STR(StateParamPool));
 	registeSystem<StatePool>(STR(StatePool));
 	registeSystem<TimePointPool>(STR(TimePointPool));
+	registeSystem<EventInfoPool>(STR(EventInfoPool));
+	registeSystem<TickerPool>(STR(TickerPool));
 	registeSystem<CharacterFactoryManager>(STR(CharacterFactoryManager));
 	registeSystem<CharacterStateFactoryManager>(STR(CharacterStateFactoryManager));
 	registeSystem<GameComponentFactoryManager>(STR(GameComponentFactoryManager));

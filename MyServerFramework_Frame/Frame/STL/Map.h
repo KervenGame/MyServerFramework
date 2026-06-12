@@ -54,8 +54,8 @@ public:
 	const_iterator end() const			{ return mMap.end(); }
 	const_iterator cbegin() const		{ return mMap.cbegin(); }
 	const_iterator cend() const			{ return mMap.cend(); }
-	// 获取列表中指定顺序的值,如果获取失败,则返回设置的defaultValue,适用于value是指针类型或者整数类型的列表
-	const Value& getAt(const int index, const Value& defaultValue) const
+	// 获取列表中指定顺序的值,如果获取失败,则返回设置的defaultValue
+	Value getAt(const int index, const Value& defaultValue) const
 	{
 		int curIndex = 0;
 		for (const auto& iter : mMap)
@@ -87,8 +87,8 @@ public:
 		}
 		return nullptr;
 	}
-	// 获取值,如果获取失败,则返回设置的defaultValue,适用于value是指针类型或者整数类型的列表
-	const Value& get(const Key& key, const Value& defaultValue) const
+	// 获取值,如果获取失败,则返回设置的defaultValue
+	Value get(const Key& key, const Value& defaultValue) const
 	{
 		auto iter = mMap.find(key);
 		return iter != mMap.end() ? iter->second : defaultValue;

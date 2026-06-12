@@ -228,8 +228,8 @@ Vector<MySQLData*> MySQLTable::queryList(const QueryParam& param, const bool cre
 	}
 	endQuery(result);
 	const llong time1 = readTSC();
-	double timeMS = Profiler::ticksToMS(time1 - time0);
-	if (ret && timeMS > 0)
+	const double timeMS = Profiler::ticksToMS(time1 - time0);
+	if (ret && timeMS > 5)
 	{
 		LOG("查询数据的耗时较长:" + FToS((float)timeMS) + "毫秒, sql:" + (!stackQueryStr.isEmpty() ? stackQueryStr.str() : heapQueryStr.c_str()));
 	}

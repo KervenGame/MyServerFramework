@@ -3,6 +3,7 @@
 #include "SQLiteTableBase.h"
 #include "SelectCount.h"
 #include "VectorPoolManager.h"
+#include "SQLUtility.h"
 
 template<class T, typename TypeCheck = typename IsSubClassOf<SQLiteData, T>::mType>
 class SQLiteTable : public SQLiteTableBase

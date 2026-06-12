@@ -46,5 +46,5 @@ bool SerializerBitRead::readStringList(Vector<string>& list)
 	{
 		result = result && readString(list[i]);
 	}
-	return true;
+	return result;
 }

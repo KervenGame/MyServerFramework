@@ -47,7 +47,7 @@ namespace FrameUtility
 	void UN_CLASS(T*& obj)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			PoolOf<T>::type::getInstance()->destroyClass(obj);
@@ -57,7 +57,7 @@ namespace FrameUtility
 	void UN_CLASS(Vector<T*>& objList)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			for (T* item : objList)
@@ -71,7 +71,7 @@ namespace FrameUtility
 	void UN_CLASS(SafeVector<T*>& objList)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			for (T* item : objList.getMainList())
@@ -85,7 +85,7 @@ namespace FrameUtility
 	void UN_CLASS(SafeVector0<T*>& objList)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			for (T* item : objList.getMainList())
@@ -99,7 +99,7 @@ namespace FrameUtility
 	void UN_CLASS(ArrayList<Length, T*>& objList)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			for (T* item : objList)
@@ -113,7 +113,7 @@ namespace FrameUtility
 	void UN_CLASS(HashMap<Key, T*>& objList)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			for (auto& item : objList)
@@ -127,7 +127,7 @@ namespace FrameUtility
 	void UN_CLASS(SafeHashMap<Key, T*>& objList)
 	{
 		constexpr bool hasNoPool = is_same<typename PoolOf<T>::type, void>::value;
-		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type");
+		static_assert(!hasNoPool, "type has no pool, please add PoolOf<Type> of your ClassObject Type, or add CLASS_POOL(yourType) at the end of yourType file");
 		if constexpr (!hasNoPool)
 		{
 			for (auto& item : objList.getMainList())

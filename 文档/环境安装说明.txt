@@ -1,0 +1,11 @@
+windows上需要安装openssl和mysql
+
+openssl：
+可以从 https://slproweb.com/products/Win32OpenSSL.html 下载Win64OpenSSL进行安装
+安装后添加环境变量OPENSSL_ROOT_DIR,值为C:\Program Files\OpenSSL-Win64
+lib/openssl_x64中的lib就是匹配此安装包的
+
+mysql：
+可以从 https://dev.mysql.com/downloads/installer/ 下载8.0版本的安装包，565MB的
+安装后添加环境变量MYSQL_ROOT,值为C:\Program Files\MySQL\MySQL Server 8.0
+lib/MySQL8.0_x64中的lib就是匹配此安装包的

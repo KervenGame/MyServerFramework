@@ -37,6 +37,7 @@ void TCPClient::disconnect()
 	mLastReceiveSequenceNumber = 0;
 	mExecutePacketList.clear();
 	mWillSendBuffer1Lock.unlock();
+	mPacketTCPCSThreadPool->notifyNewClassThreadDestroy();
 }
 
 void TCPClient::init(const string& ip, const ushort port)

@@ -55,6 +55,8 @@ namespace FrameBase
 	StateParamPool* mStateParamPool;
 	StatePool* mStatePool;
 	TimePointPool* mTimePointPool;
+	EventInfoPool* mEventInfoPool;
+	TickerPool* mTickerPool;
 	CharacterFactoryManager* mCharacterFactoryManager;
 	CharacterStateFactoryManager* mCharacterStateFactoryManager;
 	GameComponentFactoryManager* mGameComponentFactoryManager;
@@ -117,6 +119,8 @@ namespace FrameBase
 		mServerFramework->getSystem(STR(StateParamPool), mStateParamPool);
 		mServerFramework->getSystem(STR(StatePool), mStatePool);
 		mServerFramework->getSystem(STR(TimePointPool), mTimePointPool);
+		mServerFramework->getSystem(STR(EventInfoPool), mEventInfoPool);
+		mServerFramework->getSystem(STR(TickerPool), mTickerPool);
 		mServerFramework->getSystem(STR(CharacterFactoryManager), mCharacterFactoryManager);
 		mServerFramework->getSystem(STR(CharacterStateFactoryManager), mCharacterStateFactoryManager);
 		mServerFramework->getSystem(STR(GameComponentFactoryManager), mGameComponentFactoryManager);
@@ -181,6 +185,8 @@ namespace FrameBase
 		mStateParamPool = nullptr;
 		mStatePool = nullptr;
 		mTimePointPool = nullptr;
+		mEventInfoPool = nullptr;
+		mTickerPool = nullptr;
 		mCharacterFactoryManager = nullptr;
 		mCharacterStateFactoryManager = nullptr;
 		mGameComponentFactoryManager = nullptr;

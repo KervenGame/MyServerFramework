@@ -148,11 +148,6 @@ struct StringUtilityExtTestImpl
 		findString("abcabc", "b", &pos2, 2);
 		SUET_ASSERT_EQ(pos2, 4, "findString startIndex=2 pos=4");
 
-		// 反向查找
-		int pos3 = -1;
-		findString("abcabc", "b", &pos3, 0, false);
-		SUET_ASSERT_EQ(pos3, 4, "findString reverse pos=4");
-
 		// findStringPos
 		SUET_ASSERT_EQ(findStringPos("hello", "ell"), 1, "findStringPos=1");
 		SUET_ASSERT_EQ(findStringPos("hello", "xyz"), -1, "findStringPos=-1");
@@ -570,25 +565,17 @@ struct StringUtilityExtTestImpl
 		//------------------------------------------------------------------------------
 		// 扩展测试 Part 3 — findString 更多场景
 		//------------------------------------------------------------------------------
-			// findString 从后往前
-		{
-			int pos = -1;
-			bool found = findString("abcabc", "bc", &pos, 0, false);
-			SUET_ASSERT(found, "findString backward found");
-			SUET_ASSERT_EQ(pos, 4, "findString backward pos=4");
-		}
-
 		// findString startIndex > 0
 		{
 			int pos = -1;
-			bool found = findString("abcabc", "abc", &pos, 3, true);
+			bool found = findString("abcabc", "abc", &pos, 3);
 			SUET_ASSERT(found, "findString start>0 found");
 			SUET_ASSERT_EQ(pos, 3, "findString start>0 pos=3");
 		}
 
 		// findString not found with startIndex
 		{
-			bool found = findString("abcabc", "xyz", nullptr, 0, true);
+			bool found = findString("abcabc", "xyz");
 			SUET_ASSERT(!found, "findString not found");
 		}
 
@@ -2422,11 +2409,6 @@ struct StringUtilityExt2TestImpl
 			int pos = findStringPos(string("abcabc"), string("bc"), 2);
 			SU2_ASSERT_EQ(pos, 4, "findStringPos 'bc' from 2 = 4");
 		}
-		// 反向查找
-		{
-			int pos = findStringPos(string("abcabc"), string("ab"), 0, false);
-			SU2_ASSERT_EQ(pos, 3, "findStringPos backward 'ab' = 3");
-		}
 	}
 
 	//------------------------------------------------------------------------------
@@ -3756,7 +3738,6 @@ struct StringUtilityExtendTestImpl
 		testSplitLineBasic();
 		testSplitLineToBuffer();
 		testFindStringBasic();
-		testFindStringFromEnd();
 		testFindStringStartIndex();
 		testFindStringLowerBasic();
 		testFindStringPos();
@@ -3870,18 +3851,10 @@ struct StringUtilityExtendTestImpl
 		SUEXT_ASSERT(!notFound);
 	}
 
-	static void testFindStringFromEnd()
-	{
-		int pos = 0;
-		bool found = findString("abcabc", "abc", &pos, 0, false);
-		SUEXT_ASSERT(found);
-		SUEXT_ASSERT(pos == 3);
-	}
-
 	static void testFindStringStartIndex()
 	{
 		int pos = 0;
-		bool found = findString("abcabc", "abc", &pos, 1, true);
+		bool found = findString("abcabc", "abc", &pos, 1);
 		SUEXT_ASSERT(found);
 		SUEXT_ASSERT(pos == 3);
 	}
@@ -4702,6 +4675,300 @@ struct StringUtilityFormat2TestImpl
 	}
 };
 
+// 覆盖缺口：SToX buffer/vector 重载、toLower/toUpper、bytesToHex/charToHex、isNumber/isPhoneNumber、SToV2/V3
+struct StringUtilityCoverageGapTestImpl
+{
+
+#define SUCG_ASSERT(expr, msg) \
+    do { if (!(expr)) { ERROR(string("StringUtilityCoverageGap FAILED: " #expr) + (msg)); } } while(0)
+#define SUCG_ASSERT_EQ(a, b, msg) \
+    do { if ((a) != (b)) { ERROR(string("StringUtilityCoverageGap FAILED: ") + (msg) + \
+        " | expected=" + IToS((int)(b)) + " actual=" + IToS((int)(a))); } } while(0)
+#define SUCG_ASSERT_STR(a, b, msg) \
+    do { if ((a) != (b)) { ERROR(string("StringUtilityCoverageGap FAILED: ") + (msg) + \
+        " | expected='" + (b) + "' actual='" + (a) + "'"); } } while(0)
+
+	// ========== toLower / toUpper ==========
+	static void testToLowerUpper()
+	{
+		SUCG_ASSERT_STR(toLower("Hello World"), "hello world", "toLower mixed");
+		SUCG_ASSERT_STR(toLower("ABC"), "abc", "toLower uppercase");
+		SUCG_ASSERT_STR(toLower("abc"), "abc", "toLower already lower");
+		SUCG_ASSERT_STR(toLower(""), "", "toLower empty");
+		SUCG_ASSERT_STR(toLower("123!@#"), "123!@#", "toLower non-alpha unchanged");
+
+		SUCG_ASSERT_STR(toUpper("Hello World"), "HELLO WORLD", "toUpper mixed");
+		SUCG_ASSERT_STR(toUpper("abc"), "ABC", "toUpper lowercase");
+		SUCG_ASSERT_STR(toUpper("ABC"), "ABC", "toUpper already upper");
+		SUCG_ASSERT_STR(toUpper(""), "", "toUpper empty");
+		SUCG_ASSERT_STR(toUpper("123!@#"), "123!@#", "toUpper non-alpha unchanged");
+	}
+
+	// ========== charToHexString / bytesToHexString ==========
+	static void testHexConversion()
+	{
+		// charToHexString
+		SUCG_ASSERT_STR(charToHexString((byte)0x00, false), "00", "hex 0x00 lower");
+		SUCG_ASSERT_STR(charToHexString((byte)0xFF, false), "ff", "hex 0xFF lower");
+		SUCG_ASSERT_STR(charToHexString((byte)0xAB, true), "AB", "hex 0xAB upper");
+		SUCG_ASSERT_STR(charToHexString((byte)0x0F, false), "0f", "hex 0x0F lower");
+		SUCG_ASSERT_STR(charToHexString((byte)0x10, true), "10", "hex 0x10 upper");
+
+		// bytesToHexString - no space, lower
+		byte data1[] = { 0x00, 0xFF, 0xAB };
+		SUCG_ASSERT_STR(bytesToHexString(data1, 3, false, false), "00ffab", "bytesToHex 3 no space lower");
+
+		// bytesToHexString - with space, upper
+		SUCG_ASSERT_STR(bytesToHexString(data1, 3, true, true), "00 FF AB", "bytesToHex 3 space upper");
+
+		// bytesToHexString - empty
+		SUCG_ASSERT_STR(bytesToHexString(nullptr, 0, false, false), "", "bytesToHex empty");
+
+		// bytesToHexString - single byte
+		byte data2[] = { 0x5A };
+		SUCG_ASSERT_STR(bytesToHexString(data2, 1, false, false), "5a", "bytesToHex single");
+	}
+
+	// ========== isNumber / isPhoneNumber ==========
+	static void testIsNumber()
+	{
+		SUCG_ASSERT(isNumber("12345"), "isNumber digits");
+		SUCG_ASSERT(!isNumber("12a45"), "isNumber with alpha false");
+		SUCG_ASSERT(!isNumber("-123"), "isNumber negative false");
+		SUCG_ASSERT(!isNumber(""), "isNumber empty false");
+		SUCG_ASSERT(!isNumber(" 1"), "isNumber leading space false");
+		SUCG_ASSERT(isNumber("0"), "isNumber single zero");
+		SUCG_ASSERT(isNumber("9999999999"), "isNumber long number");
+	}
+
+	static void testIsPhoneNumber()
+	{
+		SUCG_ASSERT(isPhoneNumber("13800138000"), "phone normal");
+		SUCG_ASSERT(!isPhoneNumber("1234567890"), "phone too short (10)");
+		SUCG_ASSERT(!isPhoneNumber("123456789012"), "phone too long (12)");
+		SUCG_ASSERT(!isPhoneNumber("03800138000"), "phone not start with 1");
+		SUCG_ASSERT(!isPhoneNumber("13800a38000"), "phone with alpha");
+		SUCG_ASSERT(!isPhoneNumber(""), "phone empty");
+	}
+
+	// ========== SToIs / SToFs / SToBs / SToLLs / SToSs / SToUIs / SToUSs ==========
+	static void testSToIs()
+	{
+		// Vector version
+		Vector<int> list;
+		SToIs("1,2,3", list, ",");
+		SUCG_ASSERT_EQ(list.size(), 3, "SToIs size");
+		SUCG_ASSERT_EQ(list[0], 1, "SToIs[0]");
+		SUCG_ASSERT_EQ(list[1], 2, "SToIs[1]");
+		SUCG_ASSERT_EQ(list[2], 3, "SToIs[2]");
+
+		// buffer version
+		int buf[10];
+		int count = SToIs("4,5,6", buf, 10, ",");
+		SUCG_ASSERT_EQ(count, 3, "SToIs buf count");
+		SUCG_ASSERT_EQ(buf[0], 4, "SToIs buf[0]");
+		SUCG_ASSERT_EQ(buf[1], 5, "SToIs buf[1]");
+
+		// return vector version
+		Vector<int> rlist = SToIs("7,8,9", ",");
+		SUCG_ASSERT_EQ(rlist.size(), 3, "SToIs ret size");
+		SUCG_ASSERT_EQ(rlist[2], 9, "SToIs ret[2]");
+
+		// empty string
+		Vector<int> empty;
+		SToIs("", empty, ",");
+		SUCG_ASSERT_EQ(empty.size(), 0, "SToIs empty");
+	}
+
+	static void testSToFs()
+	{
+		Vector<float> list;
+		SToFs("1.5,2.5,3.0", list, ",");
+		SUCG_ASSERT_EQ(list.size(), 3, "SToFs size");
+		SUCG_ASSERT(abs(list[0] - 1.5f) < 0.001f, "SToFs[0]");
+		SUCG_ASSERT(abs(list[1] - 2.5f) < 0.001f, "SToFs[1]");
+		SUCG_ASSERT(abs(list[2] - 3.0f) < 0.001f, "SToFs[2]");
+
+		// buffer version
+		Array<10, float> buf;
+		int count = SToFs("4.0,5.5", buf, ",");
+		SUCG_ASSERT_EQ(count, 2, "SToFs buf count");
+		SUCG_ASSERT(abs(buf[0] - 4.0f) < 0.001f, "SToFs buf[0]");
+	}
+
+	static void testSToBs()
+	{
+		byte buf[10];
+		int count = SToBs("10,20,30", buf, 10, ",");
+		SUCG_ASSERT_EQ(count, 3, "SToBs count");
+		SUCG_ASSERT_EQ((int)buf[0], 10, "SToBs[0]");
+		SUCG_ASSERT_EQ((int)buf[1], 20, "SToBs[1]");
+		SUCG_ASSERT_EQ((int)buf[2], 30, "SToBs[2]");
+
+		// Vector version
+		Vector<byte> vlist;
+		SToBs("1,2", vlist, ",");
+		SUCG_ASSERT_EQ(vlist.size(), 2, "SToBs vec size");
+	}
+
+	static void testSToLLs()
+	{
+		Vector<llong> list;
+		SToLLs("10000000000,20000000000", list, ",");
+		SUCG_ASSERT_EQ(list.size(), 2, "SToLLs size");
+		SUCG_ASSERT(list[0] == 10000000000LL, "SToLLs[0]");
+		SUCG_ASSERT(list[1] == 20000000000LL, "SToLLs[1]");
+
+		// buffer version
+		llong buf[10];
+		int count = SToLLs("42,99", buf, 10, ",");
+		SUCG_ASSERT_EQ(count, 2, "SToLLs buf count");
+		SUCG_ASSERT(buf[0] == 42LL, "SToLLs buf[0]");
+
+		// return vector version
+		Vector<llong> rlist = SToLLs("7,8", ",");
+		SUCG_ASSERT_EQ(rlist.size(), 2, "SToLLs ret size");
+	}
+
+	static void testSToSs()
+	{
+		short buf[10];
+		int count = SToSs("100,200,300", buf, 10, ",");
+		SUCG_ASSERT_EQ(count, 3, "SToSs count");
+		SUCG_ASSERT_EQ((int)buf[0], 100, "SToSs[0]");
+		SUCG_ASSERT_EQ((int)buf[1], 200, "SToSs[1]");
+		SUCG_ASSERT_EQ((int)buf[2], 300, "SToSs[2]");
+
+		Vector<short> vlist;
+		SToSs("1,2", vlist, ",");
+		SUCG_ASSERT_EQ(vlist.size(), 2, "SToSs vec size");
+	}
+
+	static void testSToUIs()
+	{
+		uint buf[10];
+		int count = SToUIs("10,20,30", buf, 10, ",");
+		SUCG_ASSERT_EQ(count, 3, "SToUIs count");
+		SUCG_ASSERT_EQ((int)buf[0], 10, "SToUIs[0]");
+
+		Vector<uint> vlist;
+		SToUIs("1,2", vlist, ",");
+		SUCG_ASSERT_EQ(vlist.size(), 2, "SToUIs vec size");
+	}
+
+	static void testSToUSs()
+	{
+		ushort buf[10];
+		int count = SToUSs("100,200", buf, 10, ",");
+		SUCG_ASSERT_EQ(count, 2, "SToUSs count");
+		SUCG_ASSERT_EQ((int)buf[0], 100, "SToUSs[0]");
+
+		Vector<ushort> vlist;
+		SToUSs("1,2", vlist, ",");
+		SUCG_ASSERT_EQ(vlist.size(), 2, "SToUSs vec size");
+	}
+
+	// ========== FsToS / UIsToS ==========
+	static void testFsToS()
+	{
+		Vector<float> list;
+		list.add(1.5f);
+		list.add(2.5f);
+		string result = FsToS(list, ",");
+		SUCG_ASSERT(!result.empty(), "FsToS not empty");
+		// 验证包含数字
+		SUCG_ASSERT(result.find("1.5") != string::npos || result.find("1.500") != string::npos, "FsToS contains 1.5");
+
+		// buffer version
+		char buf[64];
+		FsToS(buf, 64, list, ",");
+		SUCG_ASSERT(strlen(buf) > 0, "FsToS buf not empty");
+	}
+
+	static void testUIsToS()
+	{
+		Vector<uint> list;
+		list.add(10u);
+		list.add(20u);
+		string result = UIsToS(list, ",");
+		SUCG_ASSERT_STR(result, "10,20", "UIsToS basic");
+
+		// buffer version
+		char buf[64];
+		UIsToS(buf, 64, list, ",");
+		SUCG_ASSERT_STR(string(buf), "10,20", "UIsToS buf");
+	}
+
+	// ========== SToV2Is / SToV2s / SToV3Is / SToV3s ==========
+	static void testSToV2Is()
+	{
+		Vector<Vector2Int> list;
+		SToV2Is("1,2|3,4", list);
+		SUCG_ASSERT_EQ(list.size(), 2, "SToV2Is size");
+		SUCG_ASSERT_EQ(list[0].x, 1, "SToV2Is[0].x");
+		SUCG_ASSERT_EQ(list[0].y, 2, "SToV2Is[0].y");
+		SUCG_ASSERT_EQ(list[1].x, 3, "SToV2Is[1].x");
+		SUCG_ASSERT_EQ(list[1].y, 4, "SToV2Is[1].y");
+
+		Vector<Vector2Int> empty;
+		SToV2Is("", empty);
+		SUCG_ASSERT_EQ(empty.size(), 0, "SToV2Is empty");
+	}
+
+	static void testSToV2s()
+	{
+		Vector<Vector2> list;
+		SToV2s("1.5,2.5|3.0,4.0", list);
+		SUCG_ASSERT_EQ(list.size(), 2, "SToV2s size");
+		SUCG_ASSERT(abs(list[0].x - 1.5f) < 0.001f, "SToV2s[0].x");
+		SUCG_ASSERT(abs(list[0].y - 2.5f) < 0.001f, "SToV2s[0].y");
+	}
+
+	static void testSToV3Is()
+	{
+		Vector<Vector3Int> list;
+		SToV3Is("1,2,3|4,5,6", list);
+		SUCG_ASSERT_EQ(list.size(), 2, "SToV3Is size");
+		SUCG_ASSERT_EQ(list[0].x, 1, "SToV3Is[0].x");
+		SUCG_ASSERT_EQ(list[0].y, 2, "SToV3Is[0].y");
+		SUCG_ASSERT_EQ(list[0].z, 3, "SToV3Is[0].z");
+		SUCG_ASSERT_EQ(list[1].x, 4, "SToV3Is[1].x");
+		SUCG_ASSERT_EQ(list[1].y, 5, "SToV3Is[1].y");
+		SUCG_ASSERT_EQ(list[1].z, 6, "SToV3Is[1].z");
+	}
+
+	static void testSToV3s()
+	{
+		Vector<Vector3> list;
+		SToV3s("1.0,2.0,3.0|4.0,5.0,6.0", list);
+		SUCG_ASSERT_EQ(list.size(), 2, "SToV3s size");
+		SUCG_ASSERT(abs(list[0].x - 1.0f) < 0.001f, "SToV3s[0].x");
+		SUCG_ASSERT(abs(list[0].y - 2.0f) < 0.001f, "SToV3s[0].y");
+		SUCG_ASSERT(abs(list[0].z - 3.0f) < 0.001f, "SToV3s[0].z");
+	}
+
+	static void test()
+	{
+		testToLowerUpper();
+		testHexConversion();
+		testIsNumber();
+		testIsPhoneNumber();
+		testSToIs();
+		testSToFs();
+		testSToBs();
+		testSToLLs();
+		testSToSs();
+		testSToUIs();
+		testSToUSs();
+		testFsToS();
+		testUIsToS();
+		testSToV2Is();
+		testSToV2s();
+		testSToV3Is();
+		testSToV3s();
+	}
+};
+
 void StringUtilityTest::test()
 {
 	StringUtilityExtTestImpl::test();
@@ -4713,4 +4980,5 @@ void StringUtilityTest::test()
 	StringUtilityFilePathTestImpl::test();
 	StringUtilityStringOpTestImpl::test();
 	StringUtilityFormat2TestImpl::test();
+	StringUtilityCoverageGapTestImpl::test();
 }

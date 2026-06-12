@@ -1,8 +1,8 @@
-﻿#project name
-PROJECT(MyServerFramework)
+﻿#minimum_version
+cmake_minimum_required(VERSION 3.10)
 
-#minimum_version
-cmake_minimum_required(VERSION 2.8)
+#project name
+PROJECT(MyServerFramework)
 
 #包含其他CMakeLists.txt的目录
 add_subdirectory(MyServerFramework_Frame)

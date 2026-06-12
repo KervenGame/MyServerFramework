@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// auto generate start
+#pragma once
 
 #include "Character.h"
 #include "CharacterManager.h"
@@ -374,9 +375,11 @@
 #include "TriangleIntersect.h"
 #include "TriangleIntersect3.h"
 #include "MathUtility.h"
+#include "SQLUtility.h"
 #include "StringUtility.h"
 #include "SystemUtility.h"
 #include "IsPODType.h"
 #include "IsSubClassOf.h"
 #include "TypeUtility.h"
 #include "Utility.h"
+// auto generate end

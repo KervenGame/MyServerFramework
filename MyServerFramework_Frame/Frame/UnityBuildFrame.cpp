@@ -1,4 +1,5 @@
-﻿#include "Character.cpp"
+﻿// auto generate start
+#include "Character.cpp"
 #include "CharacterManager.cpp"
 #include "COMCharacterStateMachine.cpp"
 #include "COMMonsterDecisionTree.cpp"
@@ -215,5 +216,7 @@
 #include "FrameUtility.cpp"
 #include "Line2D.cpp"
 #include "MathUtility.cpp"
+#include "SQLUtility.cpp"
 #include "StringUtility.cpp"
 #include "SystemUtility.cpp"
+// auto generate end

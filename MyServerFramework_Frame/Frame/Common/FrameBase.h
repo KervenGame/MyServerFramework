@@ -60,6 +60,8 @@ namespace FrameBase
 	MICRO_LEGEND_FRAME_API extern StateParamPool* mStateParamPool;
 	MICRO_LEGEND_FRAME_API extern StatePool* mStatePool;
 	MICRO_LEGEND_FRAME_API extern TimePointPool* mTimePointPool;
+	MICRO_LEGEND_FRAME_API extern EventInfoPool* mEventInfoPool;
+	MICRO_LEGEND_FRAME_API extern TickerPool* mTickerPool;
 	MICRO_LEGEND_FRAME_API extern CharacterFactoryManager* mCharacterFactoryManager;
 	MICRO_LEGEND_FRAME_API extern CharacterStateFactoryManager* mCharacterStateFactoryManager;
 	MICRO_LEGEND_FRAME_API extern GameComponentFactoryManager* mGameComponentFactoryManager;

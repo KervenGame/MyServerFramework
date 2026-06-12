@@ -41,14 +41,14 @@ namespace FileUtility
 		dirent* pDirent = nullptr;
 		while ((pDirent = readdir(pDir)) != nullptr)
 		{
+			szTmpPath.clear();
 			//如果是.或者..跳过
 			if (string(pDirent->d_name) == "." || string(pDirent->d_name) == "..")
 			{
 				continue;
 			}
 			//判断是否为文件夹
-			szTmpPath.add(tempPath.c_str());
-			szTmpPath.add(pDirent->d_name);
+			szTmpPath.add(tempPath.c_str(), pDirent->d_name);
 			if (isDirectory(szTmpPath.str()))
 			{
 				if (recursive)
@@ -92,14 +92,14 @@ namespace FileUtility
 		MyString<1024> szTmpPath;
 		while ((pDirent = readdir(pDir)) != nullptr)
 		{
+			szTmpPath.clear();
 			//如果是.或者..跳过
 			if (string(pDirent->d_name) == "." || string(pDirent->d_name) == "..")
 			{
 				continue;
 			}
 			//判断是否为文件夹
-			szTmpPath.add(tempPath.c_str());
-			szTmpPath.add(pDirent->d_name);
+			szTmpPath.add(tempPath.c_str(), pDirent->d_name);
 			// 如果是文件夹,则先将文件夹放入列表,然后判断是否递归查找
 			if (isDirectory(szTmpPath.str()))
 			{
@@ -127,14 +127,14 @@ namespace FileUtility
 		MyString<1024> szTmpPath;
 		while ((pDirent = readdir(pDir)) != nullptr)
 		{
+			szTmpPath.clear();
 			//如果是.或者..跳过
 			if (string(pDirent->d_name) == "." || string(pDirent->d_name) == "..")
 			{
 				continue;
 			}
 			//判断是否为文件夹
-			szTmpPath.add(tempPath.c_str());
-			szTmpPath.add(pDirent->d_name);
+			szTmpPath.add(tempPath.c_str(), pDirent->d_name);
 			// 如果是文件夹,则递归删除空文件夹
 			if (isDirectory(szTmpPath.str()))
 			{
@@ -171,14 +171,14 @@ namespace FileUtility
 		MyString<1024> szTmpPath;
 		while ((pDirent = readdir(pDir)) != nullptr)
 		{
+			szTmpPath.clear();
 			//如果是.或者..跳过
 			if (string(pDirent->d_name) == "." || string(pDirent->d_name) == "..")
 			{
 				continue;
 			}
 			//判断是否为文件夹
-			szTmpPath.add(tempPath.c_str());
-			szTmpPath.add(pDirent->d_name);
+			szTmpPath.add(tempPath.c_str(), pDirent->d_name);
 			// 如果是文件夹,则递归删除文件夹
 			if (isDirectory(szTmpPath.str()))
 			{
@@ -233,6 +233,7 @@ namespace FileUtility
 						if (endWith(fullname, patterns[i].c_str(), false))
 						{
 							files.add(fullname);
+							break;
 						}
 					}
 				}
@@ -390,6 +391,11 @@ namespace FileUtility
 		if (isFileExist(destFile) && !overWrite)
 		{
 			return true;
+		}
+		// 源文件不存在，直接返回
+		if (!isFileExist(sourceFile))
+		{
+			return false;
 		}
 		FileContent file;
 		if (!openBinaryFile(sourceFile, &file))
@@ -710,7 +716,10 @@ namespace FileUtility
 	int getFileSize(const string& filePath)
 	{
 		struct stat info;
-		stat(filePath.c_str(), &info);
+		if (stat(filePath.c_str(), &info) != 0)
+		{
+			return 0;
+		}
 		return (int)info.st_size;
 	}
 }

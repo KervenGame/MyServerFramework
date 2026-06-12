@@ -100,7 +100,9 @@ namespace SystemUtility
 #ifdef WINDOWS
 		return (int)GetCurrentThreadId();
 #elif defined LINUX
-		return (int)pthread_self();
+		// 使用 syscall(SYS_gettid) 获取内核线程 ID，始终为正整数
+		// pthread_self() 返回 pthread_t 是 unsigned long，强转 int 可能变负
+		return (int)syscall(SYS_gettid);
 #endif
 	}
 	// 获得程序当前所在路径,带文件名

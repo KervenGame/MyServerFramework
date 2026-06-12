@@ -464,6 +464,11 @@ public:
 			}
 		}
 	}
+	// 通知此对象池,调用newClass的线程已经被销毁,需要清空对这个线程的ID记录
+	void notifyNewClassThreadDestroy()
+	{
+		mNewClassThreadID = 0;
+	}
 protected:
 	virtual ClassType* create(const KeyType type) = 0;
 	void onSecond() override

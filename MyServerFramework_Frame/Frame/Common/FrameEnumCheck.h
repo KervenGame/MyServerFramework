@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// auto generate start
+#pragma once
 
 #include "FrameEnum.h"
 
@@ -19,6 +20,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<COMMAND_STATE>& valueList)
+	{
+		for (const COMMAND_STATE value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const DEAD_TYPE value)
 	{
 		switch (value)
@@ -28,6 +41,18 @@ public:
 		case DEAD_TYPE::SERVER_KICK_OUT:break;
 		case DEAD_TYPE::NET_ERROR:break;
 		default:return false;
+		}
+		return true;
+	}
+
+	static bool checkEnum(const Vector<DEAD_TYPE>& valueList)
+	{
+		for (const DEAD_TYPE value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -47,6 +72,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<GROUP_MUTEX>& valueList)
+	{
+		for (const GROUP_MUTEX value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const KEY_STATE value)
 	{
 		switch (value)
@@ -60,6 +97,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<KEY_STATE>& valueList)
+	{
+		for (const KEY_STATE value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const LOGIC_RELATION value)
 	{
 		switch (value)
@@ -68,6 +117,18 @@ public:
 		case LOGIC_RELATION::AND:break;
 		case LOGIC_RELATION::OR:break;
 		default:return false;
+		}
+		return true;
+	}
+
+	static bool checkEnum(const Vector<LOGIC_RELATION>& valueList)
+	{
+		for (const LOGIC_RELATION value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -85,6 +146,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<MOUSE_BUTTON>& valueList)
+	{
+		for (const MOUSE_BUTTON value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const MYSQL_ORDER value)
 	{
 		switch (value)
@@ -93,6 +166,18 @@ public:
 		case MYSQL_ORDER::ASC:break;
 		case MYSQL_ORDER::DESC:break;
 		default:return false;
+		}
+		return true;
+	}
+
+	static bool checkEnum(const Vector<MYSQL_ORDER>& valueList)
+	{
+		for (const MYSQL_ORDER value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -114,6 +199,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<PARSE_RESULT>& valueList)
+	{
+		for (const PARSE_RESULT value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const PLAY_STATE value)
 	{
 		switch (value)
@@ -127,6 +224,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<PLAY_STATE>& valueList)
+	{
+		for (const PLAY_STATE value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const SERIALIZE_PARAM_LENGTH value)
 	{
 		switch (value)
@@ -136,6 +245,18 @@ public:
 		case SERIALIZE_PARAM_LENGTH::MIDDLE:break;
 		case SERIALIZE_PARAM_LENGTH::LONG:break;
 		default:return false;
+		}
+		return true;
+	}
+
+	static bool checkEnum(const Vector<SERIALIZE_PARAM_LENGTH>& valueList)
+	{
+		for (const SERIALIZE_PARAM_LENGTH value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -154,6 +275,18 @@ public:
 		return true;
 	}
 
+	static bool checkEnum(const Vector<SQLITE_DATATYPE>& valueList)
+	{
+		for (const SQLITE_DATATYPE value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	static constexpr bool checkEnum(const STATE_MUTEX value)
 	{
 		switch (value)
@@ -164,6 +297,18 @@ public:
 		case STATE_MUTEX::KEEP_HIGH_PRIORITY:break;
 		case STATE_MUTEX::OVERLAP_LAYER:break;
 		default:return false;
+		}
+		return true;
+	}
+
+	static bool checkEnum(const Vector<STATE_MUTEX>& valueList)
+	{
+		for (const STATE_MUTEX value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -180,4 +325,17 @@ public:
 		}
 		return true;
 	}
+
+	static bool checkEnum(const Vector<TASK_STATE>& valueList)
+	{
+		for (const TASK_STATE value : valueList)
+		{
+			if (!checkEnum(value))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 };
+// auto generate end

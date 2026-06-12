@@ -422,11 +422,11 @@ namespace MathUtility
 		int expressionBegin = -1;
 		int expressionEnd = -1;
 		// 倒序寻找
-		while (findString(str, "\\(", &expressionBegin, 0, false))
+		while (findStringInverse(str, "\\(", &expressionBegin))
 		{
 			replaced = true;
 			// 找到匹配的)
-			findString(str, ")", &expressionEnd, 0, false);
+			findStringInverse(str, ")", &expressionEnd);
 			// expressionBegin + 1 去掉 /
 			string calculateValue = str.substr(expressionBegin + 1, expressionEnd - expressionBegin);
 			replaceKeywordAndCalculate(calculateValue, keyword, keyValue, floatOrInt);

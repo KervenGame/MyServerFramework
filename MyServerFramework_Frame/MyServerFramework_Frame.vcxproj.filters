@@ -2133,6 +2133,12 @@
     <ClInclude Include="Frame\Utility\MathUtility.h">
       <Filter>Frame\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\Utility\SQLUtility.cpp">
+      <Filter>Frame\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Utility\SQLUtility.h">
+      <Filter>Frame\Utility</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\Utility\StringUtility.cpp">
       <Filter>Frame\Utility</Filter>
     </ClInclude>

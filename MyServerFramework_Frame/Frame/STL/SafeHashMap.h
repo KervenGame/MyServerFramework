@@ -48,8 +48,8 @@ public:
 	// 尝试获取值的指针,适用于value是非指针类型的列表
 	Value* getPtr(const Key& key)										{ return mMainList.getPtr(key); }
 	const Value* getPtrConst(const Key& key) const						{ return mMainList.getPtrConst(key); }
-	// 获取值,如果获取失败,则返回设置的defaultValue,适用于value是指针类型或者整数类型的列表
-	const Value& get(const Key& key, const Value& defaultValue) const	{ return mMainList.get(key, defaultValue); }
+	// 获取值,如果获取失败,则返回设置的defaultValue
+	Value get(const Key& key, const Value& defaultValue) const	{ return mMainList.get(key, defaultValue); }
 	const Value& get(const Key& key) const								{ return mMainList.get(key); }
 	bool contains(const Key& key) const									{ return mMainList.contains(key); }
 	int size() const													{ return mMainList.size(); }

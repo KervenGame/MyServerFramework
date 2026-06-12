@@ -2726,13 +2726,13 @@ namespace StringUtility
 			}
 		}
 	}
-	bool findStringLower(const string& res, const string& sub, int* pos, const int startIndex, const bool direction)
+	bool findStringLower(const string& res, const string& sub, int* pos, const int startIndex)
 	{
 		// 全转换为小写
-		return findString(toLower(res), toLower(sub).c_str(), pos, startIndex, direction);
+		return findString(toLower(res), toLower(sub).c_str(), pos, startIndex);
 	}
 
-	bool findString(const string& res, const char* sub, int* pos, const int startIndex, const bool direction)
+	bool findString(const string& res, const char* sub, int* pos, const int startIndex)
 	{
 		// 这里只是不再通过strlength获取字符串长度,而是直接string.length()获取,其余完全一致
 		int posFind = -1;
@@ -2742,42 +2742,20 @@ namespace StringUtility
 		{
 			return false;
 		}
-		if (direction)
+		for (int i = startIndex; i < searchLength; ++i)
 		{
-			for (int i = startIndex; i < searchLength; ++i)
+			int j = 0;
+			for (; j < subLen; ++j)
 			{
-				int j = 0;
-				for (; j < subLen; ++j)
+				if (res[i + j] != sub[j])
 				{
-					if (res[i + j] != sub[j])
-					{
-						break;
-					}
-				}
-				if (j == subLen)
-				{
-					posFind = i;
 					break;
 				}
 			}
-		}
-		else
-		{
-			for (int i = searchLength - 1; i >= startIndex; --i)
+			if (j == subLen)
 			{
-				int j = 0;
-				for (; j < subLen; ++j)
-				{
-					if (res[i + j] != sub[j])
-					{
-						break;
-					}
-				}
-				if (j == subLen)
-				{
-					posFind = i;
-					break;
-				}
+				posFind = i;
+				break;
 			}
 		}
 		if (pos != nullptr)
@@ -2787,7 +2765,40 @@ namespace StringUtility
 		return posFind != -1;
 	}
 
-	bool findString(const char* res, const char* sub, int* pos, const int startIndex, const bool direction)
+	bool findStringInverse(const string& res, const char* sub, int* pos)
+	{
+		// 这里只是不再通过strlength获取字符串长度,而是直接string.length()获取,其余完全一致
+		int posFind = -1;
+		const int subLen = strlength(sub);
+		const int searchLength = (int)res.length() - subLen + 1;
+		if (searchLength <= 0)
+		{
+			return false;
+		}
+		for (int i = searchLength - 1; i >= 0; --i)
+		{
+			int j = 0;
+			for (; j < subLen; ++j)
+			{
+				if (res[i + j] != sub[j])
+				{
+					break;
+				}
+			}
+			if (j == subLen)
+			{
+				posFind = i;
+				break;
+			}
+		}
+		if (pos != nullptr)
+		{
+			*pos = posFind;
+		}
+		return posFind != -1;
+	}
+
+	bool findString(const char* res, const char* sub, int* pos, const int startIndex)
 	{
 		int posFind = -1;
 		const int subLen = strlength(sub);
@@ -2796,42 +2807,20 @@ namespace StringUtility
 		{
 			return false;
 		}
-		if (direction)
+		for (int i = startIndex; i < searchLength; ++i)
 		{
-			for (int i = startIndex; i < searchLength; ++i)
+			int j = 0;
+			for (; j < subLen; ++j)
 			{
-				int j = 0;
-				for (; j < subLen; ++j)
+				if (res[i + j] != sub[j])
 				{
-					if (res[i + j] != sub[j])
-					{
-						break;
-					}
-				}
-				if (j == subLen)
-				{
-					posFind = i;
 					break;
 				}
 			}
-		}
-		else
-		{
-			for (int i = searchLength - 1; i >= startIndex; --i)
+			if (j == subLen)
 			{
-				int j = 0;
-				for (; j < subLen; ++j)
-				{
-					if (res[i + j] != sub[j])
-					{
-						break;
-					}
-				}
-				if (j == subLen)
-				{
-					posFind = i;
-					break;
-				}
+				posFind = i;
+				break;
 			}
 		}
 		if (pos != nullptr)
@@ -2860,17 +2849,17 @@ namespace StringUtility
 		return posFind != -1;
 	}
 
-	int findStringPos(const char* res, const char* dst, const int startIndex, const bool direction)
+	int findStringPos(const char* res, const char* dst, const int startIndex)
 	{
 		int pos = -1;
-		findString(res, dst, &pos, startIndex, direction);
+		findString(res, dst, &pos, startIndex);
 		return pos;
 	}
 
-	int findStringPos(const string& res, const string& dst, const int startIndex, const bool direction)
+	int findStringPos(const string& res, const string& dst, const int startIndex)
 	{
 		int pos = -1;
-		findString(res, dst.c_str(), &pos, startIndex, direction);
+		findString(res, dst.c_str(), &pos, startIndex);
 		return pos;
 	}
 
@@ -2901,6 +2890,13 @@ namespace StringUtility
 	string charToHexString(byte value, bool upper)
 	{
 		MyString<3> byteHex;
+		charToHexString(byteHex, value, upper);
+		return byteHex.str();
+	}
+
+	void charToHexString(MyString<3>& byteHex, byte value, bool upper)
+	{
+		byteHex.clear();
 		const char* charPool = upper ? "ABCDEF" : "abcdef";
 		const byte highBit = value >> 4;
 		// 高字节的十六进制
@@ -2908,29 +2904,34 @@ namespace StringUtility
 		// 低字节的十六进制
 		const byte lowBit = value & 0x0F;
 		byteHex.add((lowBit < (byte)10) ? ('0' + lowBit) : charPool[lowBit - 10]);
-		return byteHex.str();
 	}
 
 	string bytesToHexString(const byte* data, int dataCount, bool addSpace, bool upper)
 	{
 		const int oneLength = addSpace ? 3 : 2;
-		CharArrayScopeThread byteData(getGreaterPower2(dataCount * oneLength + 1));
+		const int maxLength = addSpace ? (dataCount * oneLength - 1) : (dataCount * oneLength);
+		MyString<3> byteHex;
+		CharArrayScopeThread byteData(getGreaterPower2(maxLength + 1));
 		FOR(dataCount)
 		{
-			const string byteStr = charToHexString(data[i]);
-			byteData.mArray[i * oneLength + 0] = byteStr[0];
-			byteData.mArray[i * oneLength + 1] = byteStr[1];
-			if (oneLength >= 3)
+			charToHexString(byteHex, data[i], upper);
+			byteData.mArray[i * oneLength + 0] = byteHex[0];
+			byteData.mArray[i * oneLength + 1] = byteHex[1];
+			if (addSpace && i != dataCount - 1)
 			{
 				byteData.mArray[i * oneLength + 2] = ' ';
 			}
 		}
-		byteData.mArray[dataCount * oneLength] = '\0';
+		byteData.mArray[maxLength] = '\0';
 		return byteData.mArray;
 	}
 
 	bool isNumber(const string& str)
 	{
+		if (str.empty())
+		{
+			return false;
+		}
 		FOR(str.length())
 		{
 			if (!isNumber(str[i]))
@@ -3027,198 +3028,6 @@ namespace StringUtility
 			ChineseSpace = chineseSpace.str();
 		}
 		return findString(str, ChineseSpace.c_str()) || findString(str, " ");
-	}
-
-	void sqlAddString(char* queryStr, const int size, const char* str, const bool addComma)
-	{
-		if (checkSQLString(str))
-		{
-			strcat_t(queryStr, size, "'", str, addComma ? "'," : "'");
-		}
-		else
-		{
-			strcat_t(queryStr, size, "'", addComma ? "'," : "'");
-		}
-	}
-	
-	void sqlAddStringUTF8(char* queryStr, const int size, const char* str, const bool addComma)
-	{
-		if (str[0] != '\0')
-		{
-			if (checkSQLString(str))
-			{
-				CharArrayScopeThread utf8String(size);
-				ANSIToUTF8(str, utf8String.mArray, size, false);
-				strcat_t(queryStr, size, "'", utf8String.mArray, addComma ? "'," : "'");
-			}
-			else
-			{
-				strcat_t(queryStr, size, "'", addComma ? "'," : "'");
-			}
-		}
-		else
-		{
-			strcat_t(queryStr, size, "'", addComma ? "'," : "'");
-		}
-	}
-
-	void sqlAddStringUTF8(string& queryStr, const string& str, const bool addComma)
-	{
-		if (str[0] != '\0')
-		{
-			if (checkSQLString(str))
-			{
-				queryStr += "'";
-				queryStr += ANSIToUTF8(str);
-				queryStr += addComma ? "'," : "'";
-			}
-			else
-			{
-				queryStr += "'";
-				queryStr += addComma ? "'," : "'";
-			}
-		}
-		else
-		{
-			queryStr += "'";
-			queryStr += addComma ? "'," : "'";
-		}
-	}
-
-	void sqlAddInt(char* queryStr, const int size, const int value, const bool addComma)
-	{
-		INT_STR(temp, value);
-		if (addComma)
-		{
-			strcat_t(queryStr, size, temp.str(), ",");
-		}
-		else
-		{
-			strcat_s(queryStr, size, temp.str());
-		}
-	}
-
-	void sqlAddUInt(char* queryStr, const int size, const int value, const bool addComma)
-	{
-		UINT_STR(temp, value);
-		if (addComma)
-		{
-			strcat_t(queryStr, size, temp.str(), ",");
-		}
-		else
-		{
-			strcat_s(queryStr, size, temp.str());
-		}
-	}
-
-	void sqlAddFloat(char* queryStr, const int size, const float value, const bool addComma)
-	{
-		FLOAT_STR(temp, value);
-		if (addComma)
-		{
-			strcat_t(queryStr, size, temp.str(), ",");
-		}
-		else
-		{
-			strcat_s(queryStr, size, temp.str());
-		}
-	}
-
-	void sqlAddULLong(char* queryStr, const int size, const ullong value, const bool addComma)
-	{
-		ULLONG_STR(temp, value);
-		if (addComma)
-		{
-			strcat_t(queryStr, size, temp.str(), ",");
-		}
-		else
-		{
-			strcat_s(queryStr, size, temp.str());
-		}
-	}
-
-	void sqlAddLLong(char* queryStr, const int size, const llong value, const bool addComma)
-	{
-		LLONG_STR(temp, value);
-		if (addComma)
-		{
-			strcat_t(queryStr, size, temp.str(), ",");
-		}
-		else
-		{
-			strcat_s(queryStr, size, temp.str());
-		}
-	}
-
-	void sqlAddVector2Int(char* queryStr, const int size, Vector2Int value, const bool addComma)
-	{
-		MyString<32> temp;
-		V2IToS(temp, value);
-		sqlAddString(queryStr, size, temp.str(), addComma);
-	}
-
-	void sqlAddVector2UInt(char* queryStr, const int size, Vector2UInt value, const bool addComma)
-	{
-		MyString<32> temp;
-		V2UIToS(temp, value);
-		sqlAddString(queryStr, size, temp.str(), addComma);
-	}
-
-	void sqlAddVector2Short(char* queryStr, const int size, Vector2Short value, const bool addComma)
-	{
-		MyString<16> temp;
-		V2SToS(temp, value);
-		sqlAddString(queryStr, size, temp.str(), addComma);
-	}
-
-	void sqlAddVector2UShort(char* queryStr, const int size, Vector2UShort value, const bool addComma)
-	{
-		MyString<16> temp;
-		V2USToS(temp, value);
-		sqlAddString(queryStr, size, temp.str(), addComma);
-	}
-
-	void sqlUpdateString(char* updateInfo, const int size, const string& col, const char* str, const bool addComma)
-	{
-		if (checkSQLString(str))
-		{
-			strcat_t(updateInfo, size, col.c_str(), " = '", str, addComma ? "'," : "'");
-		}
-		else
-		{
-			strcat_t(updateInfo, size, col.c_str(), " = '", addComma ? "'," : "'");
-		}
-	}
-
-	void sqlUpdateStringUTF8(char* updateInfo, const int size, const string& col, const char* str, const bool addComma)
-	{
-		if (checkSQLString(str))
-		{
-			CharArrayScopeThread utf8String(size);
-			ANSIToUTF8(str, utf8String.mArray, size, false);
-			strcat_t(updateInfo, size, col.c_str(), " = '", utf8String.mArray, addComma ? "'," : "'");
-		}
-		else
-		{
-			strcat_t(updateInfo, size, col.c_str(), " = '", addComma ? "'," : "'");
-		}
-	}
-
-	void sqlUpdateStringUTF8(string& updateInfo, const string& col, const string& str, const bool addComma)
-	{
-		if (checkSQLString(str))
-		{
-			updateInfo += col;
-			updateInfo += " = '";
-			updateInfo += ANSIToUTF8(str);
-			updateInfo += addComma ? "'," : "'";
-		}
-		else
-		{
-			updateInfo += col;
-			updateInfo += " = '";
-			updateInfo += addComma ? "'," : "'";
-		}
 	}
 
 	void initIntToString()

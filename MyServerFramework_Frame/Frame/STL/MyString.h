@@ -11,8 +11,6 @@ public:
 	MyString() {}
 	// 为了方便查代码,将返回指针的函数命名为具体的名字
 	const char* str() const				{ return mValue; }
-	// 仅为了在类型匹配时能够编译通过,尽量避免直接使用
-	const char* data() const			{ return mValue; }
 	char* data()						{ return mValue; }
 	bool isEmpty() const				{ return mLength == 0; }
 	constexpr int getMaxLength() const	{ return Length; }
@@ -386,17 +384,7 @@ public:
 	bool setCount(const char c, const int count)
 	{
 		clear();
-		if (mLength + count >= Length)
-		{
-			LOG("添加的字符串太长");
-			return false;
-		}
-		FOR(count)
-		{
-			mValue[mLength++] = c;
-		}
-		mValue[mLength] = '\0';
-		return true;
+		return addCount(c, count);
 	}
 	void sprintf(const char* format, ...)
 	{
@@ -419,26 +407,6 @@ public:
 		}
 	}
 protected:
-	template<int SourceLength>
-	void copy(const MyString<SourceLength>& src)
-	{
-		if (SourceLength > Length)
-		{
-			LOG("拷贝字符串太长");
-			return;
-		}
-		MEMCPY(mValue, Length, src.str(), SourceLength);
-	}
-	template<int SourceLength>
-	void copy(const MyString<SourceLength>& src, const int copyCount)
-	{
-		if (copyCount > Length)
-		{
-			LOG("拷贝字符串太长");
-			return;
-		}
-		MEMCPY(mValue, Length, src.str(), copyCount);
-	}
 	void copy(const char* src) const
 	{
 		const int length = (int)::strlen(src);
@@ -475,26 +443,6 @@ protected:
 			return;
 		}
 		MEMCPY(mValue, Length, src.c_str() + srcOffset, copyCount);
-	}
-	template<int SourceLength>
-	void copy(const int destOffset, const MyString<SourceLength>& src)
-	{
-		if (SourceLength + destOffset > Length)
-		{
-			LOG("拷贝字符串太长");
-			return;
-		}
-		MEMCPY(mValue + destOffset, Length - destOffset, src.str(), SourceLength);
-	}
-	template<int SourceLength>
-	void copy(const int destOffset, const MyString<SourceLength>& src, const int copyCount)
-	{
-		if (copyCount + destOffset > Length)
-		{
-			LOG("拷贝字符串太长");
-			return;
-		}
-		MEMCPY(mValue + destOffset, Length - destOffset, src.str(), copyCount);
 	}
 	void copy(const int destOffset, const char* src, const int copyCount)
 	{

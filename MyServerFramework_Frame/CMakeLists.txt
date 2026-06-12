@@ -1,8 +1,8 @@
-﻿#project name
-PROJECT(MyServerFramework_Frame)
+﻿#minimum_version
+cmake_minimum_required(VERSION 3.10)
 
-#minimum_version
-cmake_minimum_required(VERSION 2.8)
+#project name
+PROJECT(MyServerFramework_Frame)
 
 MESSAGE("\nstart cmake ${PROJECT_NAME}")
 
@@ -10,9 +10,11 @@ MESSAGE("\nstart cmake ${PROJECT_NAME}")
 SET(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 #release模式下关闭优化,开启gdb调试
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O0 -Wall -g")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O2 -Wall -g2 -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-omit-frame-pointer")
 #release模式下开启全部优化,关闭gdb调试
 #set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+#关闭指定警告
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
 
 INCLUDE(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)  
