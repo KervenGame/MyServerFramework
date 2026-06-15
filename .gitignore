@@ -8,3 +8,5 @@ Release
 /ToolProject/GenerateVSProject/.vs
 /MyServerFramework/MyServerFramework.vcxproj.user
 /MyServerFramework_Frame/MyServerFramework_Frame.vcxproj.user
+
+/.workbuddy
